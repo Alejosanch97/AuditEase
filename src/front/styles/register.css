@@ -1,0 +1,492 @@
+.sgsst-register-container {
+    font-family: 'Inter', sans-serif; /* Asegura la fuente para este componente */
+    background-color: #ffffff;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column; /* Default to column for mobile */
+    /* Ajustes de tamaño para que la card ocupe un buen espacio */
+    max-width: 1000px; /* Reducido para que sea más compacto, similar al login */
+    width: 90%; /* Ocupa un porcentaje del ancho disponible */
+    overflow: hidden;
+    height: auto; /* Allow height to adjust based on content */
+    /* Centrar el contenedor en la pantalla */
+    position: absolute; 
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    /* Asegurar que la altura se ajuste y permitir scroll interno si es necesario */
+    max-height: 90vh; /* Limitar la altura máxima a un porcentaje del viewport */
+    overflow-y: auto; /* Permitir scroll vertical si el contenido excede la altura */
+    min-height: 550px; /* Asegura una altura mínima para el contenedor de registro */
+}
+
+/* Left Panel - Welcome section */
+.sgsst-register-left-panel {
+    background-color: #00473e; /* Headline color from second palette */
+    color: #fffffe; /* Sub headline color from second palette */
+    padding: 30px; /* Reducir padding para más espacio */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    /* Permitir que el panel izquierdo sea más flexible, eliminando el min-width fijo de 950px */
+    flex: 1; /* Permite que el panel izquierdo y derecho compartan el espacio equitativamente */
+    min-width: unset; /* Elimina el min-width fijo, permitiendo que se encoja */
+    max-width: 50%; /* Asegura que no ocupe más de la mitad del contenedor principal */
+    min-height: 280px; /* Ensure minimum height for mobile */
+    position: relative; /* Para posicionar el indicador de pasos */
+}
+
+.sgsst-register-logo-image {
+    /* El logo se adaptará al tamaño del panel izquierdo, no será 900px en portátiles */
+    max-width: 800px; /* Limitar el tamaño del logo para que quepa en el panel más pequeño */
+    width: 100%; /* Ocupa el 100% del ancho de su contenedor (hasta 300px) */
+    height: auto; /* Mantiene la proporción */
+    margin-bottom: 25px; /* Ligeramente reducido */
+    filter: drop-shadow(0 8px 15px rgba(0,0,0,0.4)); 
+}
+
+.sgsst-register-welcome-headline {
+    font-size: 2.2rem; /* Ligeramente más pequeño */
+    font-weight: 700;
+    margin-bottom: 0.8rem; 
+    line-height: 1.2;
+}
+
+.sgsst-register-welcome-text {
+    font-size: 1rem; /* Ligeramente más pequeño */
+    text-align: center;
+    line-height: 1.5;
+    max-width: 350px; /* Ajuste del ancho */
+    margin-bottom: 25px; /* Espacio antes del indicador de pasos */
+}
+
+/* Indicador de Pasos */
+.sgsst-register-steps-indicator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    max-width: 300px; /* Limitar el ancho del indicador */
+    margin-top: auto; /* Empuja el indicador hacia abajo en el panel izquierdo */
+    padding-top: 15px; /* Reducir padding */
+    gap: 10px; /* Espacio entre los pasos y la línea */
+}
+
+.sgsst-register-step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    color: rgba(255, 255, 255, 0.5); /* Color inactivo */
+    transition: color 0.3s ease;
+    position: relative;
+    z-index: 2; /* Para que el círculo esté sobre la línea */
+}
+
+.sgsst-register-step span {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px; /* Círculos más pequeños */
+    height: 30px;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.5); /* Borde inactivo */
+    font-weight: 600;
+    font-size: 1rem; /* Fuente más pequeña */
+    background-color: #00473e; /* Fondo del círculo */
+    transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+}
+
+.sgsst-register-step small {
+    margin-top: 4px; /* Ligeramente reducido */
+    font-size: 0.8rem; /* Texto más pequeño */
+    text-align: center;
+}
+
+.sgsst-register-step.active {
+    color: #fffffe; /* Color activo */
+}
+
+.sgsst-register-step.active span {
+    background-color: #faae2b; /* Color de realce para el círculo activo */
+    border-color: #faae2b;
+    color: #00473e; /* Texto oscuro en el círculo activo */
+}
+
+.sgsst-register-step-line {
+    flex-grow: 1;
+    height: 2px;
+    background-color: rgba(255, 255, 255, 0.3); /* Línea inactiva */
+    position: absolute;
+    width: calc(100% - 60px); /* Ancho de la línea entre los círculos (ajustado por el tamaño de los círculos) */
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1;
+}
+
+/* Right Panel - Registration Form section */
+.sgsst-register-right-panel {
+    padding: 30px; /* Reducido de 40px a 30px */
+    flex: 1; 
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.sgsst-register-heading {
+    font-size: 2.2rem; /* Ligeramente más pequeño */
+    font-weight: 700;
+    text-align: center;
+    margin-bottom: 1.2rem; /* Ligeramente reducido */
+    color: #00473e; /* Headline color */
+}
+
+/* Input field styling */
+.sgsst-register-input-group-wrapper {
+    margin-bottom: 12px; /* Reducido de 15px a 12px */
+    position: relative; 
+}
+
+.sgsst-register-form-label {
+    color: #475d5b; 
+    font-weight: 600;
+    margin-bottom: 6px; /* Reducido de 8px a 6px */
+    display: block; 
+}
+
+.sgsst-register-required-star {
+    color: #fa5246; 
+    font-weight: bold;
+    margin-left: 4px;
+}
+
+.sgsst-register-input-field {
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 10px 14px; /* Reducido de 12px 16px */
+    width: 100%;
+    box-sizing: border-box;
+    font-size: 15px; /* Ligeramente más pequeño */
+    color: #475d5b; 
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.sgsst-register-input-field:focus {
+    outline: none;
+    border-color: #faae2b; 
+    box-shadow: 0 0 0 3px rgba(250, 174, 43, 0.3);
+}
+
+.sgsst-register-input-field.is-invalid {
+    border-color: #dc3545; 
+}
+
+.sgsst-register-invalid-feedback {
+    color: #dc3545;
+    font-size: 0.8rem; /* Ligeramente más pequeño */
+    margin-top: 0.2rem; /* Ligeramente reducido */
+    display: block; 
+}
+
+/* Password toggle button */
+.sgsst-register-password-input-wrapper {
+    position: relative;
+}
+
+.sgsst-register-toggle-password-visibility {
+    position: absolute;
+    right: 10px;
+    /* Ajuste top para el toggle si hay label encima: 
+       (altura de la etiqueta + margen) + mitad del padding del input + mitad de la altura del input */
+    top: calc(50% + 12px); /* Ajuste basado en los nuevos márgenes/paddings */
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1.1rem; /* Ligeramente más pequeño */
+    color: #475d5b;
+    padding: 4px; /* Ligeramente reducido */
+    border-radius: 50%;
+    transition: background-color 0.2s ease;
+}
+
+.sgsst-register-toggle-password-visibility:hover {
+    background-color: #f0f0f0;
+}
+
+/* Password Strength Meter */
+.sgsst-register-password-strength-container {
+    margin-top: 0.4rem; /* Ligeramente reducido */
+}
+
+.sgsst-register-progress {
+    height: 5px; /* Ligeramente más delgado */
+    background-color: #e9ecef; 
+    border-radius: 3px;
+    overflow: hidden;
+    margin-bottom: 0.2rem; /* Ligeramente reducido */
+}
+
+.sgsst-register-progress-bar {
+    height: 100%;
+    transition: width 0.4s ease-in-out;
+    border-radius: 3px;
+}
+
+/* Colores de la barra de fortaleza */
+.sgsst-register-progress-bar-danger { background-color: #dc3545; } 
+.sgsst-register-progress-bar-warning { background-color: #ffc107; } 
+.sgsst-register-progress-bar-info { background-color: #17a2b8; } 
+.sgsst-register-progress-bar-success { background-color: #28a745; } 
+
+.sgsst-register-text-muted {
+    color: #6c757d; 
+    font-size: 0.8rem; /* Ligeramente más pequeño */
+}
+
+/* Register button and Navigation buttons */
+.sgsst-register-button {
+    background-color: #faae2b; 
+    color: #00473e; 
+    padding: 12px 18px; /* Reducido de 14px 20px */
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 1rem; /* Reducido de 1.125rem */
+    width: 100%;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
+    box-shadow: 0 5px 15px rgba(250, 174, 43, 0.3); 
+    margin-top: 1rem; /* Reducido de 1.5rem */
+}
+
+.sgsst-register-button:hover {
+    background-color: #e09a24; 
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(250, 174, 43, 0.4);
+}
+
+.sgsst-register-button:active {
+    transform: translateY(0);
+    box-shadow: 0 5px 15px rgba(250, 174, 43, 0.3);
+}
+
+.sgsst-register-button:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+    box-shadow: none;
+    transform: none;
+}
+
+.sgsst-register-button-secondary {
+    background-color: #e2e8f0; 
+    color: #475d5b; 
+    box-shadow: none;
+}
+
+.sgsst-register-button-secondary:hover {
+    background-color: #cbd5e1; 
+    transform: translateY(-2px);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.sgsst-register-navigation-buttons {
+    display: flex;
+    justify-content: space-between;
+    gap: 15px; /* Reducido de 20px */
+    margin-top: 1rem; /* Reducido de 1.5rem */
+}
+
+.sgsst-register-navigation-buttons .sgsst-register-button {
+    width: auto; 
+    flex: 1; 
+}
+
+
+/* Spinner for loading state */
+.sgsst-register-spinner {
+    border: 3px solid rgba(255, 255, 255, 0.3);
+    border-top: 3px solid #fff;
+    border-radius: 50%;
+    width: 1em;
+    height: 1em;
+    animation: sgsst-register-spin 1s linear infinite;
+    display: inline-block;
+    vertical-align: middle;
+    margin-right: 0.5em;
+}
+
+@keyframes sgsst-register-spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* "Ya tienes cuenta?" text and link */
+.sgsst-register-signup-text {
+    text-align: center;
+    font-size: 0.875rem; 
+    margin-top: 1.5rem; /* Reducido de 2rem */
+    color: #475d5b; 
+}
+
+.sgsst-register-signup-link {
+    color: #00473e; 
+    font-weight: 500;
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+.sgsst-register-signup-link:hover {
+    color: #faae2b; 
+    text-decoration: underline;
+}
+
+/* Custom alert styling for errors */
+.sgsst-register-alert-danger {
+    background-color: #f8d7da; 
+    color: #721c24; 
+    border: 1px solid #f5c6cb;
+    border-radius: 8px;
+    padding: 0.8rem 1rem; /* Reducido */
+    margin-bottom: 1.2rem; /* Reducido */
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 0.9rem; /* Reducido */
+}
+
+.sgsst-register-close-alert-btn {
+    background: none;
+    border: none;
+    font-size: 1.3rem; /* Reducido */
+    line-height: 1;
+    color: #721c24;
+    cursor: pointer;
+    padding: 0;
+    margin-left: 8px; /* Reducido */
+    opacity: 0.7;
+    transition: opacity 0.2s ease;
+}
+
+.sgsst-register-close-alert-btn:hover {
+    opacity: 1;
+}
+
+/* Media Queries for Responsiveness */
+@media (min-width: 768px) {
+    .sgsst-register-container {
+        flex-direction: row; 
+        width: 85%; /* Mantiene un buen porcentaje */
+        max-width: 1200px; /* Ajustado para ser un poco más grande que 1000px, pero no tan masivo como 1600px */
+    }
+    .sgsst-register-left-panel {
+        padding: 40px; /* Ajustado */
+        flex: 1; 
+        min-width: unset; 
+        max-width: 50%; /* Mantiene el 50% del ancho del contenedor principal */
+    }
+    .sgsst-register-right-panel {
+        padding: 40px; /* Ajustado */
+    }
+    /* Ajuste para el indicador de pasos en desktop */
+    .sgsst-register-steps-indicator {
+        flex-direction: column; 
+        align-items: flex-start; 
+        gap: 20px; /* Reducido de 25px */
+        max-width: none; 
+        width: auto;
+        margin-top: auto; 
+        padding-left: 0;
+        margin-left: 0;
+    }
+    .sgsst-register-step {
+        flex-direction: row; 
+        gap: 8px; /* Reducido de 10px */
+    }
+    .sgsst-register-step-line {
+        display: none; 
+    }
+    .sgsst-register-logo-image {
+        max-width: 250px; /* Ajustado para que sea un tamaño razonable en desktop */
+    }
+}
+
+@media (max-width: 767.98px) { /* Mobile devices */
+    .sgsst-register-left-panel {
+        padding: 20px 15px; /* Más reducido */
+        min-height: 200px; /* Más pequeño */
+        flex: 1 1 auto; 
+        min-width: unset; 
+    }
+
+    .sgsst-register-logo-image {
+        max-width: 150px; /* Más pequeño en móviles */
+        margin-bottom: 15px;
+    }
+
+    .sgsst-register-welcome-headline {
+        font-size: 1.8rem; /* Más pequeño */
+    }
+
+    .sgsst-register-welcome-text {
+        font-size: 0.85rem; /* Más pequeño */
+        margin-bottom: 15px;
+    }
+
+    .sgsst-register-right-panel {
+        padding: 25px 15px; /* Más reducido */
+    }
+
+    .sgsst-register-heading {
+        font-size: 1.8rem; /* Más pequeño */
+        margin-bottom: 0.8rem;
+    }
+
+    .sgsst-register-button {
+        padding: 10px 12px; /* Más reducido */
+        font-size: 0.9rem; /* Más pequeño */
+    }
+    
+    /* Centrar el contenedor principal en móviles, ocupando el 95% del ancho */
+    .sgsst-register-container {
+        width: 95%; /* Ocupa más ancho en móviles */
+        left: 50%;
+        transform: translate(-50%, -50%);
+        position: fixed; 
+        top: 50%;
+        height: auto;
+        max-height: 98vh; /* Permitir casi toda la altura del viewport */
+        overflow-y: auto; 
+    }
+    /* Ajuste top para el toggle si hay label encima en móviles */
+    .sgsst-register-input-group-wrapper.sgsst-register-password-input-wrapper .sgsst-register-toggle-password-visibility {
+        top: calc(50% + 12px); /* Ajuste basado en los nuevos márgenes/paddings */
+    }
+
+    /* Ajuste del indicador de pasos para móviles */
+    .sgsst-register-steps-indicator {
+        flex-direction: row; 
+        justify-content: space-around;
+        gap: 8px; /* Más reducido */
+        max-width: 100%;
+        margin-top: 15px;
+        padding-top: 0;
+    }
+    .sgsst-register-step-line {
+        display: block; 
+        width: calc(100% - 80px); /* Ajustar el ancho de la línea */
+        left: 50%;
+        transform: translateX(-50%);
+    }
+    .sgsst-register-step small {
+        font-size: 0.7rem; /* Texto más pequeño en móviles */
+    }
+    .sgsst-register-step span {
+        width: 28px; /* Círculos más pequeños */
+        height: 28px;
+        font-size: 0.9rem;
+    }
+}

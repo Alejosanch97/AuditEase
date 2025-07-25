@@ -1,0 +1,93 @@
+/* src/styles/navbar.module.css */
+
+/* Estilos para el fondo del navbar */
+.customNavbar {
+    background-color: var(--card-background-palette2); /* Usa #fffffe (off-white) */
+    box-shadow: 0 2px 4px rgba(0,0,0,.08); /* Sutil sombra para dar profundidad */
+    padding-top: 0.75rem; /* Ajusta el padding superior */
+    padding-bottom: 0.75rem; /* Ajusta el padding inferior */
+}
+
+/* Estilos para el brand/logo */
+.navbarBrand {
+    font-weight: 700; /* Negrita para el texto del logo */
+    color: var(--headline-palette2); /* Usa #00473e (dark green) */
+    font-size: 1.5rem; /* Tamaño de fuente más grande para el logo */
+    display: flex; /* Para alinear verticalmente el texto y posibles iconos */
+    align-items: center;
+}
+
+/* Estilos para los enlaces de navegación */
+.navbarNav .navLink {
+    color: var(--paragraph-palette2); /* Usa #475d5b (medium gray/greenish) */
+    font-weight: 500; /* Un poco de negrita para los enlaces */
+    margin: 0 10px; /* Espaciado entre los enlaces */
+    padding: 8px 12px; /* Padding para el área clicable */
+    border-radius: 5px; /* Bordes ligeramente redondeados */
+    transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out; /* Transición suave */
+}
+
+.navbarNav .navLink:hover {
+    background-color: var(--background-palette2); /* Usa #f2f7f5 (light gray/greenish) para un fondo sutil */
+    color: var(--highlight); /* Usa #faae2b (orange/yellow) */
+}
+
+.navbarNav .navLink.active {
+    color: var(--highlight); /* Usa #faae2b (orange/yellow) para el texto activo */
+    font-weight: 600; /* Más negrita si está activo */
+    background-color: rgba(250, 174, 43, 0.1); /* Un fondo muy sutil del color de realce */
+}
+
+/* Estilos para el botón de acción */
+.actionButton {
+    background-color: var(--highlight); /* Usa #faae2b (orange/yellow) */
+    border-color: var(--highlight); /* Mismo color para el borde */
+    color: white; /* El texto se mantiene blanco para contraste */
+    font-weight: 600;
+    padding: 8px 20px;
+    border-radius: 5px;
+    transition: background-color 0.2s ease-in-out, border-color 0.2s ease-in-out;
+}
+
+.actionButton:hover {
+    background-color: var(--modal-primary-btn-hover); /* Usa #e09b25 (tono más oscuro de highlight) */
+    border-color: var(--modal-primary-btn-hover);
+    color: white; /* Asegura que el texto permanezca blanco en hover */
+}
+
+/* Alineación de elementos en el navbar */
+.navbarContent {
+    display: flex;
+    align-items: center;
+    width: 100%;
+}
+
+.navbarNavContainer {
+    flex-grow: 1; /* Permite que este contenedor ocupe el espacio disponible */
+    display: flex;
+    justify-content: center; /* Centra los elementos de navegación */
+}
+
+/* Para dispositivos pequeños, el botón puede moverse a otra línea o apilarse */
+@media (max-width: 991.98px) { /* breakpoint de Bootstrap 'lg' */
+    .navbarContent {
+        flex-direction: column; /* Apila elementos verticalmente */
+        align-items: flex-start; /* Alinea a la izquierda en vista de columna */
+    }
+    .navbarBrand {
+        margin-bottom: 10px; /* Espacio debajo del logo */
+    }
+    .navbarNavContainer {
+        width: 100%; /* Ocupa todo el ancho */
+        justify-content: flex-start; /* Alinea los enlaces a la izquierda */
+        margin-bottom: 10px; /* Espacio debajo de los enlaces */
+    }
+    .ml-auto { /* Esta clase de Bootstrap puede necesitar ser reevaluada para móviles */
+        width: 100%;
+        margin-left: 0 !important; /* Anula el ml-auto de Bootstrap en móviles */
+    }
+    .actionButton {
+        width: 100%; /* El botón ocupa todo el ancho */
+        text-align: center;
+    }
+}

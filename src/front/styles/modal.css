@@ -1,0 +1,249 @@
+/* src/front/styles/modal.css */
+
+/* Modal Overlay: Fondo semi-transparente que permite ver la página de fondo atenuada */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    /* Fondo negro semi-transparente. El 0.7 es para una buena visibilidad de la página de fondo */
+    background-color: rgba(0, 0, 0, 0.7); /* Antes 0.9, 0.7 es más común para atenuar */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000; /* Asegura que esté por encima de otros elementos */
+    backdrop-filter: blur(4px); /* Efecto de desenfoque sutil en el fondo */
+    -webkit-backdrop-filter: blur(4px); /* Para compatibilidad con Safari */
+}
+
+/* Modal Content: La "mini-ventana" donde está el formulario */
+.modal-content {
+    background-color: #2e3b4e; /* Un gris azulado oscuro, más cálido que el negro puro */
+    /* Puedes usar var(--card-bg-color) si quieres que sea igual al fondo de tus tarjetas,
+       pero el diseño de la imagen sugiere un contraste */
+    padding: 35px 40px; /* Más padding para que se vea más espacioso */
+    border-radius: 15px; /* Bordes más redondeados */
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5); /* Sombra más pronunciada */
+    width: 90%;
+    max-width: 650px; /* Un poco más ancho para mejor distribución */
+    box-sizing: border-box;
+    position: relative;
+    max-height: 90vh;
+    overflow-y: auto;
+    color: #e0e0e0; /* Color de texto claro para el contenido del modal */
+    animation: fadeInScale 0.3s ease-out forwards; /* Animación de entrada */
+}
+
+/* Animación de entrada del modal */
+@keyframes fadeInScale {
+    from {
+        opacity: 0;
+        transform: scale(0.9);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+
+.modal-content h2 {
+    color: #61dafb; /* Azul claro, similar a colores de acento modernos */
+    margin-bottom: 28px;
+    text-align: center;
+    font-size: 2.2em; /* Título más grande */
+    font-weight: 700; /* Más audaz */
+    border-bottom: 2px solid #4a5a70; /* Borde más distintivo */
+    padding-bottom: 18px;
+    letter-spacing: 0.5px;
+}
+
+.form-group {
+    margin-bottom: 22px; /* Más espacio entre grupos de formulario */
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 10px;
+    font-weight: 600; /* Un poco más audaz */
+    color: #bbbbbb; /* Color de etiqueta más suave */
+    font-size: 1.05em; /* Ligeramente más grande */
+}
+
+.form-group input[type="text"],
+.form-group input[type="email"] {
+    width: calc(100% - 24px); /* Ajuste de ancho */
+    padding: 14px; /* Más padding */
+    border: 1px solid #4a5a70; /* Borde sutil */
+    border-radius: 10px; /* Más redondeado */
+    font-size: 1.05em;
+    background-color: #3a475a; /* Fondo del input un poco más claro que el modal */
+    color: #ffffff; /* Texto blanco en el input */
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.form-group input[type="text"]:focus,
+.form-group input[type="email"]:focus {
+    border-color: #61dafb; /* Borde de enfoque azul */
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(97, 218, 251, 0.3); /* Sombra de enfoque */
+}
+
+.form-group input[type="file"] {
+    width: 100%;
+    padding: 12px 0; /* Ajuste de padding */
+    color: #e0e0e0; /* Color del texto del input file */
+    /* Estilo del botón de seleccionar archivo para que sea más uniforme */
+    appearance: none; /* Quita el estilo por defecto del navegador */
+    background-color: #4a5a70; /* Color de fondo del botón */
+    border: 1px solid #61dafb; /* Borde azul */
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 1em;
+    padding: 10px 15px;
+    transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+.form-group input[type="file"]::-webkit-file-upload-button {
+    background-color: #61dafb; /* Color del botón de selección */
+    color: white;
+    padding: 8px 15px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-right: 15px;
+    transition: background-color 0.3s ease;
+}
+
+.form-group input[type="file"]::-webkit-file-upload-button:hover {
+    background-color: #4aadc4;
+}
+
+
+.profile-image-preview,
+.company-logo-preview {
+    max-width: 140px; /* Tamaño ligeramente más pequeño para centrar mejor */
+    max-height: 140px;
+    border-radius: 50%; /* Mantener redondo para perfil */
+    object-fit: cover;
+    margin-top: 20px;
+    margin-left: auto; /* Centrar la imagen */
+    margin-right: auto; /* Centrar la imagen */
+    display: block; /* Para que margin: auto funcione */
+    border: 3px solid #61dafb; /* Borde más visible */
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.company-logo-preview {
+    border-radius: 10px; /* Para logos, un poco redondeado pero no circular */
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: center; /* Centrar los botones de acción */
+    gap: 20px; /* Más espacio entre botones */
+    margin-top: 35px;
+}
+
+.modal-actions .btn {
+    padding: 14px 30px; /* Más padding para botones */
+    border: none;
+    border-radius: 10px; /* Más redondeado */
+    cursor: pointer;
+    font-size: 1.1em; /* Texto más grande */
+    font-weight: 700; /* Más audaz */
+    transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
+    letter-spacing: 0.5px;
+}
+
+.modal-actions .btn-primary {
+    background-color: #61dafb; /* Azul brillante como primario */
+    color: #20232a; /* Texto oscuro para contraste */
+}
+
+.modal-actions .btn-primary:hover {
+    background-color: #4aadc4; /* Tono de azul más oscuro al pasar el ratón */
+    transform: translateY(-3px); /* Efecto de elevación */
+    box-shadow: 0 6px 15px rgba(97, 218, 251, 0.4);
+}
+
+.modal-actions .btn-secondary {
+    background-color: #4a5a70; /* Gris azulado para secundario */
+    color: #e0e0e0;
+}
+
+.modal-actions .btn-secondary:hover {
+    background-color: #3a475a; /* Tono de gris azulado más oscuro */
+    transform: translateY(-3px);
+    box-shadow: 0 6px 15px rgba(74, 90, 112, 0.4);
+}
+
+.modal-actions .btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+.error-message {
+    color: #ff6b6b; /* Rojo más vibrante para errores */
+    margin-top: 15px;
+    font-size: 0.95em;
+    text-align: center;
+    font-weight: 500;
+}
+
+.success-message {
+    color: #61db93; /* Verde para éxito */
+    margin-top: 15px;
+    font-size: 0.95em;
+    text-align: center;
+    font-weight: 500;
+}
+
+/* Estilos para el botón de "Editar Perfil" en la tarjeta principal */
+.profile-card .profile-actions {
+    display: flex;
+    justify-content: center;
+    padding-top: 25px;
+    border-top: 1px solid #4a5a70; /* Borde que coincide con el tema oscuro */
+    margin-top: 25px;
+}
+
+.edit-profile-btn {
+    background-color: #61dafb; /* Mismo azul que los botones primarios del modal */
+    color: #20232a; /* Texto oscuro */
+    border: none;
+    padding: 12px 25px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 1.05em;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+.edit-profile-btn:hover {
+    background-color: #4aadc4;
+    transform: translateY(-2px);
+}
+
+/* Estilo para el botón "Editar" de la información laboral (Empresa) */
+.occupation-info-card .edit-btn { /* Apunta específicamente a la tarjeta de información laboral */
+    background-color: #f39c12; /* Naranja para los botones de editar secundarios, como en tu dashboard original*/
+    color: white;
+    border: none;
+    padding: 10px 18px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.95em;
+    font-weight: 600;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+.occupation-info-card .edit-btn:hover {
+    background-color: #e08e00; /* Naranja más oscuro */
+    transform: translateY(-2px);
+}

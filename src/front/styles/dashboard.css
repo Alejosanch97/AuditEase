@@ -1,0 +1,1431 @@
+/* Paleta de Colores (moderna y suave) */
+:root {
+    --primary-dark: #2c3e50;         /* Azul oscuro para elementos principales y texto fuerte */
+    --primary-light: #34495e;         /* Azul ligeramente más claro para el fondo del sidebar */
+    --secondary-accent: #1abc9c;      /* Verde turquesa para acentos, botones, progreso positivo */
+    --text-dark: #2f3640;             /* Texto oscuro principal */
+    --text-light: #ecf0f1;           /* Texto claro para fondos oscuros */
+    --background-body: #f4f7f6;      /* Fondo general muy claro */
+    --card-background: #ffffff;      /* Fondo de las tarjetas blanco puro */
+    --border-color-light: #e0e6ec;   /* Bordes y separadores suaves */
+    --shadow-light: rgba(0, 0, 0, 0.08); /* Sombra suave para elevación */
+    --error-color: #e74c3c;          /* Color para errores/peligro */
+    --info-color: #3498db;           /* Color para información */
+    --warning-color: #f39c12;         /* Color para advertencias */
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: var(--background-body);
+    color: var(--text-dark);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+.dashboard-container {
+    display: flex;
+    min-height: 100vh;
+}
+
+/* Sidebar Styles - Ancho intermedio */
+.sidebar {
+    width: 300px; /* Ancho ajustado a 300px */
+    background-color: var(--primary-light);
+    color: var(--text-light);
+    padding: 30px 0;
+    box-shadow: 3px 0 10px var(--shadow-light);
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid rgba(255, 255, 255, 0.1);
+    position: sticky;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    overflow-y: auto;
+    flex-shrink: 0;
+}
+
+.sidebar-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0 30px 30px 30px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    margin-bottom: 30px;
+    text-align: center;
+}
+
+.user-avatar {
+    width: 90px;
+    height: 90px;
+    border-radius: 50%;
+    overflow: hidden;
+    margin-bottom: 15px;
+    border: 4px solid var(--secondary-accent);
+    box-shadow: 0 0 0 6px rgba(255, 255, 255, 0.1);
+}
+
+.user-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.user-info h3 {
+    margin: 0;
+    font-size: 1.5em;
+    color: var(--text-light);
+    font-weight: 600;
+}
+
+.user-info p {
+    margin: 8px 0 0;
+    font-size: 1em;
+    color: rgba(255, 255, 255, 0.8);
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    transition: color 0.2s ease;
+}
+
+.user-info p:hover {
+    color: var(--secondary-accent);
+}
+
+.user-info p i {
+    margin-left: 10px;
+    font-size: 0.85em;
+    transition: transform 0.2s ease;
+}
+
+.sidebar-nav ul {
+    list-style: none;
+    padding: 0 20px;
+    margin: 0;
+}
+
+.sidebar-nav li {
+    margin-bottom: 10px;
+}
+
+.sidebar-nav li a {
+    display: flex;
+    align-items: center;
+    padding: 15px 20px;
+    color: var(--text-light);
+    text-decoration: none;
+    transition: background-color 0.3s ease, color 0.3s ease, transform 0.2s ease;
+    border-left: 6px solid transparent;
+    font-size: 1.15em;
+    font-weight: 500;
+    border-radius: 8px;
+}
+
+.sidebar-nav li a i {
+    margin-right: 20px;
+    font-size: 1.35em;
+    color: rgba(255, 255, 255, 0.8);
+    transition: color 0.3s ease;
+}
+
+.sidebar-nav li.active a,
+.sidebar-nav li a:hover {
+    background-color: var(--primary-dark);
+    color: var(--secondary-accent);
+    border-left-color: var(--secondary-accent);
+    transform: translateX(8px);
+}
+
+.sidebar-nav li.active a i,
+.sidebar-nav li a:hover i {
+    color: var(--secondary-accent);
+}
+
+.sidebar-footer {
+    margin-top: auto;
+    padding: 20px 30px;
+    text-align: center;
+    font-size: 0.85em;
+    color: rgba(255, 255, 255, 0.6);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Main Content Styles */
+.main-content {
+    flex-grow: 1;
+    padding: 30px;
+    background: linear-gradient(135deg, var(--background-body) 0%, #eef1f5 100%);
+    color: var(--text-dark);
+}
+
+.main-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 35px;
+    background-color: var(--card-background);
+    padding: 20px 30px;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px var(--shadow-light);
+    color: var(--text-dark);
+}
+
+.headline {
+    color: var(--primary-dark);
+    margin: 0;
+    font-size: 2.2em;
+    font-weight: 700;
+}
+
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 25px;
+    color: var(--text-dark);
+}
+
+.current-date {
+    font-size: 1em;
+    color: var(--text-dark);
+    font-weight: 500;
+}
+
+.header-icon {
+    font-size: 1.4em;
+    cursor: pointer;
+    color: var(--primary-dark);
+    transition: color 0.2s ease, transform 0.2s ease;
+}
+
+.header-icon:hover {
+    color: var(--secondary-accent);
+    transform: scale(1.1);
+}
+
+.user-avatar-small {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    overflow: hidden;
+    border: 2px solid var(--secondary-accent);
+    box-shadow: 0 0 0 3px rgba(26, 188, 156, 0.2);
+}
+
+.user-avatar-small img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* Dashboard Grid */
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 25px;
+}
+
+/* Card Styles */
+.card {
+    background-color: var(--card-background);
+    border-radius: 12px;
+    padding: 25px;
+    box-shadow: 0 6px 20px var(--shadow-light);
+    color: var(--text-dark);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+}
+
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.card-header h3 {
+    margin: 0;
+    color: var(--primary-dark);
+    font-size: 1.4em;
+    font-weight: 600;
+}
+
+.card-header .edit-btn,
+.card-header .view-all-btn {
+    background: none;
+    border: 1px solid var(--secondary-accent);
+    color: var(--secondary-accent);
+    padding: 10px 18px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.95em;
+    font-weight: 500;
+    transition: background-color 0.3s ease, color 0.3s ease, transform 0.2s ease;
+}
+
+.card-header .edit-btn:hover,
+.card-header .view-all-btn:hover {
+    background-color: var(--secondary-accent);
+    color: var(--card-background);
+    transform: translateY(-2px);
+}
+
+/* Profile Card Specific Styles */
+.profile-card {
+    grid-column: span 2;
+    display: flex;
+    flex-direction: column; /* Cambiado a columna para que los botones queden abajo */
+    /* align-items: center;  No centramos aquí, lo manejamos dentro de .profile-header */
+    padding: 25px; /* Mantén el padding original de .card */
+}
+
+.profile-header {
+    display: flex;
+    align-items: flex-start; /* Alinea la parte superior de la imagen y los detalles */
+    gap: 25px;
+    width: 100%;
+    margin-bottom: 25px; /* Espacio antes de los botones/acciones */
+    flex-wrap: wrap; /* Permite que los elementos se envuelvan en pantallas pequeñas */
+}
+
+.profile-picture {
+    width: 130px;
+    height: 130px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 4px solid var(--secondary-accent);
+    box-shadow: 0 0 0 6px rgba(26, 188, 156, 0.2);
+    flex-shrink: 0; /* Evita que la imagen se encoja */
+}
+
+.profile-details {
+    flex-grow: 1; /* Permite que los detalles ocupen el espacio restante */
+    text-align: left; /* Alinea el texto a la izquierda */
+}
+
+.profile-details h2 {
+    margin: 0 0 12px 0;
+    color: var(--primary-dark);
+    font-size: 1.8em;
+    font-weight: 700;
+}
+
+.profile-details p {
+    margin: 6px 0;
+    font-size: 1em;
+    color: var(--text-dark);
+}
+
+.profile-details p span {
+    font-weight: 600;
+    color: var(--primary-dark);
+}
+
+.social-links {
+    margin-top: 20px;
+    display: flex;
+    gap: 20px;
+}
+
+.social-links i {
+    font-size: 1.8em;
+    color: var(--primary-dark);
+    cursor: pointer;
+    transition: color 0.2s ease, transform 0.2s ease;
+}
+
+.social-links i:hover {
+    color: var(--secondary-accent);
+    transform: scale(1.1);
+}
+
+/* Botones de acción del perfil */
+.profile-actions {
+    display: flex;
+    justify-content: flex-end; /* Alinea los botones a la derecha */
+    gap: 10px; /* Espacio entre los botones */
+    margin-top: 15px; /* Espacio entre el perfil y los botones */
+    width: 100%; /* Ocupa el ancho completo */
+    flex-wrap: wrap; /* Permite que los botones se envuelvan */
+}
+
+.edit-profile-btn {
+    background-color: var(--primary-accent);
+    color: white;
+    padding: 8px 15px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 0.9em;
+    transition: background-color 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.edit-profile-btn:hover {
+    background-color: var(--primary-dark);
+}
+
+.edit-profile-btn i {
+    font-size: 1em;
+}
+
+
+/* Calendar Card Specific Styles */
+.calendar-card .card-header {
+    justify-content: flex-start;
+    gap: 25px;
+}
+
+.calendar-card .calendar-nav {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 1.1em;
+    color: var(--primary-dark);
+    font-weight: 600;
+}
+
+.calendar-card .calendar-nav i {
+    cursor: pointer;
+    color: var(--primary-dark);
+    transition: color 0.2s ease;
+}
+
+.calendar-card .calendar-nav i:hover {
+    color: var(--secondary-accent);
+}
+
+.calendar-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: center;
+    font-size: 0.95em;
+    margin-top: 15px;
+}
+
+.calendar-table th,
+.calendar-table td {
+    padding: 10px;
+    border: 1px solid var(--border-color-light);
+    color: var(--text-dark);
+}
+
+.calendar-table th {
+    background-color: var(--background-body);
+    color: var(--primary-dark);
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.85em;
+}
+
+.calendar-table td.inactive {
+    color: #b0b0b0;
+    background-color: #f9f9f9;
+}
+
+.calendar-table td.current-day {
+    background-color: var(--secondary-accent);
+    color: var(--card-background);
+    border-radius: 50%;
+    font-weight: bold;
+    position: relative;
+    z-index: 1;
+}
+.calendar-table td.current-day::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 35px;
+    height: 35px;
+    background-color: var(--secondary-accent);
+    border-radius: 50%;
+    z-index: -1;
+}
+.calendar-table td.current-day {
+    color: var(--card-background);
+}
+
+/* Upcoming Events Card Specific Styles */
+.event-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border-color-light);
+    gap: 15px;
+}
+
+.event-item:last-child {
+    border-bottom: none;
+}
+
+.event-details h4 {
+    margin: 0;
+    color: var(--primary-dark);
+    font-size: 1.1em;
+    font-weight: 600;
+}
+
+.event-details p {
+    margin: 4px 0 0;
+    font-size: 0.9em;
+    color: var(--text-dark);
+}
+
+.event-participants {
+    display: flex;
+    align-items: center;
+    gap: -8px;
+    margin-left: 10px;
+}
+
+.event-participants img {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid var(--card-background);
+    box-shadow: 0 0 0 1px var(--border-color-light);
+}
+.event-participants img:not(:first-child) {
+    margin-left: -8px;
+}
+
+.event-participants span {
+    font-size: 0.85em;
+    color: var(--text-dark);
+    background-color: var(--border-color-light);
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-weight: 600;
+    color: var(--primary-dark);
+    margin-left: 5px;
+}
+
+/* Information Cards (Basic, Personal) Styles */
+.info-group {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+.info-item {
+    margin-bottom: 10px;
+}
+
+.info-item h4 {
+    margin: 0 0 6px 0;
+    font-size: 0.95em;
+    color: var(--primary-dark);
+    text-transform: uppercase;
+    font-weight: 600;
+}
+
+.info-item p {
+    margin: 0;
+    font-size: 1.05em;
+    color: var(--text-dark);
+}
+
+
+/* INFORMACIÓN DE LA EMPRESA (Anteriormente Occupation Info Card) */
+.occupation-info-card {
+    grid-column: span 1; /* Ocupa una columna */
+    grid-row: span 1; /* Ocupa una fila */
+    padding: 25px; /* Mantén el padding original de .card */
+    display: flex;
+    flex-direction: column;
+}
+
+.occupation-info-card .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px; /* Espacio antes del contenido del header de empresa */
+}
+
+.occupation-info-card .card-header h3 {
+    margin: 0;
+    color: var(--primary-dark);
+    font-size: 1.4em; /* Mantén el tamaño de h3 de .card-header */
+}
+
+/* Reutilizamos y ajustamos .profile-header para la empresa */
+.occupation-info-card .profile-header {
+    display: flex;
+    align-items: flex-start; /* Alinea la parte superior del logo y los detalles */
+    gap: 15px; /* Menor espacio para hacerlo más compacto */
+    width: 100%;
+    margin-bottom: 0; /* No necesitamos margen extra aquí */
+    flex-wrap: wrap; /* Permite que los elementos se envuelvan */
+}
+
+.company-logo-picture { /* Nueva clase para el logo de la empresa */
+    width: 100px; /* Tamaño más pequeño para el logo de la empresa */
+    height: 100px;
+    object-fit: contain; /* Para que el logo se ajuste sin cortarse */
+    border-radius: 8px; /* Borde cuadrado o ligeramente redondeado para logos */
+    border: 1px solid var(--border-color-light); /* Borde suave */
+    padding: 5px; /* Pequeño padding alrededor del logo */
+    background-color: #f8f8f8; /* Fondo claro para logos */
+    flex-shrink: 0;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05); /* Sombra suave para el logo */
+}
+
+/* Reutilizamos y ajustamos .profile-details para la empresa */
+.occupation-info-card .profile-details {
+    flex-grow: 1;
+    text-align: left;
+}
+
+.occupation-info-card .profile-details h2 {
+    font-size: 1.5em; /* Tamaño más pequeño para el nombre de la empresa, pero visible */
+    margin: 0 0 8px 0; /* Margen ajustado */
+    color: var(--primary-dark);
+    font-weight: 600; /* Menos negrita que el nombre de usuario, pero aún resaltado */
+}
+
+.occupation-info-card .profile-details p {
+    font-size: 0.9em; /* Texto más pequeño para los detalles de la empresa */
+    margin: 4px 0; /* Margen más compacto */
+    color: var(--text-dark);
+}
+
+.occupation-info-card .profile-details p span {
+    font-weight: 600; /* Mantiene el peso de la etiqueta */
+    color: var(--primary-dark);
+}
+
+/* Estilo para el botón "Editar" de la empresa (mantener este si es diferente a .edit-profile-btn) */
+.occupation-info-card .edit-btn {
+    background-color: var(--secondary-accent); /* Color diferente para distinguir */
+    color: white;
+    padding: 8px 15px; /* Ajustado para que sea consistente con edit-profile-btn */
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 0.9em; /* Consistente con edit-profile-btn */
+    transition: background-color 0.3s ease;
+}
+
+.occupation-info-card .edit-btn:hover {
+    background-color: var(--primary-dark); /* Un tono más oscuro */
+}
+
+
+/* Onboarding Card Specific Styles */
+.onboarding-card {
+    grid-column: span 2;
+}
+
+.onboarding-card .card-header span {
+    color: var(--secondary-accent);
+    font-weight: 700;
+    font-size: 1.1em;
+}
+
+.onboarding-task-list {
+    margin-top: 20px;
+}
+
+.task-item {
+    display: flex;
+    align-items: center;
+    padding: 15px 0;
+    border-bottom: 1px solid var(--border-color-light);
+    gap: 20px;
+    font-size: 1em;
+}
+
+.task-item:last-child {
+    border-bottom: none;
+}
+
+.task-item i {
+    font-size: 1.3em;
+    color: var(--primary-dark);
+    opacity: 0.6;
+}
+
+.task-item.completed i {
+    color: var(--secondary-accent);
+    opacity: 1;
+}
+
+.task-details {
+    flex-grow: 1;
+}
+
+.task-details h4 {
+    margin: 0;
+    font-size: 1.1em;
+    color: var(--primary-dark);
+    font-weight: 600;
+}
+
+.task-details p {
+    margin: 4px 0 0;
+    font-size: 0.85em;
+    color: var(--text-dark);
+}
+
+.assigned-to, .due-date {
+    font-size: 0.9em;
+    color: var(--text-dark);
+    min-width: 90px;
+    text-align: right;
+    font-weight: 500;
+}
+
+.task-actions {
+    display: flex;
+    gap: 12px;
+}
+
+.task-actions i {
+    cursor: pointer;
+    font-size: 1em;
+    color: var(--primary-dark);
+    opacity: 0.7;
+    transition: color 0.2s ease, opacity 0.2s ease;
+}
+
+.task-actions i:hover {
+    color: var(--secondary-accent);
+    opacity: 1;
+}
+
+/* Chart Card Styles (Example 1) */
+.chart-card-1 .card-header select {
+    background-color: var(--background-body);
+    border: 1px solid var(--border-color-light);
+    padding: 8px 12px;
+    border-radius: 8px;
+    color: var(--text-dark);
+    cursor: pointer;
+    font-size: 0.95em;
+    outline: none;
+}
+
+.chart-card-1 .card-header select:focus {
+    border-color: var(--secondary-accent);
+    box-shadow: 0 0 0 2px rgba(26, 188, 156, 0.2);
+}
+
+.chart-area {
+    margin-top: 20px;
+    text-align: center;
+}
+.chart-area img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+
+/* Data Table Card Styles (Example 2) */
+.data-table-card table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    margin-top: 20px;
+    font-size: 0.95em;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.data-table-card th,
+.data-table-card td {
+    padding: 12px 15px;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color-light);
+    color: var(--text-dark);
+}
+
+.data-table-card th {
+    background-color: var(--background-body);
+    color: var(--primary-dark);
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.85em;
+}
+
+.data-table-card tr:last-child td {
+    border-bottom: none;
+}
+.data-table-card tbody tr:hover {
+    background-color: #f7f9fb;
+}
+
+.status-success {
+    color: var(--secondary-accent);
+    font-weight: 600;
+    background-color: rgba(26, 188, 156, 0.1);
+    padding: 5px 10px;
+    border-radius: 5px;
+    font-size: 0.8em;
+}
+
+.status-pending {
+    color: var(--warning-color);
+    font-weight: 600;
+    background-color: rgba(243, 156, 18, 0.1);
+    padding: 5px 10px;
+    border-radius: 5px;
+    font-size: 0.8em;
+}
+
+/* Progress Overview Card Styles (Example 3) */
+.progress-overview-card .progress-item {
+    margin-bottom: 20px;
+}
+
+.progress-overview-card .progress-item p {
+    margin: 0 0 8px 0;
+    color: var(--primary-dark);
+    font-weight: 600;
+    font-size: 1em;
+}
+
+.progress-bar-container {
+    background-color: var(--border-color-light);
+    height: 12px;
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.progress-bar {
+    height: 100%;
+    border-radius: 6px;
+    transition: width 0.5s ease-in-out;
+}
+
+.progress-overview-card .progress-item span {
+    display: block;
+    text-align: right;
+    margin-top: 8px;
+    font-size: 0.9em;
+    color: var(--primary-dark);
+    font-weight: 500;
+}
+
+/* src/styles/dashboard.css (añadir al final) */
+
+/* Estilos para la nueva tarjeta de Empresas del Owner */
+.owner-companies-card .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.owner-companies-card .create-company-btn {
+    background-color: var(--primary-light); /* Usamos --secondary-accent que es el verde */
+    color: white;
+    padding: 8px 12px;
+    border: none;
+    border-radius: 8px; /* Valor fijo o define --border-radius en :root */
+    cursor: pointer;
+    font-size: 0.85em;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    transition: background-color 0.3s ease;
+    
+    /* ******** ESTAS LÍNEAS SON CLAVE PARA FORZAR LA VISIBILIDAD ******** */
+    opacity: 1 !important;
+    visibility: visible !important;
+    /* Si por alguna razón el display flex se está sobrescribiendo a 'none', añade también: */
+    display: flex !important;
+    /* ******************************************************************* */
+}
+
+.owner-companies-card .create-company-btn:hover {
+    background-color: var(--primary-dark);
+}
+
+
+.owner-companies-card .companies-list {
+    margin-top: 20px;
+    display: grid;
+    gap: 15px;
+    /* Para múltiples columnas en pantallas grandes, ajusta según necesites */
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
+.owner-companies-card .company-item {
+    display: flex;
+    align-items: center;
+    background-color: var(--background-color); /* Un color de fondo ligeramente diferente */
+    border: 1px solid var(--border-color-light);
+    border-radius: var(--border-radius);
+    padding: 15px;
+    box-shadow: var(--box-shadow-light);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.owner-companies-card .company-item:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--box-shadow);
+}
+
+.owner-companies-card .company-list-logo {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%; /* Circular */
+    object-fit: cover;
+    margin-right: 15px;
+    border: 2px solid var(--secondary-accent);
+    flex-shrink: 0; /* No se encoge */
+}
+
+.owner-companies-card .company-details h4 {
+    margin: 0 0 5px 0;
+    color: var(--primary-dark);
+    font-size: 1.1em;
+}
+
+.owner-companies-card .company-details p {
+    margin: 0;
+    font-size: 0.85em;
+    color: var(--text-color-light);
+    line-height: 1.4;
+}
+
+/* Ajustes para el logo de la empresa en la tarjeta 'Occupation Info' */
+.occupation-info-card .company-logo-picture {
+    width: 100px; /* Tamaño más grande para el logo principal */
+    height: 100px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-right: 20px;
+    border: 3px solid var(--secondary-accent);
+}
+
+/* Opcional: ajustar el espaciado si la tarjeta de info básica reaparece */
+.basic-info-card .info-group {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); /* Ajusta el ancho mínimo de las columnas */
+    gap: 15px; /* Espacio entre los items */
+}
+
+.basic-info-card .info-item h4 {
+    font-size: 0.9em; /* Títulos más pequeños */
+    color: var(--primary-color);
+    margin-bottom: 5px;
+}
+
+.basic-info-card .info-item p {
+    font-size: 0.95em; /* Texto ligeramente más grande */
+    font-weight: 500;
+    color: var(--text-color-dark);
+}
+
+/* Calendar Card Specific Styles */
+.calendar-card {
+    display: flex; /* Asegura que la tarjeta se comporte como flexbox */
+    flex-direction: column; /* Apila los elementos dentro de la tarjeta */
+    padding: 25px; /* Mantiene el padding de la tarjeta */
+    overflow: hidden; /* Oculta cualquier contenido que se desborde, útil para tablas */
+}
+
+.calendar-card .card-header {
+    justify-content: flex-start;
+    gap: 25px;
+    margin-bottom: 20px; /* Asegura espacio entre el header y la tabla */
+}
+
+.calendar-card .calendar-nav {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 1.1em;
+    color: var(--primary-dark);
+    font-weight: 600;
+}
+
+.calendar-card .calendar-nav i {
+    cursor: pointer;
+    color: var(--primary-dark);
+    transition: color 0.2s ease;
+}
+
+.calendar-card .calendar-nav i:hover {
+    color: var(--secondary-accent);
+}
+
+.calendar-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: center;
+    font-size: 0.95em;
+    margin-top: 0; /* Elimina el margin-top para que no empuje el calendario */
+    table-layout: fixed; /* Esto es clave: distribuye las columnas uniformemente */
+}
+
+.calendar-table th,
+.calendar-table td {
+    padding: 10px 5px; /* Ajusta el padding para que quepa mejor */
+    border: 1px solid var(--border-color-light);
+    color: var(--text-dark);
+    box-sizing: border-box; /* Asegura que el padding se incluya en el ancho */
+    position: relative; /* Necesario para el pseudo-elemento */
+}
+
+.calendar-table th {
+    background-color: var(--background-body);
+    color: var(--primary-dark);
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.8em; /* Un poco más pequeño para los días de la semana */
+}
+
+.calendar-table td.inactive {
+    color: #b0b0b0;
+    background-color: #f9f9f9;
+}
+
+.calendar-table td.current-day {
+    color: var(--card-background); /* El texto del día actual es blanco */
+    font-weight: bold;
+    position: relative; /* Asegura el posicionamiento del pseudo-elemento */
+    z-index: 1; /* Para que el número del día esté sobre el círculo */
+}
+
+/* Pseudo-elemento para el círculo de fondo del día actual */
+.calendar-table td.current-day::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 38px; /* Tamaño del círculo, ajusta según sea necesario */
+    height: 38px; /* Tamaño del círculo, ajusta según sea necesario */
+    background-color: var(--secondary-accent);
+    border-radius: 50%;
+    z-index: -1; /* Envía el círculo detrás del número del día */
+    box-shadow: 0 2px 8px rgba(26, 188, 156, 0.3); /* Sombra sutil para el círculo */
+}
+
+/* src/styles/dashboard.css */
+
+/* ... (tu CSS existente) ... */
+
+
+/* Estilos para los botones de "Editar" en cada empresa individual */
+.company-item .manage-company-btn {
+    background-color: var(--info-color); /* Color por defecto, un azul claro */
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.85em;
+    transition: background-color 0.3s ease;
+    margin-left: auto; /* Para empujar el botón a la derecha dentro del flexbox */
+    white-space: nowrap; /* Evita que el texto se rompa */
+}
+
+.company-item .manage-company-btn:hover {
+    background-color: var(--info-color-darker); /* Un azul más oscuro al hacer hover */
+}
+
+
+/* Asegúrate que .company-item tenga display: flex; para que margin-left: auto funcione */
+.companies-list .company-item {
+    display: flex;
+    align-items: center; /* Centra verticalmente los elementos */
+    gap: 15px; /* Espacio entre el logo, detalles y botón */
+    padding: 10px 0;
+    border-bottom: 1px solid #eee; /* Separador entre empresas */
+}
+
+.companies-list .company-item:last-child {
+    border-bottom: none; /* No hay borde en el último elemento */
+}
+
+.company-item .company-details {
+    flex-grow: 1; /* Permite que los detalles ocupen el espacio restante */
+}
+
+.company-item h4 {
+    margin: 0;
+    color: var(--primary-color);
+}
+
+.company-item p {
+    margin: 2px 0;
+    font-size: 0.9em;
+    color: var(--text-color-light);
+}
+
+/* src/styles/dashboard.css */
+
+/* ... (tu CSS existente) ... */
+
+
+/* Contenedor de la lista de empresas */
+.owner-companies-card .companies-list {
+    display: flex; /* Asegura que la lista sea un contenedor flex */
+    flex-direction: column; /* Apila los elementos verticalmente */
+    gap: 10px; /* Espacio entre cada empresa en la lista */
+    padding: 10px 0; /* Un poco de padding interno */
+}
+
+/* Estilo para cada item de empresa */
+.companies-list .company-item {
+    display: flex; /* Habilitar flexbox para alinear contenido */
+    align-items: center; /* Alinear elementos verticalmente al centro */
+    padding: 10px;
+    border: 1px solid #e0e0e0; /* Borde suave para cada item */
+    border-radius: 8px; /* Bordes redondeados */
+    background-color: #fcfcfc; /* Un fondo ligeramente diferente para destacar */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05); /* Sombra sutil */
+    flex-wrap: nowrap; /* Evita que los elementos se envuelvan a la siguiente línea */
+    /* IMPORTANTE: Ajusta el padding para que el botón no se salga */
+    padding-right: 15px; /* Más padding a la derecha para el botón */
+}
+
+.company-item .company-list-logo {
+    width: 50px; /* Tamaño del logo */
+    height: 50px;
+    border-radius: 50%; /* Circular */
+    object-fit: cover;
+    margin-right: 15px; /* Espacio entre el logo y los detalles */
+    border: 1px solid #ddd;
+}
+
+.company-item .company-details {
+    flex-grow: 1; /* Permite que los detalles ocupen el espacio restante */
+    /* Asegúrate de que no haya un width fijo que restrinja el espacio */
+    min-width: 0; /* Permite que el contenido se encoja si es necesario */
+}
+
+.company-item h4 {
+    margin: 0;
+    color: var(--primary-color);
+    font-size: 1.1em; /* Un poco más grande para el nombre */
+    white-space: nowrap; /* Evita que el nombre de la empresa se rompa en varias líneas */
+    overflow: hidden; /* Oculta el texto que se desborda */
+    text-overflow: ellipsis; /* Añade puntos suspensivos si el texto se desborda */
+}
+
+/* Estilos para los botones de "Editar" en cada empresa individual */
+.company-item .manage-company-btn {
+    background-color: var(--info-color);
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.85em;
+    transition: background-color 0.3s ease;
+    margin-left: auto; /* Empuja el botón a la derecha dentro del flexbox */
+    flex-shrink: 0; /* Evita que el botón se encoja */
+    white-space: nowrap; /* Evita que el texto del botón se rompa */
+}
+
+.company-item .manage-company-btn:hover {
+    background-color: var(--info-color-darker);
+}
+
+/* Si el card-header también necesita ajustes para el botón "Nueva Empresa" */
+.owner-companies-card .card-header {
+    display: flex;
+    justify-content: space-between; /* Espacio entre título y botón */
+    align-items: center;
+    margin-bottom: 15px; /* Espacio debajo del header */
+}
+
+/* src/styles/dashboard.css */
+
+/* ... (tu CSS existente) ... */
+
+.companies-list .company-item .company-details .company-status {
+    font-size: 0.8em;
+    font-weight: bold;
+    margin-top: 5px;
+}
+
+.companies-list .company-item .company-details .company-status.active {
+    color: var(--success-color); /* o un verde que uses, ej. #28a745 */
+}
+
+.companies-list .company-item .company-details .company-status.inactive {
+    color: var(--error-color); /* o un rojo que uses, ej. #dc3545 */
+}
+
+/* ... (resto de tu CSS) ... */
+
+/* Media queries para el calendario */
+@media (max-width: 768px) {
+    .calendar-table th,
+    .calendar-table td {
+        padding: 8px 3px; /* Reduce aún más el padding en móviles */
+        font-size: 0.8em; /* Ajusta el tamaño de la fuente */
+    }
+    .calendar-table td.current-day::before {
+        width: 32px; /* Reduce el tamaño del círculo en móviles */
+        height: 32px;
+    }
+}
+
+@media (max-width: 480px) {
+    .calendar-table th,
+    .calendar-table td {
+        padding: 6px 2px; /* Más ajustes para pantallas muy pequeñas */
+        font-size: 0.75em;
+    }
+    .calendar-table td.current-day::before {
+        width: 28px;
+        height: 28px;
+    }
+}
+
+/* Responsive Adjustments */
+@media (max-width: 1200px) {
+    .dashboard-grid {
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    }
+    /* Mantenemos .profile-card con span 2 si el espacio lo permite,
+       pero la tarjeta de empresa es span 1 por diseño.
+       Esto hará que la de empresa ocupe 1 columna y la de perfil 2. */
+    .profile-card {
+        grid-column: span 2;
+    }
+    .onboarding-card {
+        grid-column: span 1; /* Podría ocupar 1 columna aquí para balancear */
+    }
+}
+
+@media (max-width: 992px) {
+    .sidebar {
+        width: 250px; /* Se reduce un poco para pantallas medianas */
+    }
+    .sidebar-nav ul {
+        padding: 0 15px; /* Ajuste el padding para los ítems */
+    }
+    .sidebar-nav li a {
+        font-size: 1.05em;
+        padding: 12px 15px;
+    }
+    .sidebar-nav li a i {
+        font-size: 1.25em;
+        margin-right: 15px;
+    }
+    .main-content {
+        padding: 20px;
+    }
+    .main-header {
+        padding: 15px 20px;
+    }
+    .headline {
+        font-size: 1.8em;
+    }
+    .header-right {
+        gap: 15px;
+    }
+
+    /* En pantallas medianas, todas las tarjetas se ajustan a 1 columna para evitar desbordamientos */
+    .dashboard-grid {
+        grid-template-columns: 1fr;
+    }
+    .profile-card,
+    .occupation-info-card,
+    .onboarding-card,
+    .chart-card-1,
+    .data-table-card,
+    .progress-overview-card {
+        grid-column: span 1; /* Todas las tarjetas ocupan una sola columna */
+    }
+    
+    /* Ajustes para la profile-card y company-card en pantallas medianas */
+    .profile-card .profile-header,
+    .occupation-info-card .profile-header {
+        flex-direction: column; /* Apila imagen/logo y detalles */
+        align-items: center; /* Centra horizontalmente */
+        text-align: center; /* Centra el texto */
+    }
+
+    .profile-card .profile-details,
+    .occupation-info-card .profile-details {
+        text-align: center; /* Asegura que el texto esté centrado */
+    }
+
+    .profile-card .profile-actions {
+        justify-content: center; /* Centra los botones de acción del perfil */
+    }
+}
+
+@media (max-width: 768px) {
+    .dashboard-container {
+        flex-direction: column;
+    }
+
+    .sidebar {
+        width: 100%;
+        padding: 15px 0;
+        box-shadow: 0 2px 5px var(--shadow-light);
+        order: -1;
+        position: relative;
+        height: auto;
+        overflow-y: visible;
+        border-right: none;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .sidebar-header {
+        flex-direction: row;
+        justify-content: center;
+        align-items: center;
+        padding-bottom: 15px;
+        margin-bottom: 15px;
+        gap: 15px;
+    }
+
+    .user-avatar {
+        width: 60px;
+        height: 60px;
+        margin-bottom: 0;
+    }
+    .user-info {
+        text-align: left;
+    }
+    .user-info h3 {
+        font-size: 1.2em;
+    }
+    .user-info p {
+        display: none; /* Oculta la información extra de usuario en el sidebar en móviles */
+    }
+
+    .sidebar-nav ul {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        padding: 0 10px;
+    }
+
+    .sidebar-nav li {
+        margin: 5px;
+        flex-basis: calc(33% - 10px); /* 3 elementos por fila */
+        min-width: 100px;
+    }
+
+    .sidebar-nav li a {
+        padding: 10px; /* Reduce el padding */
+        border-left: none;
+        border-bottom: 3px solid transparent;
+        font-size: 0.85em; /* Tamaño de fuente más pequeño */
+        justify-content: center;
+        flex-direction: column; /* Apila icono y texto */
+        text-align: center;
+        gap: 5px; /* Espacio entre icono y texto */
+    }
+
+    .sidebar-nav li a i {
+        margin-right: 0; /* Elimina margen derecho */
+        margin-bottom: 5px; /* Margen inferior para separar del texto */
+        font-size: 1em; /* Ajusta tamaño de icono */
+    }
+    
+    .sidebar-nav li.active a,
+    .sidebar-nav li a:hover {
+        border-left-color: transparent;
+        border-bottom-color: var(--secondary-accent);
+        transform: none;
+    }
+    .sidebar-footer {
+        display: none;
+    }
+
+    .main-content {
+        padding: 15px;
+    }
+
+    .main-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+        margin-bottom: 25px;
+        padding: 15px 20px;
+    }
+
+    .header-right {
+        width: 100%;
+        justify-content: space-between;
+        flex-wrap: wrap;
+    }
+
+    .headline {
+        font-size: 1.6em;
+    }
+
+    /* Todas las tarjetas ya son 1 columna en @media 992px, mantenemos eso */
+}
+
+@media (max-width: 480px) {
+    .dashboard-grid {
+        grid-template-columns: 1fr;
+    }
+    .sidebar-nav li {
+        flex-basis: calc(50% - 10px); /* 2 elementos por fila */
+    }
+    .sidebar-nav li a {
+        font-size: 0.8em;
+    }
+    .main-header {
+        padding: 10px 15px;
+    }
+    .headline {
+        font-size: 1.4em;
+    }
+    .card {
+        padding: 20px;
+    }
+    .card-header h3 {
+        font-size: 1.2em;
+    }
+    /* Ajustes específicos para el header de la profile-card y company-card en móviles */
+    .profile-card .profile-header,
+    .occupation-info-card .profile-header {
+        gap: 15px; /* Reduce un poco más el espacio */
+    }
+    .profile-picture {
+        width: 100px; /* Reduce un poco el tamaño de la imagen de perfil */
+        height: 100px;
+    }
+    .company-logo-picture {
+        width: 80px; /* Reduce un poco el tamaño del logo de la empresa */
+        height: 80px;
+    }
+    .profile-details h2,
+    .occupation-info-card .profile-details h2 {
+        font-size: 1.3em; /* Ajusta el tamaño de los títulos */
+    }
+    .profile-details p,
+    .occupation-info-card .profile-details p {
+        font-size: 0.8em; /* Ajusta el tamaño del texto de detalles */
+    }
+    .profile-actions {
+        flex-direction: column; /* Apila los botones si no hay espacio */
+        align-items: center;
+    }
+    .edit-profile-btn {
+        width: 80%; /* Hace que los botones sean un poco más anchos */
+        max-width: 200px;
+        justify-content: center; /* Centra el texto e icono dentro del botón */
+    }
+}

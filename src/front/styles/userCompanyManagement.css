@@ -1,0 +1,296 @@
+/* src/styles/userCompanyManagement.css */
+
+/* Variables CSS para este componente */
+:root {
+    --ucm-primary-color: #007bff; /* User Company Management Primary Color */
+    --ucm-primary-dark: #0056b3;
+    --ucm-secondary-color: #6c757d;
+    --ucm-success-color: #28a745;
+    --ucm-danger-color: #dc3545;
+    --ucm-info-color: #17a2b8;
+    --ucm-light-bg: #f8f9fa;
+    --ucm-dark-text: #343a40;
+    --ucm-border-color: #ced4da;
+    --ucm-box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    --ucm-border-radius: 0.25rem;
+}
+
+/* Contenedor principal del componente */
+.ucm-wrapper { /* Renombrado */
+    padding: 2rem;
+    max-width: 900px;
+    margin: 2rem auto;
+    background-color: #ffffff;
+    border-radius: var(--ucm-border-radius);
+    box-shadow: var(--ucm-box-shadow);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color: var(--ucm-dark-text); /* Asegura color de texto por defecto */
+}
+
+/* Contenedor del encabezado */
+.ucm-header-container { /* Renombrado */
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--ucm-border-color);
+}
+
+.ucm-header-container h1 {
+    color: var(--ucm-primary-dark);
+    font-size: 2.2em;
+    margin: 0;
+}
+
+.ucm-back-button { /* Renombrado */
+    background-color: var(--ucm-secondary-color);
+    color: white;
+    padding: 0.75rem 1.25rem;
+    border: none;
+    border-radius: var(--ucm-border-radius);
+    cursor: pointer;
+    font-size: 1em;
+    transition: background-color 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.ucm-back-button:hover {
+    background-color: #5a6268; /* Un poco más oscuro */
+}
+
+/* Contenedor para mensajes de alerta/éxito */
+.ucm-messages-container { /* Renombrado */
+    margin-bottom: 1.5rem;
+}
+
+.ucm-alert { /* Renombrado */
+    padding: 1rem;
+    margin-bottom: 1rem; /* Margen entre alertas si hubiera varias */
+    border-radius: var(--ucm-border-radius);
+    font-weight: bold;
+    text-align: center;
+    word-break: break-word;
+}
+
+.ucm-alert-danger {
+    background-color: #f8d7da; /* Rojo claro */
+    color: var(--ucm-danger-color);
+    border: 1px solid #f5c6cb; /* Rojo claro más oscuro */
+}
+
+.ucm-alert-success {
+    background-color: #d4edda; /* Verde claro */
+    color: var(--ucm-success-color);
+    border: 1px solid #c3e6cb; /* Verde claro más oscuro */
+}
+
+/* Estilo para el spinner de carga inicial */
+.ucm-loading-spinner-container { /* Renombrado */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    font-size: 2em;
+    color: var(--ucm-primary-dark);
+}
+
+/* Secciones de formulario (Empresa, Usuario) */
+.ucm-section { /* Renombrado */
+    background-color: var(--ucm-light-bg);
+    padding: 1.5rem;
+    border-radius: var(--ucm-border-radius);
+    margin-bottom: 2rem;
+    border: 1px solid #e9ecef;
+}
+
+.ucm-section-header { /* Renombrado */
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    border-bottom: 1px dashed var(--ucm-border-color);
+    padding-bottom: 1rem;
+}
+
+.ucm-section-header h2 {
+    color: var(--ucm-dark-text);
+    font-size: 1.8em;
+    margin: 0;
+}
+
+.ucm-toggle-button { /* Renombrado */
+    background-color: var(--ucm-info-color);
+    color: white;
+    padding: 0.6rem 1rem;
+    border: none;
+    border-radius: var(--ucm-border-radius);
+    cursor: pointer;
+    font-size: 0.9em;
+    transition: background-color 0.2s ease;
+}
+
+.ucm-toggle-button:hover {
+    background-color: #138496; /* Azul claro más oscuro */
+}
+
+/* Estilos de los formularios */
+.ucm-form { /* Renombrado */
+    display: grid;
+    gap: 1rem;
+}
+
+.ucm-form-group { /* Renombrado */
+    margin-bottom: 0.5rem;
+}
+
+.ucm-form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: bold;
+    color: var(--ucm-dark-text);
+}
+
+.ucm-form-group input[type="text"],
+.ucm-form-group input[type="email"],
+.ucm-form-group input[type="password"],
+.ucm-form-group select {
+    width: 100%;
+    padding: 0.8rem;
+    border: 1px solid var(--ucm-border-color);
+    border-radius: var(--ucm-border-radius);
+    font-size: 1em;
+    box-sizing: border-box; /* Incluye padding y borde en el ancho total */
+}
+
+.ucm-form-group input[type="text"]:focus,
+.ucm-form-group input[type="email"]:focus,
+.ucm-form-group input[type="password"]:focus,
+.ucm-form-group select:focus {
+    border-color: var(--ucm-primary-color);
+    outline: none;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.ucm-required-star { /* Renombrado */
+    color: var(--ucm-danger-color);
+    margin-left: 0.25rem;
+}
+
+/* Clases para validación de formularios */
+.ucm-is-invalid { /* Renombrado */
+    border-color: var(--ucm-danger-color) !important; /* !important para asegurar que sobrescriba */
+}
+
+.ucm-invalid-feedback { /* Renombrado */
+    color: var(--ucm-danger-color);
+    font-size: 0.875em;
+    margin-top: 0.25rem;
+}
+
+.ucm-submit-button { /* Renombrado */
+    background-color: var(--ucm-primary-color);
+    color: white;
+    padding: 0.9rem 1.5rem;
+    border: none;
+    border-radius: var(--ucm-border-radius);
+    cursor: pointer;
+    font-size: 1.1em;
+    font-weight: bold;
+    transition: background-color 0.2s ease;
+    margin-top: 1rem;
+    width: 100%;
+}
+
+.ucm-submit-button:hover:not(:disabled) {
+    background-color: var(--ucm-primary-dark);
+}
+
+.ucm-submit-button:disabled {
+    background-color: var(--ucm-secondary-color);
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+/* src/styles/userCompanyManagement.css (añadir al final) */
+
+/* Estilos para el contenedor del campo de contraseña */
+.ucm-form-group.password-field-wrapper {
+    position: relative; /* Necesario para posicionar el icono absolutamente */
+}
+
+/* Estilos para el icono de mostrar/ocultar contraseña */
+.password-toggle-icon {
+    position: absolute;
+    right: 15px; /* Ajusta esto según el padding de tu input y el tamaño del icono */
+    top: 50%; /* Centra verticalmente */
+    transform: translateY(-50%); /* Ajuste fino para el centrado */
+    cursor: pointer;
+    color: var(--ucm-secondary-color); /* Color del icono */
+    font-size: 1.1em; /* Tamaño del icono */
+}
+
+.password-toggle-icon:hover {
+    color: var(--ucm-primary-dark); /* Color al pasar el ratón */
+}
+
+/* Ajuste opcional para que el input no se solape con el icono */
+.ucm-form-group.password-field-wrapper input {
+    padding-right: 40px; /* Deja espacio para el icono a la derecha */
+}
+
+
+/* Media Queries para responsividad */
+@media (max-width: 768px) {
+    .ucm-wrapper {
+        padding: 1rem;
+        margin: 1rem auto;
+    }
+
+    .ucm-header-container {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+
+    .ucm-header-container h1 {
+        font-size: 1.8em;
+    }
+
+    .ucm-back-button {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .ucm-section-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.8rem;
+    }
+
+    .ucm-section-header h2 {
+        font-size: 1.5em;
+    }
+
+    .ucm-toggle-button {
+        width: 100%;
+        text-align: center;
+    }
+}
+
+@media (max-width: 480px) {
+    .ucm-header-container h1 {
+        font-size: 1.5em;
+    }
+
+    .ucm-section-header h2 {
+        font-size: 1.3em;
+    }
+
+    .ucm-submit-button {
+        padding: 0.7rem 1rem;
+        font-size: 1em;
+    }
+}

@@ -1,0 +1,289 @@
+/* src/styles/modal.css */
+
+/* Variables de color (asegúrate de que estas coincidan con tu :root en dashboard.css) */
+/* Si ya tienes estas definidas globalmente, no necesitas repetirlas aquí */
+:root {
+    --primary-dark: #2c3e50;
+    --primary-light: #34495e;
+    --secondary-accent: #1abc9c;
+    --text-dark: #2f3640;
+    --text-light: #ecf0f1;
+    --background-body: #f4f7f6;
+    --card-background: #ffffff;
+    --border-color-light: #e0e6ec;
+    --shadow-light: rgba(0, 0, 0, 0.08);
+    --error-color: #e74c3c;
+    --info-color: #3498db;
+    --warning-color: #f39c12;
+    --success-color: #28a745; /* Añade un color de éxito si no lo tienes */
+    --font-family-base: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    --border-radius-base: 8px; /* Variable para radio de borde, si no la tienes */
+}
+
+
+/* Overlay para oscurecer el fondo */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.6); /* Fondo semi-transparente oscuro */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000; /* Asegura que esté por encima de todo lo demás */
+    backdrop-filter: blur(5px); /* Efecto de desenfoque en el fondo */
+    animation: fadeIn 0.3s ease-out; /* Animación de entrada */
+}
+
+/* Contenedor principal del modal */
+.modal-content {
+    background-color: var(--card-background); /* Fondo blanco */
+    border-radius: var(--border-radius-base); /* Bordes redondeados */
+    padding: 30px;
+    width: 90%;
+    max-width: 600px; /* Ancho máximo para el modal */
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25); /* Sombra más pronunciada */
+    position: relative;
+    animation: slideIn 0.3s ease-out; /* Animación de entrada */
+    display: flex;
+    flex-direction: column;
+}
+
+/* Título del modal */
+.modal-content h2 {
+    color: var(--primary-dark);
+    font-size: 2em;
+    margin-top: 0;
+    margin-bottom: 25px;
+    text-align: center;
+    font-weight: 700;
+    border-bottom: 2px solid var(--border-color-light); /* Línea divisoria */
+    padding-bottom: 15px;
+}
+
+/* Botón de cerrar (la "X") */
+.close-button {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    background: none;
+    border: none;
+    font-size: 2em; /* Más grande */
+    color: var(--text-dark); /* Color oscuro */
+    cursor: pointer;
+    padding: 5px 10px;
+    border-radius: 50%; /* Circular */
+    transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
+    line-height: 1; /* Asegura que la 'x' esté centrada */
+}
+
+.close-button:hover {
+    background-color: var(--error-color); /* Rojo al pasar el mouse */
+    color: white; /* Texto blanco al pasar el mouse */
+    transform: rotate(90deg); /* Animación de rotación */
+}
+
+/* Grupos de formulario */
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    color: var(--primary-dark);
+    font-weight: 600;
+    font-size: 1.05em;
+}
+
+.form-group input[type="text"],
+.form-group input[type="email"],
+.form-group input[type="file"] {
+    width: calc(100% - 20px); /* Ocupa casi todo el ancho, dejando padding */
+    padding: 12px 10px;
+    border: 1px solid var(--border-color-light);
+    border-radius: var(--border-radius-base);
+    font-size: 1em;
+    color: var(--text-dark);
+    background-color: var(--background-body); /* Fondo ligeramente gris para inputs */
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.form-group input[type="text"]:focus,
+.form-group input[type="email"]:focus,
+.form-group input[type="file"]:focus {
+    border-color: var(--secondary-accent); /* Borde verde al enfocar */
+    box-shadow: 0 0 0 3px rgba(26, 188, 156, 0.2); /* Sombra de enfoque suave */
+    outline: none; /* Elimina el contorno predeterminado del navegador */
+}
+
+/* Estilo para la vista previa de la imagen */
+.profile-image-preview {
+    display: block; /* Para que ocupe su propia línea */
+    margin-top: 15px;
+    border: 3px solid var(--secondary-accent);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    object-fit: cover; /* Recorta la imagen para que encaje */
+}
+
+/* Botón para eliminar imagen actual (si lo usas) */
+.btn-remove-image {
+    background-color: var(--error-color); /* Rojo para eliminar */
+    color: white;
+    border: none;
+    padding: 8px 15px;
+    border-radius: var(--border-radius-base);
+    cursor: pointer;
+    font-size: 0.9em;
+    margin-top: 10px;
+    transition: background-color 0.2s ease;
+}
+
+.btn-remove-image:hover {
+    background-color: #c0392b; /* Rojo más oscuro al pasar el mouse */
+}
+
+/* Mensajes de error y éxito */
+.error-message {
+    color: var(--error-color);
+    background-color: rgba(231, 76, 60, 0.1); /* Fondo claro para error */
+    border: 1px solid var(--error-color);
+    padding: 10px;
+    border-radius: var(--border-radius-base);
+    margin-bottom: 20px;
+    font-size: 0.9em;
+    text-align: center;
+}
+
+.success-message {
+    color: var(--success-color); /* Verde para éxito */
+    background-color: rgba(40, 167, 69, 0.1); /* Fondo claro para éxito */
+    border: 1px solid var(--success-color);
+    padding: 10px;
+    border-radius: var(--border-radius-base);
+    margin-bottom: 20px;
+    font-size: 0.9em;
+    text-align: center;
+}
+
+/* Contenedor de acciones (botones) */
+.modal-actions {
+    display: flex;
+    justify-content: flex-end; /* Alinea los botones a la derecha */
+    gap: 15px; /* Espacio entre los botones */
+    margin-top: 20px; /* Espacio superior */
+    padding-top: 20px;
+    border-top: 1px solid var(--border-color-light); /* Línea divisoria */
+}
+
+.modal-actions .btn {
+    padding: 12px 25px;
+    border: none;
+    border-radius: var(--border-radius-base);
+    cursor: pointer;
+    font-size: 1.05em;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    min-width: 120px; /* Ancho mínimo para los botones */
+}
+
+.modal-actions .btn-primary {
+    background-color: var(--secondary-accent); /* Verde principal */
+    color: white;
+}
+
+.modal-actions .btn-primary:hover:not(:disabled) {
+    background-color: var(--primary-dark); /* Azul oscuro al pasar el mouse */
+    transform: translateY(-2px); /* Pequeño efecto de elevación */
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+.modal-actions .btn-secondary {
+    background-color: var(--border-color-light); /* Gris claro */
+    color: var(--text-dark); /* Texto oscuro */
+}
+
+.modal-actions .btn-secondary:hover:not(:disabled) {
+    background-color: #d0d5db; /* Gris un poco más oscuro al pasar el mouse */
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+}
+
+.modal-actions .btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* Animaciones */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateY(-30px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+/* Media Queries para responsividad */
+@media (max-width: 768px) {
+    .modal-content {
+        width: 95%;
+        padding: 20px;
+    }
+
+    .modal-content h2 {
+        font-size: 1.8em;
+        margin-bottom: 20px;
+        padding-bottom: 10px;
+    }
+
+    .close-button {
+        font-size: 1.8em;
+        top: 10px;
+        right: 10px;
+    }
+
+    .form-group input {
+        padding: 10px;
+        font-size: 0.95em;
+    }
+
+    .modal-actions {
+        flex-direction: column; /* Apila los botones en pantallas pequeñas */
+        gap: 10px;
+    }
+
+    .modal-actions .btn {
+        width: 100%; /* Ocupa el ancho completo */
+        min-width: unset; /* Elimina el ancho mínimo para que se ajuste */
+        padding: 10px;
+    }
+}
+
+@media (max-width: 480px) {
+    .modal-content {
+        padding: 15px;
+    }
+
+    .modal-content h2 {
+        font-size: 1.6em;
+    }
+
+    .form-group label {
+        font-size: 1em;
+    }
+
+    .profile-image-preview {
+        max-width: 80px;
+        max-height: 80px;
+    }
+}
