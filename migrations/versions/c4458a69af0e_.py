@@ -1,8 +1,8 @@
 """empty message
 
-Revision ID: 9184961d882c
+Revision ID: c4458a69af0e
 Revises: 
-Create Date: 2025-07-25 01:48:56.909337
+Create Date: 2025-07-28 01:42:55.282441
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '9184961d882c'
+revision = 'c4458a69af0e'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -34,7 +34,8 @@ def upgrade():
     sa.Column('id_tipo_respuesta', sa.Integer(), nullable=False),
     sa.Column('nombre_tipo', sa.String(length=100), nullable=False),
     sa.Column('descripcion', sa.Text(), nullable=True),
-    sa.PrimaryKeyConstraint('id_tipo_respuesta')
+    sa.PrimaryKeyConstraint('id_tipo_respuesta'),
+    sa.UniqueConstraint('nombre_tipo')
     )
     op.create_table('espacios',
     sa.Column('id_espacio', sa.Integer(), nullable=False),
@@ -58,6 +59,8 @@ def upgrade():
     sa.Column('activo', sa.Boolean(), nullable=False),
     sa.Column('telefono_personal', sa.String(length=20), nullable=True),
     sa.Column('cargo', sa.String(length=100), nullable=True),
+    sa.Column('favoritos', sa.JSON(), nullable=False),
+    sa.Column('firma_digital_url', sa.String(length=500), nullable=True),
     sa.ForeignKeyConstraint(['id_empresa'], ['empresas.id_empresa'], ),
     sa.PrimaryKeyConstraint('id_usuario'),
     sa.UniqueConstraint('email')
@@ -67,9 +70,17 @@ def upgrade():
     sa.Column('id_empresa', sa.Integer(), nullable=False),
     sa.Column('nombre_formulario', sa.String(length=255), nullable=False),
     sa.Column('descripcion', sa.Text(), nullable=True),
-    sa.Column('frecuencia_minima_llenado', sa.Integer(), nullable=False),
+    sa.Column('max_submissions_per_period', sa.Integer(), nullable=False),
+    sa.Column('submission_period_days', sa.Integer(), nullable=False),
     sa.Column('fecha_creacion', sa.DateTime(), nullable=False),
     sa.Column('creado_por_usuario_id', sa.Integer(), nullable=False),
+    sa.Column('es_plantilla', sa.Boolean(), nullable=False),
+    sa.Column('es_plantilla_global', sa.Boolean(), nullable=False),
+    sa.Column('compartir_con_empresas_ids', sa.JSON(), nullable=False),
+    sa.Column('notificaciones_activas', sa.Boolean(), nullable=False),
+    sa.Column('automatizacion_activa', sa.Boolean(), nullable=False),
+    sa.Column('scheduled_automation_time', sa.Time(), nullable=True),
+    sa.Column('last_automated_run_date', sa.Date(), nullable=True),
     sa.ForeignKeyConstraint(['creado_por_usuario_id'], ['usuarios.id_usuario'], ),
     sa.ForeignKeyConstraint(['id_empresa'], ['empresas.id_empresa'], ),
     sa.PrimaryKeyConstraint('id_formulario')
@@ -91,6 +102,7 @@ def upgrade():
     sa.Column('completado_automaticamente', sa.Boolean(), nullable=False),
     sa.Column('espacios_cubiertos_ids', sa.JSON(), nullable=True),
     sa.Column('subespacios_cubiertos_ids', sa.JSON(), nullable=True),
+    sa.Column('objetos_cubiertos_ids', sa.JSON(), nullable=True),
     sa.ForeignKeyConstraint(['id_formulario'], ['formularios.id_formulario'], ),
     sa.ForeignKeyConstraint(['id_usuario'], ['usuarios.id_usuario'], ),
     sa.PrimaryKeyConstraint('id_envio')
@@ -109,6 +121,13 @@ def upgrade():
     sa.ForeignKeyConstraint(['id_subespacio'], ['sub_espacios.id_subespacio'], ),
     sa.PrimaryKeyConstraint('id_formulario', 'id_subespacio')
     )
+    op.create_table('formulario_tipo_respuesta',
+    sa.Column('id_formulario', sa.Integer(), nullable=False),
+    sa.Column('id_tipo_respuesta', sa.Integer(), nullable=False),
+    sa.ForeignKeyConstraint(['id_formulario'], ['formularios.id_formulario'], ),
+    sa.ForeignKeyConstraint(['id_tipo_respuesta'], ['tipos_respuesta.id_tipo_respuesta'], ),
+    sa.PrimaryKeyConstraint('id_formulario', 'id_tipo_respuesta')
+    )
     op.create_table('notificaciones',
     sa.Column('id_notificacion', sa.Integer(), nullable=False),
     sa.Column('id_formulario', sa.Integer(), nullable=False),
@@ -124,6 +143,14 @@ def upgrade():
     sa.ForeignKeyConstraint(['id_usuario_destinatario'], ['usuarios.id_usuario'], ),
     sa.PrimaryKeyConstraint('id_notificacion')
     )
+    op.create_table('objetos',
+    sa.Column('id_objeto', sa.Integer(), nullable=False),
+    sa.Column('id_subespacio', sa.Integer(), nullable=False),
+    sa.Column('nombre_objeto', sa.String(length=255), nullable=False),
+    sa.Column('descripcion', sa.Text(), nullable=True),
+    sa.ForeignKeyConstraint(['id_subespacio'], ['sub_espacios.id_subespacio'], ),
+    sa.PrimaryKeyConstraint('id_objeto')
+    )
     op.create_table('preguntas',
     sa.Column('id_pregunta', sa.Integer(), nullable=False),
     sa.Column('id_formulario', sa.Integer(), nullable=False),
@@ -134,6 +161,13 @@ def upgrade():
     sa.ForeignKeyConstraint(['id_formulario'], ['formularios.id_formulario'], ),
     sa.ForeignKeyConstraint(['tipo_respuesta_id'], ['tipos_respuesta.id_tipo_respuesta'], ),
     sa.PrimaryKeyConstraint('id_pregunta')
+    )
+    op.create_table('formulario_objeto',
+    sa.Column('id_formulario', sa.Integer(), nullable=False),
+    sa.Column('id_objeto', sa.Integer(), nullable=False),
+    sa.ForeignKeyConstraint(['id_formulario'], ['formularios.id_formulario'], ),
+    sa.ForeignKeyConstraint(['id_objeto'], ['objetos.id_objeto'], ),
+    sa.PrimaryKeyConstraint('id_formulario', 'id_objeto')
     )
     op.create_table('observaciones',
     sa.Column('id_observacion', sa.Integer(), nullable=False),
@@ -159,6 +193,7 @@ def upgrade():
     sa.Column('valor_booleano', sa.Boolean(), nullable=True),
     sa.Column('valor_numerico', sa.Float(), nullable=True),
     sa.Column('valores_multiples_json', sa.JSON(), nullable=True),
+    sa.Column('valor_firma_url', sa.JSON(), nullable=True),
     sa.ForeignKeyConstraint(['id_envio'], ['envios_formulario.id_envio'], ),
     sa.ForeignKeyConstraint(['id_pregunta'], ['preguntas.id_pregunta'], ),
     sa.PrimaryKeyConstraint('id_respuesta')
@@ -170,8 +205,11 @@ def downgrade():
     # ### commands auto generated by Alembic - please adjust! ###
     op.drop_table('respuestas')
     op.drop_table('observaciones')
+    op.drop_table('formulario_objeto')
     op.drop_table('preguntas')
+    op.drop_table('objetos')
     op.drop_table('notificaciones')
+    op.drop_table('formulario_tipo_respuesta')
     op.drop_table('formulario_subespacio')
     op.drop_table('formulario_espacio')
     op.drop_table('envios_formulario')

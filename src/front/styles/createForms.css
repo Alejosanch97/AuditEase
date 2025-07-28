@@ -1,0 +1,424 @@
+/* src/styles/createForms.css */
+
+/*
+   IMPORTANTE: Las variables de color globales (como --primary-dark, --secondary-accent, etc.)
+   DEBEN estar definidas en un archivo CSS global (ej. dashboard.css o un archivo de variables)
+   y NO aquí para evitar sobrescribir los estilos de otros componentes.
+   Este archivo solo usará esas variables y definirá estilos para clases con prefijo 'cf-'.
+*/
+
+/* Contenedor principal del contenido de la página de formularios */
+.cf-content-area {
+    padding: 25px;
+    background-color: var(--background-body); /* Fondo general del dashboard */
+    border-radius: 12px;
+    box-shadow: var(--shadow-light);
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 30px; /* Más espacio entre secciones */
+}
+
+/* Header de la página (ya definido en dashboard.css, aquí solo para referencia) */
+/* .main-header y .headline son clases globales del dashboard, no las prefijo */
+.main-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    background-color: var(--card-background);
+    border-bottom: 1px solid var(--border-color-light);
+    border-radius: 8px;
+    margin-bottom: 20px;
+    box-shadow: var(--shadow-light);
+}
+
+.main-header .headline {
+    color: var(--primary-dark);
+    font-size: 2em;
+    margin: 0;
+    font-weight: 700;
+}
+
+.main-header .header-right {
+    display: flex;
+    align-items: center;
+    gap: 15px; /* Espacio entre el botón de automatización y los iconos */
+}
+
+.main-header .header-icon {
+    font-size: 1.5em;
+    color: var(--primary-dark);
+    cursor: pointer;
+    transition: color 0.3s ease;
+}
+
+.main-header .header-icon:hover {
+    color: var(--secondary-accent);
+}
+
+/* Contenedor para el spinner de carga */
+.cf-loading-spinner-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    font-size: 2em;
+    color: var(--primary-dark);
+}
+
+/* Estilos para las tarjetas (secciones) */
+.cf-card {
+    background-color: var(--card-background);
+    padding: 30px; /* Más padding para contenido */
+    border-radius: 12px;
+    box-shadow: var(--shadow-light);
+    border: none;
+    transition: transform 0.2s ease-in-out; /* Suave transición al hover */
+}
+
+.cf-card:hover {
+    transform: translateY(-5px); /* Efecto de elevación sutil */
+}
+
+.cf-full-width-card {
+    width: 100%;
+}
+
+.cf-mt-4 {
+    margin-top: 25px; /* Espacio entre la primera y segunda tarjeta */
+}
+
+/* Header de cada tarjeta */
+.cf-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px; /* Más espacio */
+    padding-bottom: 15px;
+    border-bottom: 1px solid var(--border-color-light);
+}
+
+.cf-card-header h3 {
+    color: var(--primary-dark);
+    font-size: 1.8em;
+    margin: 0;
+    font-weight: 600;
+}
+
+/* Estilos de botones generales */
+.cf-btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 8px; /* Bordes más redondeados */
+    cursor: pointer;
+    font-size: 0.95em;
+    font-weight: 600;
+    transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.2s ease;
+    display: inline-flex; /* Permite alinear icono y texto */
+    align-items: center;
+    gap: 8px; /* Espacio entre icono y texto */
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* Sombra sutil */
+}
+
+.cf-btn:hover {
+    transform: translateY(-2px); /* Efecto de elevación */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15); /* Sombra más pronunciada */
+}
+
+.cf-btn-primary {
+    background-color: var(--secondary-accent); /* Color principal de acción */
+    color: var(--text-light);
+}
+
+.cf-btn-primary:hover {
+    background-color: #2980b9; /* Tono más oscuro de secondary-accent */
+}
+
+.cf-btn-secondary {
+    background-color: var(--primary-dark); /* Color secundario */
+    color: var(--text-light);
+}
+
+.cf-btn-secondary:hover {
+    background-color: #34495e; /* Tono más oscuro de primary-dark */
+}
+
+.cf-btn-info {
+    background-color: var(--info-color); /* Color para editar */
+    color: var(--text-light);
+}
+
+.cf-btn-info:hover {
+    background-color: #e67e22; /* Tono más oscuro de info-color */
+}
+
+.cf-btn-danger {
+    background-color: var(--error-color); /* Color para eliminar */
+    color: var(--text-light);
+}
+
+.cf-btn-danger:hover {
+    background-color: #c0392b; /* Tono más oscuro de error-color */
+}
+
+/* Botones pequeños para acciones en tabla */
+.cf-btn-sm {
+    padding: 6px 10px;
+    font-size: 0.8em;
+    border-radius: 5px;
+    min-width: 80px;
+    justify-content: center;
+}
+
+.cf-btn-create-form {
+    padding: 12px 25px;
+    font-size: 1.05em;
+}
+
+/* Estilos de tabla */
+.cf-table-responsive {
+    overflow-x: auto;
+    margin-top: 20px;
+    border-radius: 8px;
+    box-shadow: var(--shadow-light);
+    background-color: var(--card-background);
+}
+
+.cf-data-table {
+    width: 100%;
+    border-collapse: collapse; /* Mantiene el comportamiento de tabla nativo */
+    min-width: 700px;
+}
+
+.cf-data-table th,
+.cf-data-table td {
+    padding: 15px 20px; /* Padding de la celda */
+    text-align: left; /* Alineación de texto por defecto */
+    border-bottom: 1px solid var(--border-color-light);
+    color: var(--text-dark);
+    vertical-align: middle; /* Centra el contenido verticalmente en todas las celdas */
+}
+
+.cf-data-table th {
+    background-color: var(--primary-dark);
+    color: var(--text-light);
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.9em;
+}
+
+.cf-data-table tbody tr:nth-child(even) {
+    background-color: var(--background-body);
+}
+
+.cf-data-table tbody tr:hover {
+    background-color: #eef4f7;
+}
+
+/* Columna de acciones en la tabla (ajuste específico) */
+.cf-actions-column {
+    white-space: nowrap; /* Evita que los botones se envuelvan en varias líneas */
+    text-align: center; /* Centra el contenido (botones) horizontalmente */
+}
+
+/* Botones de acción dentro de las tablas */
+.cf-data-table td .cf-btn {
+    padding: 6px 10px;
+    border-radius: 5px;
+    font-size: 0.8em;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+    min-width: 80px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    border: none;
+    margin-inline: 4px; /* Añade un margen horizontal entre los botones */
+    display: inline-block; /* Asegura que los botones se comporten como elementos en línea para que text-align funcione */
+}
+
+/* Mensaje de no hay datos */
+.cf-no-data-message {
+    text-align: center;
+    color: var(--text-color-medium);
+    padding: 30px;
+    font-style: italic;
+    background-color: var(--card-background);
+    border-radius: 8px;
+    box-shadow: var(--shadow-light);
+    margin-top: 20px;
+}
+
+/* Footer de la tarjeta de preguntas */
+.cf-card-footer {
+    padding-top: 20px;
+    border-top: 1px solid var(--border-color-light);
+    margin-top: 25px;
+    text-align: right;
+}
+
+/* Estilos para el toggle switch */
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 45px; /* Ancho del switch */
+    height: 25px; /* Alto del switch */
+    margin: 0 5px; /* Espacio alrededor del switch */
+    vertical-align: middle; /* Alineación vertical */
+}
+
+.switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc; /* Color cuando está apagado */
+    -webkit-transition: .4s;
+    transition: .4s;
+    border-radius: 25px; /* Bordes redondeados del slider */
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 17px; /* Alto del "círculo" del slider */
+    width: 17px; /* Ancho del "círculo" del slider */
+    left: 4px;
+    bottom: 4px;
+    background-color: white;
+    -webkit-transition: .4s;
+    transition: .4s;
+    border-radius: 50%; /* Hacerlo circular */
+}
+
+input:checked + .slider {
+    background-color: var(--secondary-accent); /* Color cuando está encendido */
+}
+
+input:focus + .slider {
+    box-shadow: 0 0 1px var(--secondary-accent);
+}
+
+input:checked + .slider:before {
+    -webkit-transform: translateX(20px); /* Mover el círculo a la derecha */
+    -ms-transform: translateX(20px);
+    transform: translateX(20px);
+}
+
+/* Responsive adjustments */
+@media (max-width: 1024px) {
+    .cf-content-area {
+        padding: 20px;
+        gap: 25px;
+    }
+    .cf-card {
+        padding: 25px;
+    }
+    .cf-card-header h3 {
+        font-size: 1.6em;
+    }
+    .cf-btn {
+        padding: 8px 15px;
+        font-size: 0.9em;
+    }
+    .cf-btn-create-form {
+        padding: 10px 20px;
+        font-size: 1em;
+    }
+    .cf-data-table th,
+    .cf-data-table td {
+        padding: 12px 15px;
+    }
+    /* En pantallas medianas, si los botones no caben, pueden seguir en línea pero se ajustarán */
+    .cf-actions-column {
+        white-space: normal; /* Permitir que los botones se envuelvan si no caben */
+    }
+}
+
+@media (max-width: 768px) {
+    .main-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 15px;
+        padding: 15px;
+    }
+    .main-header .headline {
+        font-size: 1.6em;
+    }
+    .cf-content-area {
+        padding: 15px;
+        gap: 20px;
+    }
+    .cf-card {
+        padding: 20px;
+    }
+    .cf-card-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+        padding-bottom: 10px;
+    }
+    .cf-card-header h3 {
+        font-size: 1.4em;
+    }
+    .cf-btn {
+        width: 100%;
+        justify-content: center;
+        margin-bottom: 10px;
+    }
+    .cf-btn-sm {
+        width: auto;
+        margin-right: 5px;
+        margin-bottom: 5px;
+    }
+    .cf-table-responsive {
+        overflow-x: scroll;
+    }
+    .cf-data-table {
+        min-width: 600px;
+    }
+    /* REINTRODUCIDO: Para pantallas pequeñas, apilar los botones */
+    .cf-actions-column {
+        display: flex; /* Convertir a flexbox */
+        flex-direction: column; /* Apilar verticalmente */
+        align-items: stretch; /* Estirar los elementos al ancho completo */
+        gap: 5px; /* Espacio entre los botones apilados */
+        text-align: center; /* Asegurar que el texto dentro de la columna siga centrado */
+    }
+    .cf-data-table td .cf-btn {
+        width: 100%; /* Botones ocupan todo el ancho cuando están apilados */
+        margin-inline: 0; /* Eliminar margen horizontal cuando están apilados */
+    }
+    .cf-card-footer {
+        text-align: center;
+    }
+    .main-header .header-right {
+        flex-direction: column;
+        align-items: flex-start;
+        width: 100%;
+    }
+    .main-header .header-right .cf-btn {
+        width: 100%;
+        margin-bottom: 10px;
+    }
+}
+
+@media (max-width: 480px) {
+    .main-header .headline {
+        font-size: 1.4em;
+    }
+    .cf-card-header h3 {
+        font-size: 1.2em;
+    }
+    .cf-btn {
+        font-size: 0.9em;
+        padding: 8px 15px;
+    }
+}

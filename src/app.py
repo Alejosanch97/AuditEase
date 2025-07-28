@@ -21,6 +21,9 @@ import cloudinary.uploader
 import cloudinary.api
 from dotenv import load_dotenv # <--- Para cargar variables de entorno desde .env
 
+# *** IMPORTACIÓN NECESARIA PARA CORS ***
+from flask_cors import CORS # <--- AÑADE ESTA LÍNEA
+
 # Cargar variables de entorno desde el archivo .env
 load_dotenv()
 
@@ -29,6 +32,11 @@ static_file_dir = os.path.join(os.path.dirname(
     os.path.realpath(__file__)), '../dist/')
 app = Flask(__name__)
 app.url_map.strict_slashes = False
+
+# --- CORRECCIÓN CLAVE AQUÍ: Habilitar CORS para TODA la aplicación ---
+# Esto permite que tu frontend (en un puerto diferente) acceda a tu backend.
+# Para desarrollo, "*" es seguro. En producción, especifica el dominio de tu frontend.
+CORS(app) # <--- AÑADE ESTA LÍNEA AQUÍ
 
 # *** CONFIGURACIÓN DE JWT ***
 # Esta clave secreta es CRUCIAL para firmar tus tokens JWT.
@@ -70,6 +78,7 @@ setup_commands(app)
 
 
 # Add all endpoints form the API with a "api" prefix
+# Asegúrate de que esta línea esté DESPUÉS de CORS(app)
 app.register_blueprint(api, url_prefix='/api')
 
 # Handle/serialize errors like a JSON object

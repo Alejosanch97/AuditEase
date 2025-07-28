@@ -1,40 +1,39 @@
-/* src/styles/modal.css - Estilos específicos para modales, ahora con colores directos */
+/* src/styles/formModal.css - Estilos dedicados para los componentes de modal de formulario */
+/* Colores directos para evitar conflictos con variables globales */
 
 /* Modal Overlay: Fondo semi-transparente que cubre toda la pantalla */
 .modal-overlay {
-    position: fixed !important; /* Forzar la posición fija */
-    top: 0 !important;
-    left: 0 !important;
-    width: 100vw !important; /* Ocupa el 100% del ancho del viewport */
-    height: 100vh !important; /* Ocupa el 100% del alto del viewport */
-    background-color: rgba(0, 0, 0, 0.7) !important; /* Fondo negro semi-transparente */
-    display: flex !important; /* Para centrar el contenido del modal */
-    justify-content: center !important; /* Centrado horizontal */
-    align-items: center !important; /* Centrado vertical */
-    z-index: 9999 !important; /* ¡Aumentar z-index al máximo para forzar visibilidad! */
-    backdrop-filter: blur(4px) !important; /* Efecto de desenfoque sutil en el fondo */
-    -webkit-backdrop-filter: blur(4px) !important; /* Para compatibilidad con Safari */
-    animation: fadeIn 0.3s ease-out forwards !important; /* Animación de entrada */
-    visibility: visible !important; /* Asegurar que sea visible */
-    opacity: 1 !important; /* Asegurar opacidad total */
+    position: fixed; /* Fija el overlay en la ventana de visualización */
+    top: 0;
+    left: 0;
+    width: 100vw; /* Ocupa el 100% del ancho del viewport */
+    height: 100vh; /* Ocupa el 100% del alto del viewport */
+    background-color: rgba(0, 0, 0, 0.7); /* Fondo negro semi-transparente */
+    display: flex; /* Para centrar el contenido del modal */
+    justify-content: center; /* Centrado horizontal */
+    align-items: center; /* Centrado vertical */
+    z-index: 1000; /* Asegura que esté por encima de todos los demás elementos */
+    backdrop-filter: blur(4px); /* Efecto de desenfoque sutil en el fondo */
+    -webkit-backdrop-filter: blur(4px); /* Para compatibilidad con Safari */
+    animation: fadeIn 0.3s ease-out forwards; /* Animación de entrada */
 }
 
 /* Modal Content: La "mini-ventana" donde está el formulario */
 .modal-content {
-    background-color: #2e3b4e !important; /* Fondo del modal oscuro */
-    padding: 35px 40px !important; /* Más padding para que se vea más espacioso */
-    border-radius: 15px !important; /* Bordes más redondeados */
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5) !important; /* Sombra más pronunciada */
-    width: 90% !important;
-    max-width: 650px !important; /* Un poco más ancho para mejor distribución */
-    box-sizing: border-box !important; /* Incluye padding y borde en el ancho/alto */
-    position: relative !important; /* Para posicionar el botón de cerrar */
-    max-height: 90vh !important; /* Altura máxima para evitar desbordamiento en pantallas pequeñas */
-    overflow-y: auto !important; /* Permite desplazamiento si el contenido es largo */
-    color: #e0e0e0 !important; /* Color de texto claro para el contenido del modal */
-    animation: fadeInScale 0.3s ease-out forwards !important; /* Animación de entrada */
-    display: flex !important; /* Para organizar el contenido interno */
-    flex-direction: column !important;
+    background-color: #2e3b4e; /* Fondo del modal oscuro */
+    padding: 25px 30px; /* Padding reducido para un tamaño más compacto */
+    border-radius: 15px; /* Bordes más redondeados */
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5); /* Sombra más pronunciada */
+    width: 90%;
+    max-width: 480px; /* Ancho máximo aún más reducido para un formulario más compacto */
+    box-sizing: border-box; /* Incluye padding y borde en el ancho/alto */
+    position: relative; /* Para posicionar el botón de cerrar */
+    max-height: 90vh; /* Altura máxima para evitar desbordamiento en pantallas pequeñas */
+    overflow-y: auto; /* Permite desplazamiento si el contenido es largo */
+    color: #e0e0e0; /* Color de texto claro para el contenido del modal */
+    animation: fadeInScale 0.3s ease-out forwards; /* Animación de entrada */
+    display: flex; /* Para organizar el contenido interno */
+    flex-direction: column;
 }
 
 /* Animación de entrada del overlay */
@@ -58,39 +57,39 @@
 /* Título del modal */
 .modal-content h2 {
     color: #61dafb; /* Azul claro de acento */
-    margin-bottom: 28px;
+    margin-bottom: 20px; /* Espacio debajo del título reducido */
     text-align: center;
-    font-size: 2.2em; /* Título más grande */
+    font-size: 1.8em; /* Título ligeramente más pequeño */
     font-weight: 700; /* Más audaz */
     border-bottom: 2px solid #4a5a70; /* Borde más distintivo */
-    padding-bottom: 18px;
+    padding-bottom: 12px; /* Espacio debajo del borde reducido */
     letter-spacing: 0.5px;
 }
 
 /* Grupos de formulario */
 .form-group {
-    margin-bottom: 22px; /* Más espacio entre grupos de formulario */
+    margin-bottom: 18px; /* Espacio entre grupos de formulario reducido */
 }
 
 .form-group label {
     display: block;
-    margin-bottom: 10px;
+    margin-bottom: 6px; /* Espacio entre label e input reducido */
     font-weight: 600; /* Un poco más audaz */
     color: #e0e0e0; /* Color de etiqueta más suave */
-    font-size: 1.05em; /* Ligeramente más grande */
+    font-size: 0.95em; /* Tamaño de fuente de la etiqueta ajustado */
 }
 
 .form-group input[type="text"],
 .form-group input[type="email"],
-.form-group input[type="password"], /* Asegúrate de incluir todos los tipos de input */
+.form-group input[type="password"],
 .form-group input[type="number"],
 .form-group select,
 .form-group textarea {
-    width: calc(100% - 24px); /* Ajuste de ancho para padding */
-    padding: 14px; /* Más padding */
+    width: calc(100% - 16px); /* Ajuste de ancho para padding */
+    padding: 10px; /* Padding de inputs reducido */
     border: 1px solid #4a5a70; /* Borde sutil */
-    border-radius: 10px; /* Más redondeado */
-    font-size: 1.05em;
+    border-radius: 8px; /* Más redondeado */
+    font-size: 0.95em; /* Tamaño de fuente de input ajustado */
     background-color: #3a475a; /* Fondo del input un poco más claro que el modal */
     color: #ffffff; /* Texto blanco en el input */
     transition: border-color 0.3s ease, box-shadow 0.3s ease;
@@ -101,7 +100,7 @@
 .form-group input[type="password"]:focus,
 .form-group input[type="number"]:focus,
 .form-group select:focus,
-.form-group input[type="textarea"]:focus {
+.form-group textarea:focus {
     border-color: #61dafb; /* Borde de enfoque azul */
     outline: none;
     box-shadow: 0 0 0 3px rgba(97, 218, 251, 0.3); /* Sombra de enfoque */
@@ -110,26 +109,25 @@
 /* Estilos para el input de tipo file */
 .form-group input[type="file"] {
     width: 100%;
-    padding: 12px 0; /* Ajuste de padding */
+    padding: 8px 0; /* Ajuste de padding */
     color: #e0e0e0; /* Color del texto del input file */
-    /* Estilo del botón de seleccionar archivo para que sea más uniforme */
     appearance: none; /* Quita el estilo por defecto del navegador */
     background-color: #4a5a70; /* Color de fondo del botón */
     border: 1px solid #61dafb; /* Borde azul */
     border-radius: 8px;
     cursor: pointer;
-    font-size: 1em;
-    padding: 10px 15px;
+    font-size: 0.9em; /* Tamaño de fuente ajustado */
+    padding: 6px 10px; /* Ajuste de padding */
     transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 .form-group input[type="file"]::-webkit-file-upload-button {
     background-color: #61dafb; /* Color del botón de selección */
     color: white;
-    padding: 8px 15px;
+    padding: 6px 10px; /* Ajuste de padding */
     border: none;
     border-radius: 5px;
     cursor: pointer;
-    margin-right: 15px;
+    margin-right: 8px; /* Margen reducido */
     transition: background-color 0.3s ease;
 }
 
@@ -138,42 +136,34 @@
 }
 
 /* Vista previa de imagen de perfil y logo de empresa */
-.profile-image-preview {
-    max-width: 140px;
-    max-height: 140px;
+.profile-image-preview,
+.company-logo-preview {
+    max-width: 100px; /* Tamaño aún más pequeño */
+    max-height: 100px;
     border-radius: 50%; /* Mantener redondo para perfil */
     object-fit: cover;
-    margin-top: 20px;
+    margin-top: 12px; /* Espacio reducido */
     margin-left: auto; /* Centrar la imagen */
     margin-right: auto; /* Centrar la imagen */
     display: block; /* Para que margin: auto funcione */
     border: 3px solid #61dafb; /* Borde más visible */
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2); /* Sombra ajustada */
 }
 
 .company-logo-preview {
-    max-width: 140px; /* Tamaño similar */
-    max-height: 140px;
     border-radius: 10px; /* Para logos, un poco redondeado pero no circular */
-    object-fit: contain; /* Para que el logo no se recorte y se ajuste */
-    margin-top: 20px;
-    margin-left: auto;
-    margin-right: auto;
-    display: block;
-    border: 3px solid #61dafb;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
 }
 
 /* Botón para eliminar imagen (si aplica) */
 .btn-remove-image {
     background-color: #e74c3c; /* Rojo para eliminar */
     color: white;
-    padding: 8px 15px;
+    padding: 6px 10px; /* Padding ajustado */
     border: none;
-    border-radius: 8px; /* Valor directo */
+    border-radius: 8px; /* Usar valor directo */
     cursor: pointer;
-    font-size: 0.9em;
-    margin-top: 10px;
+    font-size: 0.8em; /* Tamaño de fuente ajustado */
+    margin-top: 6px; /* Espacio ajustado */
     transition: background-color 0.2s ease;
 }
 
@@ -187,11 +177,11 @@
     color: #ff6b6b; /* Rojo vibrante para errores */
     background-color: rgba(255, 107, 107, 0.1); /* Fondo claro para error */
     border: 1px solid #ff6b6b;
-    padding: 10px 15px;
+    padding: 8px 12px; /* Padding ajustado */
     border-radius: 8px;
-    margin-bottom: 20px;
+    margin-bottom: 12px; /* Espacio ajustado */
     text-align: center;
-    font-size: 0.95em;
+    font-size: 0.85em; /* Tamaño de fuente ajustado */
     font-weight: 500;
 }
 
@@ -199,11 +189,11 @@
     color: #61db93; /* Verde para éxito */
     background-color: rgba(97, 219, 147, 0.1); /* Fondo claro para éxito */
     border: 1px solid #61db93;
-    padding: 10px 15px;
+    padding: 8px 12px; /* Padding ajustado */
     border-radius: 8px;
-    margin-bottom: 20px;
+    margin-bottom: 12px; /* Espacio ajustado */
     text-align: center;
-    font-size: 0.95em;
+    font-size: 0.85em; /* Tamaño de fuente ajustado */
     font-weight: 500;
 }
 
@@ -211,18 +201,18 @@
 .modal-actions {
     display: flex;
     justify-content: center; /* Centrar los botones de acción */
-    gap: 20px; /* Más espacio entre botones */
-    margin-top: 35px;
-    padding-top: 15px;
+    gap: 12px; /* Espacio entre botones reducido */
+    margin-top: 20px; /* Espacio superior reducido */
+    padding-top: 12px; /* Padding superior reducido */
     border-top: 1px solid #4a5a70; /* Línea divisoria */
 }
 
 .modal-actions .btn {
-    padding: 14px 30px; /* Más padding para botones */
+    padding: 10px 20px; /* Padding de botones reducido */
     border: none;
     border-radius: 10px; /* Más redondeado */
     cursor: pointer;
-    font-size: 1.1em; /* Texto más grande */
+    font-size: 0.95em; /* Texto de botón ajustado */
     font-weight: 700; /* Más audaz */
     transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
     letter-spacing: 0.5px;
@@ -235,8 +225,8 @@
 
 .modal-actions .btn-primary:hover:not(:disabled) {
     background-color: #4aadc4; /* Tono de azul más oscuro al pasar el ratón */
-    transform: translateY(-3px); /* Efecto de elevación */
-    box-shadow: 0 6px 15px rgba(97, 218, 251, 0.4);
+    transform: translateY(-2px); /* Efecto de elevación */
+    box-shadow: 0 4px 10px rgba(97, 218, 251, 0.4);
 }
 
 .modal-actions .btn-secondary {
@@ -246,8 +236,8 @@
 
 .modal-actions .btn-secondary:hover:not(:disabled) {
     background-color: #3a475a; /* Tono de gris azulado más oscuro */
-    transform: translateY(-3px);
-    box-shadow: 0 6px 15px rgba(74, 90, 112, 0.4);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(74, 90, 112, 0.4);
 }
 
 .modal-actions .btn:disabled {
@@ -260,14 +250,14 @@
 /* Botón de cerrar (la "X") */
 .close-button {
     position: absolute;
-    top: 15px;
-    right: 15px;
+    top: 10px; /* Ajustado */
+    right: 10px; /* Ajustado */
     background: none;
     border: none;
-    font-size: 2.2em; /* Más grande */
+    font-size: 1.8em; /* Más pequeño */
     color: #e0e0e0; /* Color claro */
     cursor: pointer;
-    padding: 5px 10px;
+    padding: 4px 6px; /* Ajustado */
     border-radius: 50%; /* Circular */
     transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
     line-height: 1; /* Asegura que la 'x' esté centrada */
@@ -280,108 +270,75 @@
 }
 
 
-/* Estilos para el botón de "Editar Perfil" en la tarjeta principal (Profile.jsx) */
-.profile-card .profile-actions {
-    display: flex;
-    justify-content: center;
-    padding-top: 25px;
-    border-top: 1px solid #4a5a70; /* Borde que coincide con el tema oscuro */
-    margin-top: 25px;
-}
-
-.edit-profile-btn {
-    background-color: #61dafb; /* Mismo azul que los botones primarios del modal */
-    color: #20232a; /* Texto oscuro */
-    border: none;
-    padding: 12px 25px;
-    border-radius: 8px;
-    cursor: pointer;
-    font-size: 1.05em;
-    font-weight: 600;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    transition: background-color 0.3s ease, transform 0.2s ease;
-}
-
-.edit-profile-btn:hover {
-    background-color: #4aadc4;
-    transform: translateY(-2px);
-}
-
-/* Estilo para el botón "Editar" de la información laboral (Empresa) */
-.occupation-info-card .edit-btn { /* Apunta específicamente a la tarjeta de información laboral */
-    background-color: #f39c12; /* Naranja para los botones de editar secundarios */
-    color: white;
-    border: none;
-    padding: 10px 18px;
-    border-radius: 8px;
-    cursor: pointer;
-    font-size: 0.95em;
-    font-weight: 600;
-    transition: background-color 0.3s ease, transform 0.2s ease;
-}
-
-.occupation-info-card .edit-btn:hover {
-    background-color: #e08e00; /* Naranja más oscuro */
-    transform: translateY(-2px);
-}
-
-
 /* Media Queries para responsividad */
 @media (max-width: 768px) {
     .modal-content {
         width: 95%;
-        padding: 20px;
+        padding: 18px; /* Padding ajustado */
+        max-width: 380px; /* Ajuste para pantallas medianas */
     }
 
     .modal-content h2 {
-        font-size: 1.8em;
-        margin-bottom: 20px;
+        font-size: 1.6em;
+        margin-bottom: 18px;
         padding-bottom: 10px;
     }
 
     .close-button {
-        font-size: 1.8em;
-        top: 10px;
-        right: 10px;
+        font-size: 1.6em;
+        top: 8px;
+        right: 8px;
     }
 
     .form-group input,
     .form-group select,
     .form-group textarea {
-        padding: 10px;
-        font-size: 0.95em;
+        padding: 8px;
+        font-size: 0.9em;
     }
 
     .modal-actions {
         flex-direction: column; /* Apila los botones en pantallas pequeñas */
-        gap: 10px;
+        gap: 8px;
     }
 
     .modal-actions .btn {
         width: 100%; /* Ocupa el ancho completo */
         min-width: unset; /* Elimina el ancho mínimo para que se ajuste */
-        padding: 10px;
+        padding: 8px;
+        font-size: 0.9em;
     }
 }
 
 @media (max-width: 480px) {
     .modal-content {
         padding: 15px;
+        max-width: 95%; /* Asegura que no se desborde en pantallas muy pequeñas */
     }
 
     .modal-content h2 {
-        font-size: 1.6em;
+        font-size: 1.4em;
     }
 
     .form-group label {
-        font-size: 1em;
+        font-size: 0.9em;
+    }
+
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+        padding: 6px;
+        font-size: 0.85em;
     }
 
     .profile-image-preview,
     .company-logo-preview {
-        max-width: 80px;
-        max-height: 80px;
+        max-width: 60px; /* Más pequeño en móviles */
+        max-height: 60px;
+    }
+
+    .modal-actions .btn {
+        font-size: 0.85em;
+        padding: 6px;
     }
 }

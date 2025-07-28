@@ -1,14 +1,13 @@
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import String, Boolean, Integer, DateTime, Text, JSON, ForeignKey, Table, Float # Asegúrate de importar Float
+from sqlalchemy import String, Boolean, Integer, DateTime, Text, JSON, ForeignKey, Table, Float, Time, Date
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from datetime import datetime
+from datetime import datetime, date, time
 from typing import List, Optional
 
 # Inicializa SQLAlchemy aquí
 db = SQLAlchemy()
 
 # Tablas intermedias para relaciones muchos a muchos
-# Estas tablas son correctas y bien definidas.
 formulario_espacio = Table(
     'formulario_espacio',
     db.metadata,
@@ -23,6 +22,22 @@ formulario_subespacio = Table(
     db.Column('id_subespacio', Integer, ForeignKey('sub_espacios.id_subespacio'), primary_key=True)
 )
 
+formulario_objeto = Table(
+    'formulario_objeto',
+    db.metadata,
+    db.Column('id_formulario', Integer, ForeignKey('formularios.id_formulario'), primary_key=True),
+    db.Column('id_objeto', Integer, ForeignKey('objetos.id_objeto'), primary_key=True)
+)
+
+# NUEVA TABLA INTERMEDIA: formulario_tipo_respuesta
+formulario_tipo_respuesta = Table(
+    'formulario_tipo_respuesta',
+    db.metadata,
+    db.Column('id_formulario', Integer, ForeignKey('formularios.id_formulario'), primary_key=True),
+    db.Column('id_tipo_respuesta', Integer, ForeignKey('tipos_respuesta.id_tipo_respuesta'), primary_key=True)
+)
+
+
 class Empresa(db.Model):
     __tablename__ = 'empresas'
 
@@ -32,9 +47,9 @@ class Empresa(db.Model):
     telefono: Mapped[str] = mapped_column(String(20), nullable=True)
     email_contacto: Mapped[str] = mapped_column(String(120), nullable=True)
     fecha_creacion: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
-    creado_por_admin_general_id: Mapped[int] = mapped_column(Integer, nullable=True) # ID del OWNER que creó la empresa
+    creado_por_admin_general_id: Mapped[int] = mapped_column(Integer, nullable=True)
     logo_url: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
-    activo: Mapped[bool] = mapped_column(db.Boolean, default=True) # Nuevo campo para activar/suspender empresas
+    activo: Mapped[bool] = mapped_column(db.Boolean, default=True) # Campo para activar/desactivar empresa
 
     usuarios: Mapped[List["Usuario"]] = relationship("Usuario", back_populates="empresa")
     espacios: Mapped[List["Espacio"]] = relationship("Espacio", back_populates="empresa")
@@ -50,7 +65,7 @@ class Empresa(db.Model):
             "fecha_creacion": self.fecha_creacion.isoformat() if self.fecha_creacion else None,
             "creado_por_admin_general_id": self.creado_por_admin_general_id,
             "logo_url": self.logo_url,
-            "activo": self.activo # Incluir el nuevo campo
+            "activo": self.activo
         }
 
 
@@ -62,19 +77,20 @@ class Usuario(db.Model):
     nombre_completo: Mapped[str] = mapped_column(String(255), nullable=False)
     email: Mapped[str] = mapped_column(String(120), unique=True, nullable=False)
     contrasena_hash: Mapped[str] = mapped_column(String(255), nullable=False)
-    rol: Mapped[str] = mapped_column(String(50), nullable=False)  # 'owner', 'admin_empresa', 'usuario_formulario'
+    rol: Mapped[str] = mapped_column(String(50), nullable=False)
     fecha_creacion: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     ultimo_login: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     imagen_perfil_url: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
-    cambio_password_requerido: Mapped[bool] = mapped_column(db.Boolean, default=False) # NUEVO CAMPO
-    activo: Mapped[bool] = mapped_column(db.Boolean, default=True) # Nuevo campo para activar/suspender usuarios
+    cambio_password_requerido: Mapped[bool] = mapped_column(db.Boolean, default=False)
+    activo: Mapped[bool] = mapped_column(db.Boolean, default=True)
+    
+    telefono_personal: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
+    cargo: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    favoritos: Mapped[List[int]] = mapped_column(JSON, default=list, nullable=False)
+    
+    # NUEVO: Campo para la firma digital del usuario
+    firma_digital_url: Mapped[Optional[str]] = mapped_column(String(500), nullable=True) 
 
-    # --- NUEVOS CAMPOS ---
-    telefono_personal: Mapped[Optional[str]] = mapped_column(String(20), nullable=True) # Campo para teléfono personal
-    cargo: Mapped[Optional[str]] = mapped_column(String(100), nullable=True) # Campo para cargo (texto libre)
-    # ---------------------
-
-    # Relaciones: Los nombres de las clases destino están correctos
     empresa: Mapped[Optional["Empresa"]] = relationship("Empresa", back_populates="usuarios")
     envios_formulario: Mapped[List["EnvioFormulario"]] = relationship("EnvioFormulario", back_populates="usuario")
     notificaciones: Mapped[List["Notificacion"]] = relationship("Notificacion", back_populates="usuario_destinatario")
@@ -95,26 +111,27 @@ class Usuario(db.Model):
             "imagen_perfil_url": self.imagen_perfil_url,
             "telefono_personal": self.telefono_personal,
             "cargo": self.cargo,
-            "cambio_password_requerido": self.cambio_password_requerido, # Incluir el nuevo campo
-            "activo": self.activo, # Incluir el nuevo campo
-            "empresa": empresa_data
+            "cambio_password_requerido": self.cambio_password_requerido,
+            "activo": self.activo,
+            "empresa": empresa_data,
+            "favoritos": self.favoritos,
+            "firma_digital_url": self.firma_digital_url # Incluir en la serialización
         }
 
 
 class Espacio(db.Model):
     __tablename__ = 'espacios'
-    
+
     id_espacio: Mapped[int] = mapped_column(Integer, primary_key=True)
     id_empresa: Mapped[int] = mapped_column(Integer, ForeignKey('empresas.id_empresa'), nullable=False)
     nombre_espacio: Mapped[str] = mapped_column(String(255), nullable=False)
     descripcion: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    
-    # Relaciones
+
     empresa: Mapped["Empresa"] = relationship("Empresa", back_populates="espacios")
     sub_espacios: Mapped[List["SubEspacio"]] = relationship("SubEspacio", back_populates="espacio")
     formularios: Mapped[List["Formulario"]] = relationship("Formulario", secondary=formulario_espacio, back_populates="espacios")
     observaciones: Mapped[List["Observacion"]] = relationship("Observacion", back_populates="espacio")
-    
+
     def serialize(self):
         return {
             "id_espacio": self.id_espacio,
@@ -125,17 +142,17 @@ class Espacio(db.Model):
 
 class SubEspacio(db.Model):
     __tablename__ = 'sub_espacios'
-    
+
     id_subespacio: Mapped[int] = mapped_column(Integer, primary_key=True)
     id_espacio: Mapped[int] = mapped_column(Integer, ForeignKey('espacios.id_espacio'), nullable=False)
     nombre_subespacio: Mapped[str] = mapped_column(String(255), nullable=False)
     descripcion: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    
-    # Relaciones
+
     espacio: Mapped["Espacio"] = relationship("Espacio", back_populates="sub_espacios")
     formularios: Mapped[List["Formulario"]] = relationship("Formulario", secondary=formulario_subespacio, back_populates="sub_espacios")
     observaciones: Mapped[List["Observacion"]] = relationship("Observacion", back_populates="subespacio")
-    
+    objetos: Mapped[List["Objeto"]] = relationship("Objeto", back_populates="sub_espacio")
+
     def serialize(self):
         return {
             "id_subespacio": self.id_subespacio,
@@ -144,16 +161,37 @@ class SubEspacio(db.Model):
             "descripcion": self.descripcion
         }
 
+class Objeto(db.Model):
+    __tablename__ = 'objetos'
+
+    id_objeto: Mapped[int] = mapped_column(Integer, primary_key=True)
+    id_subespacio: Mapped[int] = mapped_column(Integer, ForeignKey('sub_espacios.id_subespacio'), nullable=False)
+    nombre_objeto: Mapped[str] = mapped_column(String(255), nullable=False)
+    descripcion: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+    sub_espacio: Mapped["SubEspacio"] = relationship("SubEspacio", back_populates="objetos")
+    formularios: Mapped[List["Formulario"]] = relationship("Formulario", secondary=formulario_objeto, back_populates="objetos")
+
+    def serialize(self):
+        return {
+            "id_objeto": self.id_objeto,
+            "id_subespacio": self.id_subespacio,
+            "nombre_objeto": self.nombre_objeto,
+            "descripcion": self.descripcion
+        }
+
+
 class TipoRespuesta(db.Model):
     __tablename__ = 'tipos_respuesta'
-    
+
     id_tipo_respuesta: Mapped[int] = mapped_column(Integer, primary_key=True)
-    nombre_tipo: Mapped[str] = mapped_column(String(100), nullable=False)
+    nombre_tipo: Mapped[str] = mapped_column(String(100), nullable=False, unique=True)
     descripcion: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    
-    # Relaciones
+
     preguntas: Mapped[List["Pregunta"]] = relationship("Pregunta", back_populates="tipo_respuesta")
-    
+    formularios: Mapped[List["Formulario"]] = relationship("Formulario", secondary=formulario_tipo_respuesta, back_populates="tipos_respuesta_disponibles")
+
+
     def serialize(self):
         return {
             "id_tipo_respuesta": self.id_tipo_respuesta,
@@ -163,49 +201,82 @@ class TipoRespuesta(db.Model):
 
 class Formulario(db.Model):
     __tablename__ = 'formularios'
-    
+
     id_formulario: Mapped[int] = mapped_column(Integer, primary_key=True)
     id_empresa: Mapped[int] = mapped_column(Integer, ForeignKey('empresas.id_empresa'), nullable=False)
     nombre_formulario: Mapped[str] = mapped_column(String(255), nullable=False)
     descripcion: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    frecuencia_minima_llenado: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    
+    max_submissions_per_period: Mapped[int] = mapped_column(Integer, nullable=False, default=1) # Cuántas veces se puede llenar
+    submission_period_days: Mapped[int] = mapped_column(Integer, nullable=False, default=1)     # En cuántos días (ej: 1 para diario, 7 para semanal)
+    
+    
     fecha_creacion: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     creado_por_usuario_id: Mapped[int] = mapped_column(Integer, ForeignKey('usuarios.id_usuario'), nullable=False)
-    
-    # Relaciones
+
+    es_plantilla: Mapped[bool] = mapped_column(Boolean, default=False)
+    es_plantilla_global: Mapped[bool] = mapped_column(Boolean, default=False) # Si es plantilla global para todas las empresas activas
+    # Si no es global, lista de IDs de empresas con las que se comparte esta plantilla específica
+    compartir_con_empresas_ids: Mapped[List[int]] = mapped_column(JSON, default=list, nullable=False) 
+
+    # NUEVO: Campo para activar/desactivar notificaciones del formulario
+    notificaciones_activas: Mapped[bool] = mapped_column(Boolean, default=True)
+
+    # NUEVO: Campo para activar/desactivar la automatización de llenado
+    automatizacion_activa: Mapped[bool] = mapped_column(Boolean, default=False)
+    scheduled_automation_time: Mapped[Optional[time]] = mapped_column(Time, nullable=True) # Hora programada (solo hora)
+    last_automated_run_date: Mapped[Optional[date]] = mapped_column(Date, nullable=True) # Última fecha de ejecución de la automatización
+
+
     empresa: Mapped["Empresa"] = relationship("Empresa", back_populates="formularios")
     preguntas: Mapped[List["Pregunta"]] = relationship("Pregunta", back_populates="formulario")
     envios_formulario: Mapped[List["EnvioFormulario"]] = relationship("EnvioFormulario", back_populates="formulario")
     notificaciones: Mapped[List["Notificacion"]] = relationship("Notificacion", back_populates="formulario")
     espacios: Mapped[List["Espacio"]] = relationship("Espacio", secondary=formulario_espacio, back_populates="formularios")
     sub_espacios: Mapped[List["SubEspacio"]] = relationship("SubEspacio", secondary=formulario_subespacio, back_populates="formularios")
-    
+    objetos: Mapped[List["Objeto"]] = relationship("Objeto", secondary=formulario_objeto, back_populates="formularios")
+
+    # NUEVA RELACIÓN: muchos a muchos con TipoRespuesta
+    tipos_respuesta_disponibles: Mapped[List["TipoRespuesta"]] = relationship("TipoRespuesta", secondary=formulario_tipo_respuesta, back_populates="formularios")
+
+
     def serialize(self):
+        tipos_respuesta_data = [tr.serialize() for tr in self.tipos_respuesta_disponibles] if self.tipos_respuesta_disponibles else []
+
         return {
             "id_formulario": self.id_formulario,
             "id_empresa": self.id_empresa,
             "nombre_formulario": self.nombre_formulario,
             "descripcion": self.descripcion,
-            "frecuencia_minima_llenado": self.frecuencia_minima_llenado,
+            "max_submissions_per_period": self.max_submissions_per_period,
+            "submission_period_days": self.submission_period_days,
+
             "fecha_creacion": self.fecha_creacion.isoformat() if self.fecha_creacion else None,
-            "creado_por_usuario_id": self.creado_por_usuario_id
+            "creado_por_usuario_id": self.creado_por_usuario_id,
+            "es_plantilla": self.es_plantilla, # Incluir en la serialización
+            "es_plantilla_global": self.es_plantilla_global, # Incluir en la serialización
+            "compartir_con_empresas_ids": self.compartir_con_empresas_ids, # Incluir en la serialización
+            "notificaciones_activas": self.notificaciones_activas, # Incluir en la serialización
+            "automatizacion_activa": self.automatizacion_activa, # Incluir en la serialización
+            "scheduled_automation_time": self.scheduled_automation_time.strftime('%H:%M') if self.scheduled_automation_time else None, # Formato HH:MM
+            "last_automated_run_date": self.last_automated_run_date.isoformat() if self.last_automated_run_date else None, # Formato YYYY-MM-DD
+            "tipos_respuesta_disponibles": tipos_respuesta_data
         }
 
 class Pregunta(db.Model):
     __tablename__ = 'preguntas'
-    
+
     id_pregunta: Mapped[int] = mapped_column(Integer, primary_key=True)
     id_formulario: Mapped[int] = mapped_column(Integer, ForeignKey('formularios.id_formulario'), nullable=False)
     texto_pregunta: Mapped[str] = mapped_column(Text, nullable=False)
     tipo_respuesta_id: Mapped[int] = mapped_column(Integer, ForeignKey('tipos_respuesta.id_tipo_respuesta'), nullable=False)
     orden: Mapped[int] = mapped_column(Integer, nullable=False)
     opciones_respuesta_json: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
-    
-    # Relaciones
+
     formulario: Mapped["Formulario"] = relationship("Formulario", back_populates="preguntas")
     tipo_respuesta: Mapped["TipoRespuesta"] = relationship("TipoRespuesta", back_populates="preguntas")
     respuestas: Mapped[List["Respuesta"]] = relationship("Respuesta", back_populates="pregunta")
-    
+
     def serialize(self):
         return {
             "id_pregunta": self.id_pregunta,
@@ -218,7 +289,7 @@ class Pregunta(db.Model):
 
 class EnvioFormulario(db.Model):
     __tablename__ = 'envios_formulario'
-    
+
     id_envio: Mapped[int] = mapped_column(Integer, primary_key=True)
     id_formulario: Mapped[int] = mapped_column(Integer, ForeignKey('formularios.id_formulario'), nullable=False)
     id_usuario: Mapped[int] = mapped_column(Integer, ForeignKey('usuarios.id_usuario'), nullable=False)
@@ -227,13 +298,13 @@ class EnvioFormulario(db.Model):
     completado_automaticamente: Mapped[bool] = mapped_column(Boolean, default=False)
     espacios_cubiertos_ids: Mapped[Optional[list]] = mapped_column(JSON, nullable=True)
     subespacios_cubiertos_ids: Mapped[Optional[list]] = mapped_column(JSON, nullable=True)
-    
-    # Relaciones
+    objetos_cubiertos_ids: Mapped[Optional[list]] = mapped_column(JSON, nullable=True)
+
     formulario: Mapped["Formulario"] = relationship("Formulario", back_populates="envios_formulario")
     usuario: Mapped["Usuario"] = relationship("Usuario", back_populates="envios_formulario")
     respuestas: Mapped[List["Respuesta"]] = relationship("Respuesta", back_populates="envio")
     observaciones: Mapped[List["Observacion"]] = relationship("Observacion", back_populates="envio")
-    
+
     def serialize(self):
         return {
             "id_envio": self.id_envio,
@@ -243,12 +314,13 @@ class EnvioFormulario(db.Model):
             "fechas_horas_actividad_reales": self.fechas_horas_actividad_reales,
             "completado_automaticamente": self.completado_automaticamente,
             "espacios_cubiertos_ids": self.espacios_cubiertos_ids,
-            "subespacios_cubiertos_ids": self.subespacios_cubiertos_ids
+            "subespacios_cubiertos_ids": self.subespacios_cubiertos_ids,
+            "objetos_cubiertos_ids": self.objetos_cubiertos_ids
         }
 
 class Respuesta(db.Model):
     __tablename__ = 'respuestas'
-    
+
     id_respuesta: Mapped[int] = mapped_column(Integer, primary_key=True)
     id_envio: Mapped[int] = mapped_column(Integer, ForeignKey('envios_formulario.id_envio'), nullable=False)
     id_pregunta: Mapped[int] = mapped_column(Integer, ForeignKey('preguntas.id_pregunta'), nullable=False)
@@ -257,10 +329,12 @@ class Respuesta(db.Model):
     valor_numerico: Mapped[Optional[float]] = mapped_column(db.Float, nullable=True)
     valores_multiples_json: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
     
-    # Relaciones
+    # MODIFICADO: Ahora puede almacenar una lista de URLs de firmas (JSON)
+    valor_firma_url: Mapped[Optional[List[str]]] = mapped_column(JSON, nullable=True) 
+
     envio: Mapped["EnvioFormulario"] = relationship("EnvioFormulario", back_populates="respuestas")
     pregunta: Mapped["Pregunta"] = relationship("Pregunta", back_populates="respuestas")
-    
+
     def serialize(self):
         return {
             "id_respuesta": self.id_respuesta,
@@ -269,12 +343,13 @@ class Respuesta(db.Model):
             "valor_texto": self.valor_texto,
             "valor_booleano": self.valor_booleano,
             "valor_numerico": self.valor_numerico,
-            "valores_multiples_json": self.valores_multiples_json
+            "valores_multiples_json": self.valores_multiples_json,
+            "valor_firma_url": self.valor_firma_url
         }
 
 class Observacion(db.Model):
     __tablename__ = 'observaciones'
-    
+
     id_observacion: Mapped[int] = mapped_column(Integer, primary_key=True)
     id_envio: Mapped[int] = mapped_column(Integer, ForeignKey('envios_formulario.id_envio'), nullable=False)
     id_espacio: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey('espacios.id_espacio'), nullable=True)
@@ -284,12 +359,11 @@ class Observacion(db.Model):
     resuelta: Mapped[bool] = mapped_column(Boolean, default=False)
     fecha_resolucion: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     resuelto_por_usuario_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey('usuarios.id_usuario'), nullable=True)
-    
-    # Relaciones
+
     envio: Mapped["EnvioFormulario"] = relationship("EnvioFormulario", back_populates="observaciones")
     espacio: Mapped[Optional["Espacio"]] = relationship("Espacio", back_populates="observaciones")
     subespacio: Mapped[Optional["SubEspacio"]] = relationship("SubEspacio", back_populates="observaciones")
-    
+
     def serialize(self):
         return {
             "id_observacion": self.id_observacion,
@@ -305,7 +379,7 @@ class Observacion(db.Model):
 
 class Notificacion(db.Model):
     __tablename__ = 'notificaciones'
-    
+
     id_notificacion: Mapped[int] = mapped_column(Integer, primary_key=True)
     id_formulario: Mapped[int] = mapped_column(Integer, ForeignKey('formularios.id_formulario'), nullable=False)
     id_usuario_destinatario: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey('usuarios.id_usuario'), nullable=True)
@@ -316,11 +390,10 @@ class Notificacion(db.Model):
     estado: Mapped[str] = mapped_column(String(50), default='pendiente')
     frecuencia_notificacion: Mapped[str] = mapped_column(String(50), nullable=False)
     horas_especificas_envio: Mapped[Optional[list]] = mapped_column(JSON, nullable=True)
-    
-    # Relaciones
+
     formulario: Mapped["Formulario"] = relationship("Formulario", back_populates="notificaciones")
     usuario_destinatario: Mapped[Optional["Usuario"]] = relationship("Usuario", back_populates="notificaciones")
-    
+
     def serialize(self):
         return {
             "id_notificacion": self.id_notificacion,

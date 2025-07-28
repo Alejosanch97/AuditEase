@@ -1,0 +1,549 @@
+/* src/styles/answer-forms.css */
+
+/* Contenedor principal para la lista de formularios */
+.af-content-area {
+    padding: 20px;
+    max-width: 1200px;
+    margin: 20px auto;
+}
+
+/* Estilos generales de la tarjeta */
+.af-card {
+    background-color: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+    margin-bottom: 30px;
+    padding: 18px; /* Reducido para hacer la tarjeta más compacta */
+}
+
+.af-full-width-card {
+    width: 100%;
+}
+
+.af-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #e0e6ec;
+}
+
+.af-card-header h3 {
+    font-size: 1.6em;
+    color: #2c3e50;
+    font-weight: 700;
+}
+
+/* Estilos para el contenedor de filtros */
+.af-filters-header {
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.af-filters-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    align-items: center;
+}
+
+.af-filter-group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.af-filter-label {
+    font-size: 0.9em;
+    color: #555;
+    font-weight: 500;
+}
+
+.af-filter-select {
+    padding: 7px 10px;
+    border: 1px solid #cccccc;
+    border-radius: 6px;
+    font-size: 0.85em;
+    min-width: 120px;
+    background-color: #f8f8f8;
+    cursor: pointer;
+}
+
+.af-filter-checkbox {
+    width: 16px;
+    height: 16px;
+    accent-color: #1abc9c;
+    cursor: pointer;
+}
+
+/* Mensajes de estado (carga, error, no datos) */
+.af-loading-message,
+.af-error-message,
+.af-no-forms-message {
+    text-align: center;
+    padding: 25px;
+    font-size: 1em;
+    color: #666;
+}
+
+.af-error-message {
+    color: #e74c3c;
+    font-weight: 600;
+}
+
+/* Grid de tarjetas de formulario */
+.af-forms-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); /* Min-width ajustado */
+    gap: 25px;
+    padding: 5px;
+}
+
+/* Estilos de cada tarjeta de formulario */
+.af-form-card {
+    background-color: #fdfdfd;
+    border: 1px solid #e0e6ec;
+    border-radius: 10px;
+    padding: 18px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.af-form-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.08);
+}
+
+.af-form-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.af-form-card-title {
+    font-size: 1.3em;
+    color: #2f3640;
+    font-weight: 600;
+    margin: 0;
+    flex-grow: 1;
+}
+
+/* Contenedor para los botones de acción en el header de la tarjeta del formulario */
+.af-card-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+/* Botón de Favoritos */
+.af-favorite-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1.1em;
+    color: #ccc;
+    transition: color 0.2s ease, transform 0.1s ease;
+    padding: 3px;
+}
+
+.af-favorite-btn:hover {
+    color: #FFD700;
+    transform: scale(1.08);
+}
+
+.af-favorite-btn.favorited .af-favorited-icon {
+    color: #FFD700;
+}
+
+.af-form-card-description {
+    color: #666;
+    font-size: 0.9em;
+    line-height: 1.4;
+    margin-bottom: 12px;
+    flex-grow: 1;
+}
+
+.af-form-card-details p {
+    font-size: 0.85em;
+    color: #444;
+    margin-bottom: 4px;
+}
+
+.af-form-card-details strong {
+    color: #333;
+}
+
+.af-form-card-actions {
+    margin-top: 15px;
+    text-align: center;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #f0f0f0;
+    margin-bottom: 15px;
+}
+
+.af-btn-answer-form {
+    background-color: #1abc9c;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.95em;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.1s ease, box-shadow 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    box-shadow: 0 3px 8px rgba(26, 188, 156, 0.2);
+}
+
+.af-btn-answer-form:hover {
+    background-color: #16a085;
+    transform: translateY(-1px);
+    box-shadow: 0 5px 12px rgba(26, 188, 156, 0.3);
+}
+
+/* --- ESTILOS PARA LA SECCIÓN DE AUTOMATIZACIÓN (NUEVA POSICIÓN) --- */
+.af-automation-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    background-color: #f8fcf8;
+    border: 1px solid #e0f2f1;
+    border-radius: 8px;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.03);
+}
+
+.af-automation-status-display {
+    display: flex;
+    flex-direction: row; /* Volvemos a fila para que el icono y el mensaje estén lado a lado */
+    align-items: center;
+    gap: 8px; /* Espacio entre icono y texto */
+    font-size: 0.95em;
+    color: #333;
+    font-weight: 500;
+    text-align: center;
+    max-width: 100%;
+    justify-content: center; /* Centra el contenido en el display */
+}
+
+/* Botón de estado de automatización (el icono del robot) */
+.af-automation-status-btn {
+    background: #ffffff;
+    border: 2px solid;
+    font-size: 1.4em; /* Ligeramente más grande para mejor visibilidad */
+    cursor: pointer;
+    padding: 8px; /* Ajustado */
+    border-radius: 50%;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    min-width: 42px; /* Aumentado */
+    min-height: 42px; /* Aumentado */
+}
+
+.af-automation-status-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.12);
+}
+
+/* Colores de estado específicos para el botón y su borde */
+.af-automation-status-btn.af-automation-pending {
+    color: #FFC107;
+    border-color: #FFC107;
+}
+.af-automation-status-btn.af-automation-pending:hover {
+    background-color: rgba(255, 193, 7, 0.08);
+}
+
+.af-automation-status-btn.af-automation-live {
+    color: #2196F3;
+    border-color: #2196F3;
+}
+.af-automation-status-btn.af-automation-live:hover {
+    background-color: rgba(33, 150, 243, 0.08);
+}
+
+.af-automation-status-btn.af-automation-completed {
+    color: #4CAF50;
+    border-color: #4CAF50;
+}
+.af-automation-status-btn.af-automation-completed:hover {
+    background-color: rgba(76, 175, 80, 0.08);
+}
+
+/* ELIMINADO: .af-automation-status-text ya no se renderiza directamente */
+/* Sin embargo, si quieres que el texto del mensaje se muestre en algún momento (ej. en móvil),
+   podrías reintroducir un span y controlarlo con media queries o JS.
+   Por ahora, solo el tooltip (title) lo mostrará. */
+
+
+/* Etiqueta para automatización inactiva */
+.af-automation-inactive-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: #777;
+    font-size: 0.9em;
+    background-color: #f0f0f0;
+    border-radius: 5px;
+    padding: 6px 12px;
+    cursor: default;
+    border: 1px solid #ddd;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.02);
+}
+.af-automation-inactive-label i {
+    color: #999;
+    font-size: 1.1em;
+}
+
+.af-automation-schedule-control {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background-color: #f0f4f8;
+    border: 1px solid #d0dbe6;
+    border-radius: 8px;
+    padding: 6px 10px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+/* Input de tiempo para la automatización */
+.af-automation-time-input {
+    padding: 8px 12px; /* Aumentado para mejor visualización */
+    border: 1px solid #b0c4de;
+    border-radius: 5px;
+    font-size: 1.2em; /* Aumentado para mayor legibilidad del tiempo */
+    width: 120px; /* AUMENTADO SIGNIFICATIVAMENTE para que el reloj se vea bien */
+    text-align: center;
+    background-color: #fff;
+    cursor: pointer;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.af-automation-time-input:focus {
+    border-color: #1abc9c;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(26, 188, 156, 0.15);
+}
+
+/* Botón para establecer la hora de automatización (solo icono) */
+.af-btn-set-schedule {
+    background-color: #607D8B;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    padding: 8px; /* Ajustado para hacerlo cuadrado */
+    font-size: 1.2em; /* Tamaño del icono más grande */
+    font-weight: 600; /* No es tan relevante si no hay texto, pero se mantiene */
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.1s ease, box-shadow 0.2s ease;
+    display: flex; /* Usar flex para centrar el icono */
+    align-items: center;
+    justify-content: center;
+    width: 42px; /* Ancho fijo para hacerlo cuadrado */
+    height: 42px; /* Altura fija para hacerlo cuadrado */
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.af-btn-set-schedule i { /* Icono dentro del botón Programar */
+    font-size: 1em; /* Ajustado para que el icono ocupe el espacio */
+}
+
+.af-btn-set-schedule:hover {
+    background-color: #455A64;
+    transform: translateY(-1px);
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.12);
+}
+
+.af-btn-set-schedule:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+
+/* Loading spinner (general) */
+.loading-spinner-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    font-size: 2em;
+    color: var(--primary-dark);
+}
+
+/* Media Queries para responsividad */
+@media (max-width: 992px) {
+    .af-forms-grid {
+        grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+        gap: 20px;
+    }
+    .af-form-card {
+        padding: 15px;
+    }
+    .af-form-card-title {
+        font-size: 1.2em;
+    }
+    .af-form-card-description {
+        font-size: 0.85em;
+    }
+    .af-form-card-details p {
+        font-size: 0.8em;
+    }
+    .af-btn-answer-form {
+        padding: 8px 18px;
+        font-size: 0.9em;
+    }
+    .af-automation-section {
+        padding: 10px;
+        gap: 10px;
+    }
+    .af-automation-status-btn {
+        font-size: 1.2em;
+        min-width: 36px;
+        min-height: 36px;
+    }
+    .af-automation-time-input {
+        width: 110px; /* Ajustado */
+        font-size: 1.1em; /* Ajustado */
+        padding: 7px 10px;
+    }
+    .af-btn-set-schedule {
+        padding: 7px; /* Ajustado para cuadrado */
+        font-size: 1.1em; /* Ajustado */
+        width: 38px; /* Ajustado */
+        height: 38px; /* Ajustado */
+    }
+    .af-automation-inactive-label {
+        font-size: 0.9em;
+        padding: 6px 12px;
+    }
+}
+
+@media (max-width: 768px) {
+    .af-content-area {
+        padding: 15px;
+    }
+    .af-card-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    .af-filters-container {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+        width: 100%;
+    }
+    .af-filter-group {
+        width: 100%;
+        justify-content: space-between;
+    }
+    .af-filter-select {
+        width: auto;
+        flex-grow: 1;
+    }
+    .af-forms-grid {
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+    .af-form-card-header {
+        flex-direction: row;
+        align-items: flex-start;
+        justify-content: space-between;
+        width: 100%;
+    }
+    .af-card-header-actions {
+        flex-direction: row;
+        align-items: center;
+        gap: 6px;
+        width: auto;
+    }
+    .af-automation-section {
+        flex-direction: column;
+        gap: 8px;
+        width: 100%;
+    }
+    .af-automation-status-display {
+        flex-direction: row; /* Vuelve a poner el icono y texto en fila para móviles */
+        justify-content: center;
+        gap: 8px;
+    }
+    .af-automation-schedule-control {
+        flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: center;
+        width: 100%;
+    }
+    .af-automation-time-input {
+        width: 110px; /* Ajustado */
+        font-size: 1.2em; /* Ajustado */
+    }
+    .af-btn-set-schedule {
+        padding: 7px; /* Ajustado para cuadrado */
+        font-size: 1.1em; /* Ajustado */
+        width: 38px; /* Ajustado */
+        height: 38px; /* Ajustado */
+    }
+}
+
+@media (max-width: 480px) {
+    .af-content-area {
+        padding: 10px;
+    }
+    .af-card {
+        padding: 12px;
+    }
+    .af-card-header h3 {
+        font-size: 1.4em;
+    }
+    .af-form-card-title {
+        font-size: 1.1em;
+    }
+    .af-form-card-description {
+        font-size: 0.8em;
+    }
+    .af-form-card-details p {
+        font-size: 0.75em;
+    }
+    .af-btn-answer-form {
+        padding: 7px 12px;
+        font-size: 0.85em;
+    }
+    .af-automation-section {
+        padding: 8px;
+    }
+    .af-automation-status-btn {
+        font-size: 1.1em;
+        min-width: 32px;
+        min-height: 32px;
+    }
+    .af-automation-time-input {
+        font-size: 1.1em; /* Ajustado */
+        width: 100px; /* Ajustado */
+    }
+    .af-btn-set-schedule {
+        padding: 6px; /* Ajustado para cuadrado */
+        font-size: 1em; /* Ajustado */
+        width: 32px; /* Ajustado */
+        height: 32px; /* Ajustado */
+    }
+    .af-automation-inactive-label {
+        font-size: 0.8em;
+        padding: 3px 8px;
+    }
+}
