@@ -1,5 +1,5 @@
 // src/pages/Profile.jsx
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import useGlobalReducer from '../hooks/useGlobalReducer';
 
@@ -13,18 +13,24 @@ export const Profile = () => {
 
   const [currentDateHeader, setCurrentDateHeader] = useState('');
   const [currentMonth, setCurrentMonth] = useState(new Date());
-  const [ownerCompanies, setOwnerCompanies] = useState([]);
+  const [ownerCompanies, setOwnerCompanies] = useState([]); // Empresas activas del owner
+  const [inactiveCompanies, setInactiveCompanies] = useState([]); // Empresas inactivas del owner
+  const [adminUsers, setAdminUsers] = useState([]);
+  const [loadingAdminUsers, setLoadingAdminUsers] = useState(false);
 
   const [showEditUserModal, setShowEditUserModal] = useState(false);
   const [showEditUserCompanyModal, setShowEditUserCompanyModal] = useState(false);
   const [showEditOwnerCompanyModal, setShowEditOwnerCompanyModal] = useState(false);
+  const [showEditAdminUserModal, setShowEditAdminUserModal] = useState(false);
+  
   const [companyToEdit, setCompanyToEdit] = useState(null);
+  const [userToEdit, setUserToEdit] = useState(null);
 
   const currentUser = store.user;
   const company = currentUser?.empresa;
   const allForms = store.formularios;
 
-  // --- NUEVO: Cargar formularios si no están en el store ---
+  // --- Cargar formularios si no están en el store ---
   useEffect(() => {
     const token = localStorage.getItem('access_token');
     if (!token) {
@@ -55,7 +61,7 @@ export const Profile = () => {
     }
   }, [allForms.length, dispatch, navigate]);
 
-  // --- NUEVO: Obtener detalles de formularios favoritos ---
+  // --- Obtener detalles de formularios favoritos ---
   const favoriteFormsDetails = useMemo(() => {
     if (!currentUser || !currentUser.favoritos || allForms.length === 0) {
       return [];
@@ -64,23 +70,8 @@ export const Profile = () => {
   }, [currentUser, allForms]);
 
 
-  // Cargar empresas del owner solo si el usuario es un owner
-  useEffect(() => {
-    if (currentUser && currentUser.rol === 'owner') {
-      const token = localStorage.getItem('access_token');
-      if (token && currentUser.empresa && ownerCompanies.length === 0) {
-        fetchOwnerCompanies(token, currentUser.empresa.id_empresa);
-      }
-    }
-
-    const dateOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-    const now = new Date();
-    const formattedDate = now.toLocaleDateString('es-ES', dateOptions);
-    setCurrentDateHeader(formattedDate);
-
-  }, [currentUser, ownerCompanies.length, dispatch]);
-
-  const fetchOwnerCompanies = async (token, ownerCompanyIdToExclude) => {
+  // Cargar empresas del owner (separando activas e inactivas)
+  const fetchOwnerCompanies = useCallback(async (token, ownerCompanyIdToExclude) => {
     try {
       const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/empresas`, {
         method: 'GET',
@@ -91,10 +82,14 @@ export const Profile = () => {
       });
       const data = await response.json();
       if (response.ok) {
-        const filteredCompanies = data.empresas.filter(
-            comp => comp.id_empresa !== ownerCompanyIdToExclude
-        );
-        setOwnerCompanies(filteredCompanies || []);
+        const allFetchedCompanies = data.empresas || [];
+        // Filtra las empresas activas (excluyendo la del owner logeado para la lista "Mis Empresas")
+        const activeComps = allFetchedCompanies.filter(comp => comp.activo && comp.id_empresa !== ownerCompanyIdToExclude);
+        // Filtra las empresas inactivas (todas las inactivas, sin exclusión del owner logeado)
+        const inactiveComps = allFetchedCompanies.filter(comp => !comp.activo);
+        
+        setOwnerCompanies(activeComps);
+        setInactiveCompanies(inactiveComps);
       } else {
         console.error('Error al cargar empresas del owner:', data.error);
         dispatch({ type: 'SET_MESSAGE', payload: { type: 'error', text: 'Error al cargar tus empresas.' } });
@@ -103,7 +98,56 @@ export const Profile = () => {
       console.error('Error de conexión al cargar empresas del owner:', error);
       dispatch({ type: 'SET_MESSAGE', payload: { type: 'error', text: 'Error de conexión.' } });
     }
-  };
+  }, [dispatch]);
+
+  // Función para cargar usuarios administradores (solo para owner)
+  const fetchAdminUsers = useCallback(async () => {
+    if (currentUser && currentUser.rol === 'owner') {
+      setLoadingAdminUsers(true);
+      const token = localStorage.getItem('access_token');
+      if (!token) {
+        setLoadingAdminUsers(false);
+        return;
+      }
+      try {
+        const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/owner/usuarios`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await response.json();
+        if (response.ok && data.usuarios) {
+          // Filtrar solo los usuarios con rol 'admin_empresa' y que estén ACTIVO
+          const admins = data.usuarios.filter(user => user.rol === 'admin_empresa' && user.activo);
+          setAdminUsers(admins);
+        } else {
+          console.error('Error al cargar usuarios administradores:', data.error);
+          dispatch({ type: 'SET_MESSAGE', payload: { type: 'error', text: 'Error al cargar usuarios administradores.' } });
+        }
+      } catch (error) {
+        console.error('Error de conexión al cargar usuarios administradores:', error);
+        dispatch({ type: 'SET_MESSAGE', payload: { type: 'error', text: 'Error de conexión al cargar usuarios administradores.' } });
+      } finally {
+        setLoadingAdminUsers(false);
+      }
+    }
+  }, [currentUser, dispatch]);
+
+  useEffect(() => {
+    if (currentUser) {
+      if (currentUser.rol === 'owner') {
+        const token = localStorage.getItem('access_token');
+        if (token && currentUser.empresa) {
+          fetchOwnerCompanies(token, currentUser.empresa.id_empresa);
+        }
+        fetchAdminUsers();
+      }
+    }
+
+    const dateOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+    const now = new Date();
+    const formattedDate = now.toLocaleDateString('es-ES', dateOptions);
+    setCurrentDateHeader(formattedDate);
+
+  }, [currentUser, fetchOwnerCompanies, fetchAdminUsers]);
 
   const handleOpenEditUserModal = () => {
     setShowEditUserModal(true);
@@ -130,12 +174,59 @@ export const Profile = () => {
     setCompanyToEdit(null);
   };
 
+  // Abrir modal para editar usuario administrador
+  const handleOpenEditAdminUserModal = (user) => {
+    setUserToEdit(user);
+    setShowEditAdminUserModal(true);
+  };
+
+  // Cerrar modal para editar usuario administrador
+  const handleCloseEditAdminUserModal = () => {
+    setShowEditAdminUserModal(false);
+    setUserToEdit(null);
+  };
+
   const handleUserUpdateSuccess = (updatedUserData) => {
-    dispatch({ type: 'SET_USER', payload: updatedUserData });
+    if (currentUser && updatedUserData.id_usuario === currentUser.id_usuario) {
+      dispatch({ type: 'SET_USER', payload: updatedUserData });
+    } else {
+      // Si es un admin user, actualizamos la lista de adminUsers
+      setAdminUsers(prevUsers => {
+        const updatedList = prevUsers.map(user =>
+          user.id_usuario === updatedUserData.id_usuario ? updatedUserData : user
+        );
+        // Si el usuario se desactivó, lo filtramos de la lista de activos
+        return updatedList.filter(user => user.activo);
+      });
+    }
+    dispatch({ type: 'SET_MESSAGE', payload: { type: 'success', text: `Usuario ${updatedUserData.nombre_completo} actualizado con éxito.` } });
     handleCloseEditUserModal();
+    handleCloseEditAdminUserModal();
   };
 
   const handleCompanyUpdateSuccess = (updatedCompanyData) => {
+    dispatch({ type: 'SET_MESSAGE', payload: { type: 'success', text: `Empresa ${updatedCompanyData.nombre_empresa} actualizada con éxito.` } });
+
+    // Lógica para mover la empresa entre listas si su estado 'activo' cambió
+    if (updatedCompanyData.activo) { // Si la empresa se activó
+      setInactiveCompanies(prev => prev.filter(comp => comp.id_empresa !== updatedCompanyData.id_empresa));
+      setOwnerCompanies(prev => {
+        if (!prev.some(comp => comp.id_empresa === updatedCompanyData.id_empresa) && updatedCompanyData.id_empresa !== currentUser.empresa.id_empresa) {
+          return [...prev, updatedCompanyData];
+        }
+        return prev.map(comp => comp.id_empresa === updatedCompanyData.id_empresa ? updatedCompanyData : comp);
+      });
+    } else { // Si la empresa se desactivó
+      setOwnerCompanies(prev => prev.filter(comp => comp.id_empresa !== updatedCompanyData.id_empresa));
+      setInactiveCompanies(prev => {
+        if (!prev.some(comp => comp.id_empresa === updatedCompanyData.id_empresa)) {
+          return [...prev, updatedCompanyData];
+        }
+        return prev.map(comp => comp.id_empresa === updatedCompanyData.id_empresa ? updatedCompanyData : comp);
+      });
+    }
+
+    // Si la empresa actualizada es la empresa principal del usuario logeado
     if (company && company.id_empresa === updatedCompanyData.id_empresa) {
         dispatch({
             type: 'SET_USER',
@@ -144,16 +235,206 @@ export const Profile = () => {
                 empresa: updatedCompanyData
             }
         });
-        handleCloseUserCompanyModal();
-    } else {
-        setOwnerCompanies(prevCompanies =>
-            prevCompanies.map(comp =>
-                comp.id_empresa === updatedCompanyData.id_empresa ? updatedCompanyData : comp
-            )
-        );
-        handleCloseOwnerCompanyModal();
     }
-    dispatch({ type: 'SET_MESSAGE', payload: { type: 'success', text: `Empresa ${updatedCompanyData.nombre_empresa} actualizada con éxito.` } });
+    handleCloseUserCompanyModal();
+    handleCloseOwnerCompanyModal();
+  };
+
+  // Manejar la eliminación (desactivación) de una empresa
+  const handleDeleteCompany = async (companyId, companyName) => {
+    if (!window.confirm(`¿Estás seguro de que quieres desactivar la empresa "${companyName}"? Esto también desactivará a todos sus usuarios.`)) {
+      return;
+    }
+
+    const token = localStorage.getItem('access_token');
+    if (!token) {
+      dispatch({ type: 'LOGOUT' });
+      navigate('/login');
+      return;
+    }
+
+    try {
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/owner/empresas/${companyId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      const data = await response.json();
+      if (response.ok) {
+        dispatch({ type: 'SET_MESSAGE', payload: { type: 'success', text: data.message || 'Empresa desactivada exitosamente.' } });
+        // Mover la empresa a la lista de inactivas
+        const deactivatedCompany = ownerCompanies.find(comp => comp.id_empresa === companyId) || inactiveCompanies.find(comp => comp.id_empresa === companyId);
+        if (deactivatedCompany) {
+            setOwnerCompanies(prevCompanies => prevCompanies.filter(comp => comp.id_empresa !== companyId));
+            setInactiveCompanies(prevInactive => {
+                if (!prevInactive.some(comp => comp.id_empresa === companyId)) {
+                    return [...prevInactive, { ...deactivatedCompany, activo: false }];
+                }
+                return prevInactive.map(comp => comp.id_empresa === companyId ? { ...comp, activo: false } : comp);
+            });
+        }
+        
+        // También actualizar la lista de admin users si alguno se desactivó
+        fetchAdminUsers(); // Re-fetch para asegurar que los admin users inactivos se oculten
+
+        if (currentUser.empresa && currentUser.empresa.id_empresa === companyId) {
+            dispatch({
+                type: 'SET_USER',
+                payload: {
+                    ...store.user,
+                    empresa: { ...store.user.empresa, activo: false }
+                }
+            });
+        }
+      } else {
+        dispatch({ type: 'SET_MESSAGE', payload: { type: 'error', text: data.error || 'Error al desactivar la empresa.' } });
+      }
+    } catch (error) {
+      console.error('Error al desactivar empresa:', error);
+      dispatch({ type: 'SET_MESSAGE', payload: { type: 'error', text: 'Error de conexión al desactivar la empresa.' } });
+    }
+  };
+
+  // Manejar la reactivación de una empresa
+  const handleReactivateCompany = async (companyId, companyName) => {
+    if (!window.confirm(`¿Estás seguro de que quieres reactivar la empresa "${companyName}"? Esto también reactivará a sus usuarios asociados.`)) {
+      return;
+    }
+
+    const token = localStorage.getItem('access_token');
+    if (!token) {
+      dispatch({ type: 'LOGOUT' });
+      navigate('/login');
+      return;
+    }
+
+    try {
+      const formData = new FormData();
+      formData.append('activo', 'true'); // Enviar 'true' para reactivar
+
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/owner/empresas/${companyId}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formData
+      });
+      const data = await response.json();
+      if (response.ok) {
+        dispatch({ type: 'SET_MESSAGE', payload: { type: 'success', text: data.message || 'Empresa reactivada exitosamente.' } });
+        // Mover la empresa a la lista de activas
+        const reactivatedCompany = inactiveCompanies.find(comp => comp.id_empresa === companyId) || ownerCompanies.find(comp => comp.id_empresa === companyId);
+        if (reactivatedCompany) {
+            setInactiveCompanies(prevInactive => prevInactive.filter(comp => comp.id_empresa !== companyId));
+            // Solo añadir a ownerCompanies si no es la empresa principal del owner (ya está en store global)
+            if (reactivatedCompany.id_empresa !== currentUser.empresa.id_empresa) {
+                setOwnerCompanies(prevActive => {
+                    if (!prevActive.some(comp => comp.id_empresa === companyId)) {
+                        return [...prevActive, { ...reactivatedCompany, activo: true }];
+                    }
+                    return prevActive;
+                });
+            }
+        }
+        // También actualizar la lista de admin users (el backend ya los reactivó)
+        fetchAdminUsers(); // Re-fetch para asegurar que los admin users reactivados se muestren
+
+        if (currentUser.empresa && currentUser.empresa.id_empresa === companyId) {
+            dispatch({
+                type: 'SET_USER',
+                payload: {
+                    ...store.user,
+                    empresa: { ...store.user.empresa, activo: true }
+                }
+            });
+        }
+
+      } else {
+        dispatch({ type: 'SET_MESSAGE', payload: { type: 'error', text: data.error || 'Error al reactivar la empresa.' } });
+      }
+    } catch (error) {
+      console.error('Error al reactivar empresa:', error);
+      dispatch({ type: 'SET_MESSAGE', payload: { type: 'error', text: 'Error de conexión al reactivar la empresa.' } });
+    }
+  };
+
+  // NUEVO: Manejar la eliminación PERMANENTE de una empresa
+  const handleHardDeleteCompany = async (companyId, companyName) => {
+    if (!window.confirm(
+      `¡ADVERTENCIA! Estás a punto de eliminar PERMANENTEMENTE la empresa "${companyName}" y TODOS sus datos relacionados (usuarios, formularios, respuestas, etc.). Esta acción es IRREVERSIBLE. ¿Estás absolutamente seguro?`
+    )) {
+      return;
+    }
+
+    const token = localStorage.getItem('access_token');
+    if (!token) {
+      dispatch({ type: 'LOGOUT' });
+      navigate('/login');
+      return;
+    }
+
+    try {
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/owner/empresas/permanently/${companyId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      const data = await response.json();
+      if (response.ok) {
+        dispatch({ type: 'SET_MESSAGE', payload: { type: 'success', text: data.message || 'Empresa eliminada permanentemente.' } });
+        // Eliminar la empresa de la lista de inactivas
+        setInactiveCompanies(prevInactive => prevInactive.filter(comp => comp.id_empresa !== companyId));
+        // Re-fetch admin users por si algún admin de esa empresa fue eliminado
+        fetchAdminUsers();
+      } else {
+        dispatch({ type: 'SET_MESSAGE', payload: { type: 'error', text: data.error || 'Error al eliminar la empresa permanentemente.' } });
+      }
+    } catch (error) {
+      console.error('Error al eliminar empresa permanentemente:', error);
+      dispatch({ type: 'SET_MESSAGE', payload: { type: 'error', text: 'Error de conexión al eliminar la empresa permanentemente.' } });
+    }
+  };
+
+
+  // Manejar la eliminación (desactivación) de un usuario administrador
+  const handleDeleteAdminUser = async (userId, userName) => {
+    if (!window.confirm(`¿Estás seguro de que quieres desactivar al usuario "${userName}"? No podrá iniciar sesión.`)) {
+      return;
+    }
+
+    const token = localStorage.getItem('access_token');
+    if (!token) {
+      dispatch({ type: 'LOGOUT' });
+      navigate('/login');
+      return;
+    }
+
+    if (userId === currentUser.id_usuario) {
+      dispatch({ type: 'SET_MESSAGE', payload: { type: 'error', text: 'No puedes desactivarte a ti mismo.' } });
+      return;
+    }
+
+    try {
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/owner/usuarios/${userId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      const data = await response.json();
+      if (response.ok) {
+        dispatch({ type: 'SET_MESSAGE', payload: { type: 'success', text: data.message || 'Usuario desactivado exitosamente.' } });
+        // Actualizar el estado para reflejar la desactivación (filtrando al usuario inactivo)
+        setAdminUsers(prevUsers => prevUsers.filter(user => user.id_usuario !== userId));
+      } else {
+        dispatch({ type: 'SET_MESSAGE', payload: { type: 'error', text: data.error || 'Error al desactivar el usuario.' } });
+      }
+    } catch (error) {
+      console.error('Error al desactivar usuario:', error);
+      dispatch({ type: 'SET_MESSAGE', payload: { type: 'error', text: 'Error de conexión al desactivar el usuario.' } });
+    }
   };
 
   if (!currentUser) {
@@ -210,7 +491,7 @@ export const Profile = () => {
       </header>
 
       <div className="dashboard-grid">
-        {/* Profile Card - Vuelve a ser una sección independiente */}
+        {/* Profile Card */}
         <section className="card profile-card">
           <div className="profile-header">
             <img src={currentUser.imagen_perfil_url || "https://placehold.co/130x130/1abc9c/ffffff?text=HV"} alt="Imagen de Perfil" className="profile-picture" />
@@ -235,7 +516,7 @@ export const Profile = () => {
           </div>
         </section>
 
-        {/* Calendar Card - Vuelve a ser una sección independiente */}
+        {/* Calendar Card */}
         <section className="card calendar-card">
             <div className="card-header">
                 <h3>Calendario</h3>
@@ -275,48 +556,109 @@ export const Profile = () => {
             </table>
         </section>
 
-        {/* Upcoming Events Card - Se mantiene igual */}
-        <section className="card upcoming-events-card">
-            <div className="card-header">
-                <h3>Próximos Eventos</h3>
-                <button className="view-all-btn">Ver Todos</button>
-            </div>
-            <div className="event-item">
-                <div className="event-details">
-                    <h4>Revisión de Diseño UX</h4>
-                    <p>09:00 AM - 10:00 AM</p>
-                </div>
-                <div className="event-participants">
-                    <img src="https://placehold.co/30x30/f00/ffffff?text=" alt="Participante" />
-                    <img src="https://placehold.co/30x30/0f0/ffffff?text=" alt="Participante" />
-                    <img src="https://placehold.co/30x30/00f/ffffff?text=" alt="Participante" />
-                    <span>+8</span>
-                </div>
-            </div>
-            <div className="event-item">
-                <div className="event-details">
-                    <h4>Capacitación SGSST</h4>
-                    <p>11:00 AM - 12:30 PM</p>
-                </div>
-                <div className="event-participants">
-                    <img src="https://placehold.co/30x30/f0f/ffffff?text=" alt="Participante" />
-                    <img src="https://placehold.co/30x30/ff0/ffffff?text=" alt="Participante" />
-                    <span>+5</span>
-                </div>
-            </div>
-            <div className="event-item">
-                <div className="event-details">
-                    <h4>Reunión de Seguridad</h4>
-                    <p>02:00 PM - 03:00 PM</p>
-                </div>
-                <div className="event-participants">
-                    <img src="https://placehold.co/30x30/0ff/ffffff?text=" alt="Participante" />
-                    <span>+3</span>
-                </div>
-            </div>
-        </section>
+        {/* Sección de Usuarios Administradores (para Owner y Admin_Empresa) o Próximos Eventos (para otros) */}
+        {(currentUser.rol === 'owner') ? (
+          <section className="card admin-users-card">
+              <div className="card-header">
+                  <h3>Usuarios Administradores</h3>
+                  {currentUser.rol === 'owner' && (
+                    <Link to="" className="view-all-btn">Ver Todos</Link>
+                  )}
+              </div>
+              {loadingAdminUsers ? (
+                <p>Cargando usuarios administradores...</p>
+              ) : currentUser.rol === 'owner' ? (
+                adminUsers.length > 0 ? (
+                    <div className="users-list">
+                        {adminUsers.map(adminUser => (
+                            <div key={adminUser.id_usuario} className={`user-item ${!adminUser.activo ? 'inactive-item' : ''}`}>
+                                <img
+                                    src={adminUser.imagen_perfil_url || "https://placehold.co/60x60/1abc9c/ffffff?text=AD"}
+                                    alt={`Perfil de ${adminUser.nombre_completo}`}
+                                    className="user-list-picture"
+                                />
+                                <div className="user-details">
+                                    <h4>{adminUser.nombre_completo}</h4>
+                                    <p>{adminUser.email}</p>
+                                    <p className="user-role">{adminUser.rol}</p>
+                                    {!adminUser.activo && <p className="status-inactive-text">Inactivo</p>}
+                                </div>
+                                {currentUser.rol === 'owner' && (
+                                  <div className="item-actions">
+                                      <button
+                                          className="manage-item-btn edit-btn"
+                                          onClick={() => handleOpenEditAdminUserModal(adminUser)}
+                                          disabled={!adminUser.activo}
+                                      >
+                                          Editar
+                                      </button>
+                                      <button
+                                          className="manage-item-btn delete-btn"
+                                          onClick={() => handleDeleteAdminUser(adminUser.id_usuario, adminUser.nombre_completo)}
+                                          disabled={!adminUser.activo}
+                                      >
+                                          Eliminar
+                                      </button>
+                                  </div>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                ) : (
+                    <p>No hay usuarios administradores activos registrados en el sistema.</p>
+                )
+              ) : ( // currentUser.rol === 'admin_empresa'
+                <p className="info-message">
+                  Como administrador de empresa, esta sección mostraría los administradores de tu empresa.
+                  Actualmente, esta funcionalidad requiere una ruta de backend específica.
+                  Por favor, contacta al propietario del sistema si necesitas esta característica.
+                </p>
+              )}
+          </section>
+        ) : (
+          // Sección de Próximos Eventos para otros roles (ej. usuario_formulario)
+          <section className="card upcoming-events-card">
+              <div className="card-header">
+                  <h3>Próximos Eventos</h3>
+                  <button className="view-all-btn">Ver Todos</button>
+              </div>
+              <div className="event-item">
+                  <div className="event-details">
+                      <h4>Revisión de Diseño UX</h4>
+                      <p>09:00 AM - 10:00 AM</p>
+                  </div>
+                  <div className="event-participants">
+                      <img src="https://placehold.co/30x30/f00/ffffff?text=" alt="Participante" />
+                      <img src="https://placehold.co/30x30/0f0/ffffff?text=" alt="Participante" />
+                      <img src="https://placehold.co/30x30/00f/ffffff?text=" alt="Participante" />
+                      <span>+8</span>
+                  </div>
+              </div>
+              <div className="event-item">
+                  <div className="event-details">
+                      <h4>Capacitación SGSST</h4>
+                      <p>11:00 AM - 12:30 PM</p>
+                  </div>
+                  <div className="event-participants">
+                      <img src="https://placehold.co/30x30/f0f/ffffff?text=" alt="Participante" />
+                      <img src="https://placehold.co/30x30/ff0/ffffff?text=" alt="Participante" />
+                      <span>+5</span>
+                  </div>
+              </div>
+              <div className="event-item">
+                  <div className="event-details">
+                      <h4>Reunión de Seguridad</h4>
+                      <p>02:00 PM - 03:00 PM</p>
+                  </div>
+                  <div className="event-participants">
+                      <img src="https://placehold.co/30x30/0ff/ffffff?text=" alt="Participante" />
+                      <span>+3</span>
+                  </div>
+              </div>
+          </section>
+        )}
 
-        {/* NUEVA SECCIÓN: MIS EMPRESAS (Solo para Owner) */}
+        {/* MIS EMPRESAS (Solo para Owner - Ahora solo activas) */}
         {currentUser.rol === 'owner' && (
           <section className="card owner-companies-card">
               <div className="card-header">
@@ -328,7 +670,7 @@ export const Profile = () => {
               {ownerCompanies.length > 0 ? (
                   <div className="companies-list">
                       {ownerCompanies.map(comp => (
-                          <div key={comp.id_empresa} className="company-item">
+                          <div key={comp.id_empresa} className={`company-item ${!comp.activo ? 'inactive-item' : ''}`}>
                               <img
                                   src={comp.logo_url || "https://placehold.co/60x60/2c3e50/ffffff?text=LOGO"}
                                   alt={`Logo de ${comp.nombre_empresa}`}
@@ -340,22 +682,70 @@ export const Profile = () => {
                                       Estado: {comp.activo ? 'Activa' : 'Inactiva'}
                                   </p>
                               </div>
-                              <button
-                                  className="manage-company-btn"
-                                  onClick={() => handleOpenOwnerCompanyModal(comp)}
-                              >
-                                  Editar
-                              </button>
+                              <div className="item-actions">
+                                  <button
+                                      className="manage-item-btn"
+                                      onClick={() => handleOpenOwnerCompanyModal(comp)}
+                                  >
+                                      Editar
+                                  </button>
+                                  <button
+                                      className="manage-item-btn delete-btn"
+                                      onClick={() => handleDeleteCompany(comp.id_empresa, comp.nombre_empresa)}
+                                      disabled={!comp.activo}
+                                  >
+                                      Eliminar
+                                  </button>
+                              </div>
                           </div>
                       ))}
                   </div>
               ) : (
-                  <p>No has creado ninguna empresa adicional todavía. <Link to="/user-company-management?action=create-company">Crea una ahora</Link>.</p>
+                  <p>No tienes empresas activas adicionales. <Link to="/user-company-management?action=create-company">Crea una ahora</Link>.</p>
               )}
           </section>
         )}
 
-        {/* Placeholder para Información Básica (si no es owner, o si quieres moverla a otro lado) */}
+        {/* NUEVA SECCIÓN: EMPRESAS INACTIVAS (Solo para Owner) */}
+        {currentUser.rol === 'owner' && inactiveCompanies.length > 0 && (
+          <section className="card inactive-companies-card">
+              <div className="card-header">
+                  <h3>Empresas Inactivas</h3>
+              </div>
+              <div className="companies-list">
+                  {inactiveCompanies.map(comp => (
+                      <div key={comp.id_empresa} className="company-item inactive-item">
+                          <img
+                              src={comp.logo_url || "https://placehold.co/60x60/7f8c8d/ffffff?text=LOGO"}
+                              alt={`Logo de ${comp.nombre_empresa}`}
+                              className="company-list-logo"
+                          />
+                          <div className="company-details">
+                              <h4>{comp.nombre_empresa}</h4>
+                              <p className="company-status inactive">Estado: Inactiva</p>
+                          </div>
+                          <div className="item-actions">
+                              <button
+                                  className="manage-item-btn reactivate-btn"
+                                  onClick={() => handleReactivateCompany(comp.id_empresa, comp.nombre_empresa)}
+                              >
+                                  Reactivar
+                              </button>
+                              <button
+                                  className="manage-item-btn delete-btn"
+                                  onClick={() => handleHardDeleteCompany(comp.id_empresa, comp.nombre_empresa)}
+                              >
+                                  Eliminar Permanentemente
+                              </button>
+                          </div>
+                      </div>
+                  ))}
+              </div>
+          </section>
+        )}
+
+
+        {/* Placeholder para Información Básica (si no es owner) */}
         {currentUser.rol !== 'owner' && (
            <section className="card basic-info-card">
                <div className="card-header">
@@ -383,7 +773,7 @@ export const Profile = () => {
         )}
 
 
-        {/* Formularios a Diligenciar (antes Información Personal) */}
+        {/* Formularios a Diligenciar */}
         <section className="card forms-to-fill-card">
             <div className="card-header">
                 <h3>Formularios a Diligenciar</h3>
@@ -440,155 +830,6 @@ export const Profile = () => {
             )}
         </section>
 
-        {/* Las otras tarjetas (Onboarding, Charts, Data Table, Progress) se mantienen igual */}
-        <section className="card onboarding-card">
-          <div className="card-header">
-            <h3>Proceso de Inducción</h3>
-            <span>1/5 completado</span>
-          </div>
-          <div className="onboarding-task-list">
-            <div className="task-item completed">
-                <i className="fas fa-check-circle"></i>
-                <div className="task-details">
-                    <h4>Preparar espacio de trabajo</h4>
-                    <p>software, accesos</p>
-                </div>
-                <span className="assigned-to"></span>
-                <span className="due-date"></span>
-                <div className="task-actions">
-                    <i className="fas fa-paperclip"></i>
-                    <i className="fas fa-ellipsis-h"></i>
-                </div>
-            </div>
-            <div className="task-item">
-                <i className="far fa-circle"></i>
-                <div className="task-details">
-                    <h4>Reunión con gerente de RRHH</h4>
-                </div>
-                <span className="assigned-to">Juan Pérez</span>
-                <span className="due-date">Jul 26, 2025</span>
-                <div className="task-actions">
-                    <i className="fas fa-paperclip"></i>
-                    <i className="fas fa-ellipsis-h"></i>
-                </div>
-            </div>
-            <div className="task-item">
-                <i className="far fa-circle"></i>
-                <div className="task-details">
-                    <h4>Tour de la oficina para empleado</h4>
-                </div>
-                <span className="assigned-to">María Gómez</span>
-                <span className="due-date">Jul 26, 2025</span>
-                <div className="task-actions">
-                    <i className="fas fa-paperclip"></i>
-                    <i className="fas fa-ellipsis-h"></i>
-                </div>
-            </div>
-            <div className="task-item">
-                <i className="far fa-circle"></i>
-                <div className="task-details">
-                    <h4>Visión de la empresa</h4>
-                </div>
-                <span className="assigned-to">Carlos Ruiz</span>
-                <span className="due-date">Jul 28, 2025</span>
-                <div className="task-actions">
-                    <i className="fas fa-paperclip"></i>
-                    <i className="fas fa-ellipsis-h"></i>
-                </div>
-            </div>
-          </div>
-        </section>
-
-        <section className="card chart-card-1">
-          <div className="card-header">
-            <h3>Métricas de Rendimiento</h3>
-            <select>
-              <option>Mensual</option>
-              <option>Trimestral</option>
-              <option>Anual</option>
-            </select>
-          </div>
-          <div className="chart-area">
-            <img src="https://quickchart.io/chart?c={type:%27bar%27,data:{labels:[%27Ene%27,%27Feb%27,%27Mar%27,%27Abr%27,%27May%27,%27Jun%27],datasets:[{label:%27Tareas Completadas%27,data:[18,25,15,22,19,28],backgroundColor:%27%231abc9c%27},{label:%27Tareas Pendientes%27,data:[5,8,7,3,6,4],backgroundColor:%27%23f39c12%27}]}}" alt="Bar Chart" style={{ width: '100%', height: 'auto' }} />
-          </div>
-        </section>
-
-        <section className="card data-table-card">
-          <div className="card-header">
-            <h3>Registro de Actividad Reciente</h3>
-          </div>
-          <table>
-            <thead>
-              <tr>
-                <th>Actividad</th>
-                <th>Fecha</th>
-                <th>Estado</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>Actualizó Perfil</td>
-                <td>2025-07-22</td>
-                <td className="status-success">Completado</td>
-              </tr>
-              <tr>
-                <td>Envió Reporte Q2</td>
-                <td>2025-07-20</td>
-                <td className="status-pending">Pendiente Revisión</td>
-              </tr>
-              <tr>
-                <td>Revisó Formulario SST-001</td>
-                <td>2025-07-19</td>
-                <td className="status-success">Completado</td>
-              </tr>
-              <tr>
-                <td>Asignó nueva tarea a equipo</td>
-                <td>2025-07-18</td>
-                <td className="status-success">Completado</td>
-              </tr>
-              <tr>
-                <td>Reunión con Proveedor</td>
-                <td>2025-07-17</td>
-                <td className="status-success">Completado</td>
-              </tr>
-            </tbody>
-          </table>
-        </section>
-
-        <section className="card progress-overview-card">
-          <div className="card-header">
-            <h3>Resumen de Cumplimiento</h3>
-          </div>
-          <div className="progress-item">
-            <p>Capacitación Anual</p>
-            <div className="progress-bar-container">
-              <div className="progress-bar" style={{ width: '75%', backgroundColor: '#1abc9c' /* secondary-accent */ }}></div>
-            </div>
-            <span>75%</span>
-          </div>
-          <div className="progress-item">
-            <p>Revisión Documental</p>
-            <div className="progress-bar-container">
-              <div className="progress-bar" style={{ width: '90%', backgroundColor: '#3498db' /* info-color */ }}></div>
-            </div>
-            <span>90%</span>
-          </div>
-          <div className="progress-item">
-            <p>Reporte de Incidentes</p>
-            <div className="progress-bar-container">
-              <div className="progress-bar" style={{ width: '50%', backgroundColor: '#e74c3c' /* error-color */ }}></div>
-            </div>
-            <span>50%</span>
-          </div>
-           <div className="progress-item">
-                <p>Auditoría Interna</p>
-                <div className="progress-bar-container">
-                    <div className="progress-bar" style={{ width: '30%', backgroundColor: '#f39c12' /* warning-color */ }}></div>
-                </div>
-                <span>30%</span>
-            </div>
-          </section>
-
         </div>
       {showEditUserModal && currentUser && (
         <EditUserProfileModal
@@ -613,9 +854,18 @@ export const Profile = () => {
           onUpdateSuccess={handleCompanyUpdateSuccess}
         />
       )}
+
+      {/* Modal para editar usuarios administradores */}
+      {showEditAdminUserModal && userToEdit && (
+        <EditUserProfileModal
+          currentUser={userToEdit}
+          onClose={handleCloseEditAdminUserModal}
+          onUpdateSuccess={handleUserUpdateSuccess}
+          isEditingOtherUser={true}
+        />
+      )}
     </>
   );
 };
 
 export default Profile;
-

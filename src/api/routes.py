@@ -9,8 +9,12 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity, JWTManager
 from datetime import datetime, timedelta, date, time # Importa date
 import re
-from sqlalchemy import func, and_ # Importa func y and_ para consultas de fecha
+from sqlalchemy import func, and_, cast, Date, Time, or_
 from sqlalchemy.orm import joinedload
+
+from collections import Counter
+import json
+from sqlalchemy.dialects.postgresql import JSONB
 
 # *** IMPORTACIONES NECESARIAS PARA CLOUDINARY ***
 import cloudinary
@@ -667,6 +671,7 @@ def actualizar_empresa_por_owner(empresa_id):
     """
     Permite al OWNER actualizar los datos de cualquier empresa, incluyendo su estado 'activo' y logo.
     Ahora espera FormData.
+    Si la empresa se reactiva, sus usuarios asociados también se reactivan.
     """
     try:
         empresa = Empresa.query.get(empresa_id)
@@ -682,6 +687,9 @@ def actualizar_empresa_por_owner(empresa_id):
         telefono = data.get('telefono', '').strip()
         email_contacto = data.get('email_contacto', '').strip().lower()
         activo_str = data.get('activo') # Viene como string 'true' o 'false' de FormData
+
+        # Guardar el estado activo_anterior para la lógica de reactivación de usuarios
+        activo_anterior = empresa.activo
 
         if nombre_empresa and nombre_empresa != empresa.nombre_empresa:
             existing_empresa = Empresa.query.filter_by(nombre_empresa=nombre_empresa).first()
@@ -701,6 +709,15 @@ def actualizar_empresa_por_owner(empresa_id):
         if activo_str is not None:
             empresa.activo = activo_str.lower() == 'true'
             print(f"DEBUG_OWNER_UPDATE: Activo recibido '{activo_str}', convertido a {empresa.activo}")
+
+            # Lógica NUEVA: Si la empresa se reactiva, reactivar sus usuarios
+            if not activo_anterior and empresa.activo: # Si estaba inactiva y ahora está activa
+                usuarios_asociados = Usuario.query.filter_by(id_empresa=empresa_id).all()
+                for user in usuarios_asociados:
+                    if not user.activo: # Solo reactivar si el usuario está inactivo
+                        user.activo = True
+                        db.session.add(user)
+                print(f"DEBUG_OWNER_UPDATE: Usuarios asociados a empresa {empresa_id} reactivados.")
 
 
         if 'logo_empresa' in request.files:
@@ -725,6 +742,167 @@ def actualizar_empresa_por_owner(empresa_id):
         db.session.rollback()
         print(f"Error al actualizar empresa por owner: {e}")
         return jsonify({"error": f"Error interno del servidor al actualizar empresa: {str(e)}"}), 500
+
+
+# NUEVA RUTA: Eliminar (desactivar) una empresa por el OWNER
+@api.route('/owner/empresas/<int:empresa_id>', methods=['DELETE'])
+@role_required(['owner'])
+@jwt_required()
+def eliminar_empresa_por_owner(empresa_id):
+    """
+    Permite al OWNER desactivar (soft delete) una empresa.
+    Una empresa desactivada no puede tener nuevos usuarios ni formularios asociados.
+    Los usuarios existentes de esa empresa también serán desactivados.
+    """
+    try:
+        current_user_id = get_jwt_identity()
+        owner_user = Usuario.query.get(int(current_user_id))
+
+        empresa_a_desactivar = Empresa.query.get(empresa_id)
+        if not empresa_a_desactivar:
+            return jsonify({"error": "Empresa no encontrada."}), 404
+
+        if owner_user.id_empresa == empresa_id:
+            return jsonify({"error": "No puedes desactivar la empresa a la que perteneces directamente."}), 403
+
+
+        if not empresa_a_desactivar.activo:
+            return jsonify({"message": "La empresa ya está inactiva."}), 200
+
+        empresa_a_desactivar.activo = False
+        db.session.add(empresa_a_desactivar)
+
+        # Desactivar todos los usuarios asociados a esta empresa
+        usuarios_afectados = Usuario.query.filter_by(id_empresa=empresa_id).all()
+        for user in usuarios_afectados:
+            if user.id_usuario != int(current_user_id):
+                user.activo = False
+                db.session.add(user)
+
+        db.session.commit()
+        return jsonify({"message": f"Empresa '{empresa_a_desactivar.nombre_empresa}' y sus usuarios asociados han sido desactivados exitosamente."}), 200
+
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error al desactivar empresa por owner: {e}")
+        return jsonify({"error": f"Error interno del servidor al desactivar empresa: {str(e)}"}), 500
+
+# NUEVA RUTA: Eliminar PERMANENTEMENTE una empresa por el OWNER
+@api.route('/owner/empresas/permanently/<int:empresa_id>', methods=['DELETE'])
+@role_required(['owner'])
+@jwt_required()
+def eliminar_empresa_permanentemente(empresa_id):
+    """
+    Permite al OWNER eliminar PERMANENTEMENTE una empresa y TODOS sus datos relacionados
+    (usuarios, formularios, respuestas, espacios, sub-espacios, objetos, etc.)
+    de la base de datos.
+    """
+    try:
+        current_user_id = get_jwt_identity()
+        owner_user = Usuario.query.get(int(current_user_id))
+
+        empresa_a_eliminar = Empresa.query.get(empresa_id)
+        if not empresa_a_eliminar:
+            return jsonify({"error": "Empresa no encontrada."}), 404
+
+        # Prevenir que el owner elimine la empresa a la que pertenece
+        if owner_user.id_empresa == empresa_id:
+            return jsonify({"error": "No puedes eliminar permanentemente la empresa a la que perteneces."}), 403
+
+        # --- ORDEN CRÍTICO DE ELIMINACIÓN PARA RESPETAR CLAVES FORÁNEAS ---
+        # El orden es de las tablas más dependientes a las menos dependientes.
+
+        # 1. Eliminar Observaciones y Notificaciones
+        #    Estas tablas tienen FK a EnvioFormulario, Formulario o Usuario.
+        #    Si tienen FK a EnvioFormulario o Formulario, se eliminarán en cascada
+        #    cuando estos sean eliminados.
+        #    Si tienen FK a Usuario, se eliminarán en cascada cuando el usuario sea eliminado.
+        #    Si tuvieran una FK directa a Empresa, se necesitaría una eliminación explícita aquí.
+        #    Basado en tus modelos, Observacion tiene FK a EnvioFormulario, Espacio, SubEspacio.
+        #    Notificacion tiene FK a Formulario y Usuario.
+        #    Por lo tanto, se eliminarán en cascada con sus padres.
+
+        # 2. Eliminar Respuestas de Formularios
+        #    Las Respuestas dependen de EnvioFormulario y Pregunta.
+        #    Deben eliminarse antes que los Envíos y Preguntas.
+        respuestas_a_eliminar = db.session.query(Respuesta).join(EnvioFormulario).join(Formulario).filter(Formulario.id_empresa == empresa_id).all()
+        for respuesta in respuestas_a_eliminar:
+            db.session.delete(respuesta)
+        db.session.flush() # Asegurarse de que las eliminaciones se procesen antes de continuar
+
+        # 3. Eliminar Envíos de Formularios
+        #    Los Envíos dependen de Formularios y Usuarios.
+        envios_a_eliminar = db.session.query(EnvioFormulario).join(Formulario).filter(Formulario.id_empresa == empresa_id).all()
+        for envio in envios_a_eliminar:
+            # Observaciones relacionadas con este envío (si las hay) se eliminarán en cascada si la relación está configurada así.
+            # Si no, se necesitaría: Observacion.query.filter_by(id_envio=envio.id_envio).delete(synchronize_session=False)
+            db.session.delete(envio)
+        db.session.flush()
+
+        # 4. Eliminar Preguntas de Formularios
+        #    Las Preguntas dependen de Formularios.
+        preguntas_a_eliminar = db.session.query(Pregunta).join(Formulario).filter(Formulario.id_empresa == empresa_id).all()
+        for pregunta in preguntas_a_eliminar:
+            db.session.delete(pregunta)
+        db.session.flush()
+
+        # 5. Eliminar Formularios (y relaciones muchos a muchos)
+        #    Los Formularios dependen de Empresa.
+        #    También tienen relaciones muchos a muchos que deben ser manejadas.
+        #    Las relaciones many-to-many (formulario_espacio, formulario_subespacio, formulario_objeto, formulario_tipo_respuesta)
+        #    se manejan automáticamente por SQLAlchemy si las relaciones están configuradas con `cascade="all, delete-orphan"`
+        #    o si se eliminan las filas de las tablas intermedias manualmente.
+        #    Para mayor seguridad, eliminaremos las entradas en las tablas intermedias explícitamente.
+        formularios_empresa = Formulario.query.filter_by(id_empresa=empresa_id).all()
+        for form in formularios_empresa:
+            # Eliminar entradas en tablas intermedias de muchos a muchos
+            db.session.execute(formulario_espacio.delete().where(formulario_espacio.c.id_formulario == form.id_formulario))
+            db.session.execute(formulario_subespacio.delete().where(formulario_subespacio.c.id_formulario == form.id_formulario))
+            db.session.execute(formulario_objeto.delete().where(formulario_objeto.c.id_formulario == form.id_formulario))
+            db.session.execute(formulario_tipo_respuesta.delete().where(formulario_tipo_respuesta.c.id_formulario == form.id_formulario))
+            db.session.delete(form)
+        db.session.flush()
+
+
+        # 6. Eliminar Objetos
+        #    Los Objetos dependen de SubEspacio.
+        objetos_a_eliminar = db.session.query(Objeto).join(SubEspacio).join(Espacio).filter(Espacio.id_empresa == empresa_id).all()
+        for objeto in objetos_a_eliminar:
+            db.session.delete(objeto)
+        db.session.flush()
+
+        # 7. Eliminar SubEspacios
+        #    Los SubEspacios dependen de Espacio.
+        sub_espacios_a_eliminar = db.session.query(SubEspacio).join(Espacio).filter(Espacio.id_empresa == empresa_id).all()
+        for sub_espacio in sub_espacios_a_eliminar:
+            db.session.delete(sub_espacio)
+        db.session.flush()
+
+        # 8. Eliminar Espacios
+        #    Los Espacios dependen de Empresa.
+        espacios_a_eliminar = Espacio.query.filter_by(id_empresa=empresa_id).all()
+        for espacio in espacios_a_eliminar:
+            db.session.delete(espacio)
+        db.session.flush()
+
+        # 9. Eliminar Usuarios
+        #    Los Usuarios dependen de Empresa.
+        usuarios_a_eliminar = Usuario.query.filter_by(id_empresa=empresa_id).all()
+        for user in usuarios_a_eliminar:
+            if user.id_usuario != int(current_user_id): # Asegurarse de no eliminar al owner loggeado
+                db.session.delete(user)
+        db.session.flush()
+
+        # 10. Finalmente, eliminar la Empresa
+        db.session.delete(empresa_a_eliminar)
+        db.session.commit()
+
+        return jsonify({"message": f"Empresa '{empresa_a_eliminar.nombre_empresa}' y todos sus datos relacionados han sido eliminados permanentemente."}), 200
+
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error al eliminar empresa permanentemente: {e}")
+        return jsonify({"error": f"Error interno del servidor al eliminar empresa permanentemente: {str(e)}"}), 500
 
 
 @api.route('/owner/usuarios', methods=['POST'])
@@ -882,6 +1060,44 @@ def actualizar_usuario_por_owner(user_id):
         print(f"Error al actualizar usuario por owner: {e}")
         return jsonify({"error": f"Error interno del servidor al actualizar usuario: {str(e)}"}), 500
 
+@api.route('/owner/usuarios/<int:user_id>', methods=['DELETE'])
+@role_required(['owner'])
+@jwt_required()
+def eliminar_usuario_por_owner(user_id):
+    """
+    Permite al OWNER desactivar (soft delete) un usuario.
+    Un usuario desactivado no puede iniciar sesión.
+    """
+    try:
+        current_user_id = get_jwt_identity()
+
+        usuario_a_desactivar = Usuario.query.get(user_id)
+        if not usuario_a_desactivar:
+            return jsonify({"error": "Usuario no encontrado."}), 404
+
+        # Prevenir que el owner se desactive a sí mismo
+        if user_id == int(current_user_id):
+            return jsonify({"error": "No puedes desactivarte a ti mismo."}), 403
+        
+        # Prevenir que un owner desactive a otro owner (si hubiera más de uno)
+        if usuario_a_desactivar.rol == 'owner':
+            return jsonify({"error": "No puedes desactivar a otro usuario con rol 'owner'."}), 403
+
+        if not usuario_a_desactivar.activo:
+            return jsonify({"message": "El usuario ya está inactivo."}), 200
+
+        usuario_a_desactivar.activo = False
+        db.session.add(usuario_a_desactivar)
+        db.session.commit()
+
+        return jsonify({"message": f"Usuario '{usuario_a_desactivar.nombre_completo}' ha sido desactivado exitosamente."}), 200
+
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error al desactivar usuario por owner: {e}")
+        return jsonify({"error": f"Error interno del servidor al desactivar usuario: {str(e)}"}), 500
+
+
 @api.route('/owner/usuarios', methods=['GET'])
 @role_required(['owner'])
 def listar_todos_los_usuarios_por_owner():
@@ -896,32 +1112,32 @@ def listar_todos_los_usuarios_por_owner():
     except Exception as e:
         return jsonify({"error": f"Error interno del servidor al listar usuarios: {str(e)}"}), 500
 
-# --- NUEVAS RUTAS DE GESTIÓN (Admin de Empresa) ---
 
+
+# --- NUEVAS RUTAS DE GESTIÓN (Admin de Empresa) ---
 @api.route('/empresa/usuarios', methods=['POST'])
+@jwt_required() # Añadir jwt_required()
 @role_required(['admin_empresa'])
 def crear_usuario_por_admin_empresa():
     """
-    Permite a un ADMIN_EMPRESA crear nuevos usuarios (solo usuario_formulario)
+    Permite a un ADMIN_EMPRESA crear nuevos usuarios (admin_empresa o usuario_formulario)
     dentro de SU empresa.
     """
     try:
         current_user_id = get_jwt_identity()
         admin_empresa = Usuario.query.get(int(current_user_id))
 
-        if not admin_empresa.id_empresa:
-            return jsonify({"error": "El administrador de empresa no está asociado a una empresa."}), 403
+        if not admin_empresa or not admin_empresa.id_empresa:
+            return jsonify({"error": "El administrador de empresa no está asociado a una empresa válida."}), 403
 
         data = request.get_json()
-
         if not data:
             return jsonify({"error": "No se recibieron datos"}), 400
 
-        # Datos requeridos para el usuario
         nombre_completo = data.get('nombre_completo', '').strip()
         email = data.get('email', '').strip().lower()
         password = data.get('password', '')
-        rol = data.get('rol', '').strip().lower() # Solo puede ser 'usuario_formulario'
+        rol = data.get('rol', '').strip().lower() # Puede ser 'admin_empresa' o 'usuario_formulario'
         telefono_personal = data.get('telefono_personal', '').strip()
         cargo = data.get('cargo', '').strip()
 
@@ -935,16 +1151,15 @@ def crear_usuario_por_admin_empresa():
         if not is_valid_password:
             return jsonify({"error": password_message}), 400
 
-        # Validar que el rol sea el permitido para la creación por admin_empresa
-        if rol != 'usuario_formulario':
-            return jsonify({"error": "Rol inválido. El administrador de empresa solo puede crear usuarios con rol 'usuario_formulario'."}), 400
+        # Validar que el rol sea uno permitido para la creación por admin_empresa
+        if rol not in ['admin_empresa', 'usuario_formulario']:
+            return jsonify({"error": "Rol inválido. Un administrador de empresa solo puede crear roles 'admin_empresa' o 'usuario_formulario'."}), 403
 
         # Verificar que el email no esté ya en uso
         existing_user_by_email = Usuario.query.filter_by(email=email).first()
         if existing_user_by_email:
             return jsonify({"error": "Ya existe un usuario con este email."}), 409
 
-        # Crear hash de contraseña
         password_hash = generate_password_hash(password)
 
         nuevo_usuario = Usuario(
@@ -956,8 +1171,8 @@ def crear_usuario_por_admin_empresa():
             fecha_creacion=datetime.utcnow(),
             telefono_personal=telefono_personal if telefono_personal else None,
             cargo=cargo if cargo else None,
-            cambio_password_requerido=True, # ¡Clave! El nuevo usuario debe cambiar su contraseña
-            activo=True # Se activa por defecto
+            cambio_password_requerido=True,
+            activo=True
         )
 
         db.session.add(nuevo_usuario)
@@ -974,11 +1189,12 @@ def crear_usuario_por_admin_empresa():
         return jsonify({"error": f"Error interno del servidor al crear usuario: {str(e)}"}), 500
 
 @api.route('/empresa/usuarios/<int:user_id>', methods=['PUT'])
+@jwt_required() # Añadir jwt_required()
 @role_required(['admin_empresa'])
 def actualizar_usuario_por_admin_empresa(user_id):
     """
     Permite a un ADMIN_EMPRESA actualizar los datos de usuarios
-    dentro de SU empresa. Solo puede modificar roles a 'usuario_formulario'.
+    dentro de SU empresa. Puede modificar roles a 'admin_empresa' o 'usuario_formulario'.
     """
     try:
         current_user_id = get_jwt_identity()
@@ -988,25 +1204,39 @@ def actualizar_usuario_por_admin_empresa(user_id):
         if not usuario_a_actualizar:
             return jsonify({"error": "Usuario no encontrado."}), 404
 
-        # Un admin_empresa no puede modificarse a sí mismo o a otros admins de empresa
-        # También solo puede modificar usuarios de SU empresa
+        # 1. Restricción: Admin_empresa solo puede modificar usuarios de SU empresa
         if usuario_a_actualizar.id_empresa != admin_empresa.id_empresa:
             return jsonify({"error": "No tienes permiso para modificar usuarios de otras empresas."}), 403
-        if usuario_a_actualizar.rol != 'usuario_formulario' and user_id != admin_empresa.id_usuario:
-            return jsonify({"error": "Solo puedes modificar usuarios con rol 'usuario_formulario'."}), 403
-        if user_id == admin_empresa.id_usuario and ('rol' in request.get_json() or 'activo' in request.get_json()):
-            return jsonify({"error": "No puedes modificar tu propio rol o estado activo como admin de empresa a través de esta ruta."}), 403
-
-
+        
         data = request.get_json()
         if not data:
             return jsonify({"error": "No se recibieron datos"}), 400
+
+        # 2. Restricción: Un admin_empresa no puede modificarse a sí mismo (rol o activo)
+        if user_id == admin_empresa.id_usuario:
+            if 'rol' in data and data['rol'].lower() != admin_empresa.rol:
+                return jsonify({"error": "No puedes modificar tu propio rol como administrador de empresa."}), 403
+            if 'activo' in data and not data['activo']:
+                return jsonify({"error": "No puedes desactivarte a ti mismo como administrador de empresa."}), 403
+
+        # 3. Restricción: Un admin_empresa no puede asignar el rol 'owner'
+        if 'rol' in data and data['rol'].lower() == 'owner':
+            return jsonify({"error": "Un administrador de empresa no puede asignar el rol 'owner'."}), 403
+
+        # 4. Restricción: Un admin_empresa no puede desactivar a otro admin_empresa (manejo de 'activo')
+        if 'activo' in data and not data['activo'] and usuario_a_actualizar.rol == 'admin_empresa':
+             return jsonify({"error": "Un administrador de empresa no puede desactivar a otro administrador de empresa."}), 403
+
+        # 5. Restricción: Un admin_empresa no puede cambiar la empresa de un usuario
+        if 'id_empresa' in data and data['id_empresa'] != usuario_a_actualizar.id_empresa:
+            return jsonify({"error": "Un administrador de empresa no puede cambiar la empresa de un usuario."}), 403
+
 
         nombre_completo = data.get('nombre_completo', '').strip()
         email = data.get('email', '').strip().lower()
         telefono_personal = data.get('telefono_personal', '').strip()
         cargo = data.get('cargo', '').strip()
-        rol = data.get('rol', '').strip().lower() # Solo 'usuario_formulario'
+        rol = data.get('rol', '').strip().lower() # Puede ser 'admin_empresa' o 'usuario_formulario'
         activo = data.get('activo')
 
         if nombre_completo:
@@ -1026,14 +1256,12 @@ def actualizar_usuario_por_admin_empresa(user_id):
             usuario_a_actualizar.cargo = cargo if cargo else None
 
         if rol and rol != usuario_a_actualizar.rol:
-            if rol != 'usuario_formulario':
-                return jsonify({"error": "Un administrador de empresa solo puede asignar el rol 'usuario_formulario'."}), 400
+            # Un admin_empresa solo puede cambiar a admin_empresa o usuario_formulario
+            if rol not in ['admin_empresa', 'usuario_formulario']:
+                return jsonify({"error": "Rol no válido para asignación por el administrador de empresa."}), 403
             usuario_a_actualizar.rol = rol
 
         if activo is not None and isinstance(activo, bool):
-            # Un admin de empresa no puede desactivar a otro admin o al owner, ni a sí mismo
-            if usuario_a_actualizar.rol in ['owner', 'admin_empresa'] and not activo:
-                 return jsonify({"error": "No tienes permiso para desactivar un usuario con este rol."}), 403
             usuario_a_actualizar.activo = activo
 
         db.session.commit()
@@ -1045,6 +1273,7 @@ def actualizar_usuario_por_admin_empresa(user_id):
         return jsonify({"error": f"Error interno del servidor al actualizar usuario: {str(e)}"}), 500
 
 @api.route('/empresa/usuarios', methods=['GET'])
+@jwt_required() # Añadir jwt_required()
 @role_required(['admin_empresa'])
 def listar_usuarios_por_empresa():
     """
@@ -1054,8 +1283,8 @@ def listar_usuarios_por_empresa():
         current_user_id = get_jwt_identity()
         admin_empresa = Usuario.query.get(int(current_user_id))
 
-        if not admin_empresa.id_empresa:
-            return jsonify({"error": "El administrador de empresa no está asociado a una empresa."}), 403
+        if not admin_empresa or not admin_empresa.id_empresa:
+            return jsonify({"error": "El administrador de empresa no está asociado a una empresa válida."}), 403
 
         usuarios_empresa = Usuario.query.filter_by(id_empresa=admin_empresa.id_empresa).all()
         return jsonify({
@@ -1064,6 +1293,49 @@ def listar_usuarios_por_empresa():
 
     except Exception as e:
         return jsonify({"error": f"Error interno del servidor al listar usuarios de la empresa: {str(e)}"}), 500
+
+# --- NUEVA RUTA: DESACTIVAR USUARIO POR ADMIN_EMPRESA ---
+@api.route('/empresa/usuarios/<int:user_id>', methods=['DELETE'])
+@jwt_required()
+@role_required(['admin_empresa'])
+def desactivar_usuario_por_admin_empresa(user_id):
+    """
+    Permite a un ADMIN_EMPRESA desactivar (soft delete) un usuario
+    con rol 'usuario_formulario' dentro de SU empresa.
+    """
+    try:
+        current_user_id = get_jwt_identity()
+        admin_empresa = Usuario.query.get(int(current_user_id))
+
+        usuario_a_desactivar = Usuario.query.get(user_id)
+        if not usuario_a_desactivar:
+            return jsonify({"error": "Usuario no encontrado."}), 404
+
+        # 1. Restricción: Admin_empresa solo puede desactivar usuarios de SU empresa
+        if usuario_a_desactivar.id_empresa != admin_empresa.id_empresa:
+            return jsonify({"error": "No tienes permiso para desactivar usuarios de otra empresa."}), 403
+
+        # 2. Restricción: No puede desactivarse a sí mismo
+        if user_id == admin_empresa.id_usuario:
+            return jsonify({"error": "No puedes desactivarte a ti mismo."}), 403
+        
+        # 3. Restricción: Solo puede desactivar usuarios_formulario
+        if usuario_a_desactivar.rol != 'usuario_formulario':
+            return jsonify({"error": "No tienes permiso para desactivar un usuario con este rol (solo 'usuario_formulario')."}), 403
+
+        if not usuario_a_desactivar.activo:
+            return jsonify({"message": "El usuario ya está inactivo."}), 200
+
+        usuario_a_desactivar.activo = False
+        db.session.add(usuario_a_desactivar)
+        db.session.commit()
+
+        return jsonify({"message": f"Usuario '{usuario_a_desactivar.nombre_completo}' ha sido desactivado exitosamente por el administrador de empresa."}), 200
+
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error al desactivar usuario por admin de empresa: {e}")
+        return jsonify({"error": f"Error interno del servidor al desactivar usuario: {str(e)}"}), 500
 
 # --- Ajustes en la ruta de cambio de contraseña para incluir el flag ---
 @api.route('/cambiar-password-inicial', methods=['PUT'])
@@ -1698,39 +1970,75 @@ def get_all_formularios():
             return jsonify({"error": "Usuario no encontrado."}), 404
 
         formularios_query = Formulario.query
+        formularios = []
 
         if usuario.rol == 'owner':
-            # El owner ve todos los formularios, incluyendo sus plantillas
-            formularios = formularios_query.all()
-        else:
-            # Usuarios de empresa ven sus propios formularios y las plantillas compartidas
-            formularios_empresa = formularios_query.filter_by(id_empresa=usuario.id_empresa).all()
+            owner_company_id = usuario.id_empresa
+            
+            # Formularios creados por el owner
+            owner_created_forms = formularios_query.filter(Formulario.creado_por_usuario_id == usuario.id_usuario).all()
             
             # Plantillas globales
-            plantillas_globales = formularios_query.filter_by(es_plantilla=True, es_plantilla_global=True).all()
-
-            # Plantillas compartidas específicamente con esta empresa
-            plantillas_compartidas_especificas = formularios_query.filter(
+            global_templates = formularios_query.filter(
                 Formulario.es_plantilla == True,
-                Formulario.es_plantilla_global == False,
-                Formulario.compartir_con_empresas_ids.contains([usuario.id_empresa]) # Busca si el ID de la empresa está en la lista JSON
+                Formulario.es_plantilla_global == True
             ).all()
 
-            # Combinar y eliminar duplicados
-            formularios = list(set(formularios_empresa + plantillas_globales + plantillas_compartidas_especificas))
+            # Plantillas no globales compartidas con la empresa del owner
+            shared_templates_with_owner_company = []
+            if owner_company_id:
+                # Corrección clave: Convertir a JSONB y usar el operador @>
+                # El ID de la empresa debe ser parte de un array JSON para el operador @>
+                shared_templates_with_owner_company = formularios_query.filter(
+                    Formulario.es_plantilla == True,
+                    Formulario.es_plantilla_global == False,
+                    cast(Formulario.compartir_con_empresas_ids, JSONB).op('@>')(f'[{owner_company_id}]')
+                ).all()
+            
+            all_owner_forms = set(owner_created_forms + global_templates + shared_templates_with_owner_company)
+            formularios = list(all_owner_forms)
+
+        else: # Roles: 'admin_empresa', 'usuario_formulario'
+            if not usuario.id_empresa:
+                return jsonify({"error": "Usuario no asociado a una empresa."}), 400
+            
+            user_company_id = usuario.id_empresa
+
+            # Formularios que pertenecen a la empresa del usuario (creados por cualquier usuario de esa empresa)
+            forms_for_user_company = formularios_query.filter_by(id_empresa=user_company_id).all()
+            
+            # Plantillas globales
+            global_templates = formularios_query.filter(
+                Formulario.es_plantilla == True,
+                Formulario.es_plantilla_global == True
+            ).all()
+
+            # Plantillas compartidas específicamente con esta empresa
+            shared_templates_with_this_company = formularios_query.filter(
+                Formulario.es_plantilla == True,
+                Formulario.es_plantilla_global == False,
+                # Corrección clave: Convertir a JSONB y usar el operador @>
+                cast(Formulario.compartir_con_empresas_ids, JSONB).op('@>')(f'[{user_company_id}]')
+            ).all()
+
+            combined_forms = set(forms_for_user_company + global_templates + shared_templates_with_this_company)
+            formularios = list(combined_forms)
+
+        # Ordenar los formularios por fecha de creación (más recientes primero)
+        formularios.sort(key=lambda f: f.fecha_creacion, reverse=True)
 
         formularios_data = []
         for f in formularios:
-            # La serialización del formulario ya incluye los campos de frecuencia actualizados
-            # gracias a los cambios en el modelo Formulario.
             f_data = f.serialize()
             formularios_data.append(f_data)
 
         return jsonify({"formularios": formularios_data}), 200
 
     except Exception as e:
+        db.session.rollback()
         print(f"Error al obtener formularios: {e}")
         return jsonify({"error": f"Error interno del servidor al obtener formularios: {str(e)}"}), 500
+
         
 @api.route('/formularios/<int:form_id>', methods=['GET'])
 @role_required(['owner', 'admin_empresa', 'usuario_formulario'])
@@ -2771,11 +3079,14 @@ def submit_formulario():
         return jsonify({"error": f"Error interno del servidor al enviar formulario: {str(e)}"}), 500
 
 @api.route('/envios-formulario/<int:envio_id>', methods=['GET'])
-@role_required(['owner', 'admin_empresa', 'usuario_formulario'])
+@jwt_required()
+# @role_required(['owner', 'admin_empresa', 'usuario_formulario']) # Ya manejado dentro
 def get_envio_formulario(envio_id):
     try:
         current_user_id = get_jwt_identity()
         usuario = Usuario.query.get(int(current_user_id))
+        if not usuario:
+            return jsonify({"error": "Usuario no encontrado."}), 404
 
         envio = EnvioFormulario.query.get(envio_id)
         if not envio:
@@ -2801,15 +3112,41 @@ def get_envio_formulario(envio_id):
             if usuario.rol == 'usuario_formulario' and envio.id_usuario != usuario.id_usuario:
                 return jsonify({"error": "No tienes permisos para acceder a este envío de formulario."}), 403
 
-
         envio_data = envio.serialize()
         envio_data['respuestas'] = []
+
+        # Pre-fetch all resources for the FORM'S company to avoid N+1 queries
+        # Esto es importante para el rendimiento si muchas respuestas usan seleccion_recursos
+        form_company_id = formulario_asociado.id_empresa # Obtener la ID de la empresa del formulario asociado
+        all_espacios = {e.id_espacio: e.nombre_espacio for e in Espacio.query.filter_by(id_empresa=form_company_id).all()}
+        all_subespacios = {s.id_subespacio: s.nombre_subespacio for s in SubEspacio.query.join(Espacio).filter(Espacio.id_empresa == form_company_id).all()}
+        all_objetos = {o.id_objeto: o.nombre_objeto for o in Objeto.query.join(SubEspacio).join(Espacio).filter(Espacio.id_empresa == form_company_id).all()}
+        resource_names_map = {**all_espacios, **all_subespacios, **all_objetos}
+
         for respuesta in envio.respuestas:
             res_data = respuesta.serialize()
             pregunta = Pregunta.query.get(respuesta.id_pregunta)
             if pregunta:
                 res_data['texto_pregunta'] = pregunta.texto_pregunta
                 res_data['tipo_respuesta_nombre'] = pregunta.tipo_respuesta.nombre_tipo if pregunta.tipo_respuesta else None
+
+                # Lógica para manejar seleccion_recursos y mostrar nombres
+                if res_data['tipo_respuesta_nombre'] == 'seleccion_recursos' and res_data['valores_multiples_json']:
+                    try:
+                        selected_resource_ids = json.loads(res_data['valores_multiples_json'])
+                        if isinstance(selected_resource_ids, list):
+                            # Map IDs to names
+                            selected_resource_names = [
+                                resource_names_map.get(res_id, f"ID Desconocido: {res_id}")
+                                for res_id in selected_resource_ids
+                            ]
+                            res_data['valor_recursos_nombres'] = selected_resource_names
+                        elif isinstance(selected_resource_ids, (int, str)): # Handle single resource ID stored directly
+                            name = resource_names_map.get(int(selected_resource_ids), f"ID Desconocido: {selected_resource_ids}")
+                            res_data['valor_recursos_nombres'] = [name]
+                    except (json.JSONDecodeError, TypeError) as e:
+                        print(f"Error parsing valores_multiples_json for resource names in get_envio_formulario: {res_data['valores_multiples_json']} - {e}")
+                        res_data['valor_recursos_nombres'] = ["Error al cargar recursos"]
             envio_data['respuestas'].append(res_data)
 
         # Opcional: añadir detalles del formulario y usuario que lo envió
@@ -2822,6 +3159,9 @@ def get_envio_formulario(envio_id):
     except Exception as e:
         print(f"Error al obtener envío de formulario: {e}")
         return jsonify({"error": f"Error interno del servidor al obtener envío de formulario: {str(e)}"}), 500
+
+
+
 
 @api.route('/envios-formulario/<int:envio_id>', methods=['PUT'])
 @role_required(['owner', 'admin_empresa'])
@@ -3340,4 +3680,244 @@ def set_formulario_automation_schedule(form_id):
     except Exception as e:
         db.session.rollback()
         print(f"Error al establecer la hora de automatización: {e}")
+        return jsonify({"error": f"Error interno del servidor: {str(e)}"}), 500
+
+# NUEVA RUTA: Para obtener una lista de formularios para análisis (solo ID y nombre)
+@api.route('/formularios/analytics', methods=['GET'])
+@jwt_required()
+def get_forms_for_analytics():
+    try:
+        current_user_id = get_jwt_identity()
+        usuario = Usuario.query.get(int(current_user_id))
+        if not usuario:
+            return jsonify({"error": "Usuario no encontrado."}), 404
+
+        # Filtrar formularios accesibles por el usuario
+        if usuario.rol == 'owner':
+            formularios = Formulario.query.all()
+        elif usuario.rol == 'admin_empresa':
+            formularios = Formulario.query.filter_by(id_empresa=usuario.id_empresa).all()
+        else: # usuario_formulario
+            # Solo formularios de su empresa y plantillas globales/compartidas
+            formularios = Formulario.query.filter(
+                (Formulario.id_empresa == usuario.id_empresa) |
+                (Formulario.es_plantilla_global == True) |
+                (Formulario.compartir_con_empresas_ids.contains(usuario.id_empresa))
+            ).all()
+
+        return jsonify({"formularios": [{"id_formulario": f.id_formulario, "nombre_formulario": f.nombre_formulario} for f in formularios]}), 200
+
+    except Exception as e:
+        print(f"Error al obtener formularios para análisis: {e}")
+        return jsonify({"error": f"Error interno del servidor: {str(e)}"}), 500
+    
+# NUEVA RUTA: Para obtener las preguntas de un formulario específico para análisis
+@api.route('/formularios/<int:form_id>/preguntas/analytics', methods=['GET'])
+@jwt_required()
+def get_questions_for_analytics(form_id):
+    try:
+        current_user_id = get_jwt_identity()
+        usuario = Usuario.query.get(int(current_user_id))
+        if not usuario:
+            return jsonify({"error": "Usuario no encontrado."}), 404
+
+        formulario = Formulario.query.get(form_id)
+        if not formulario:
+            return jsonify({"error": "Formulario no encontrado."}), 404
+
+        # Control de acceso (similar a otras rutas de formulario)
+        if usuario.rol != 'owner':
+            is_allowed_template = False
+            if formulario.es_plantilla:
+                if formulario.es_plantilla_global:
+                    is_allowed_template = True
+                elif usuario.id_empresa in formulario.compartir_con_empresas_ids:
+                    is_allowed_template = True
+            
+            if not is_allowed_template and formulario.id_empresa != usuario.id_empresa:
+                return jsonify({"error": "No tienes permisos para acceder a este formulario."}), 403
+
+        preguntas = Pregunta.query.filter_by(id_formulario=form_id).options(joinedload(Pregunta.tipo_respuesta)).all()
+
+        preguntas_data = []
+        for p in preguntas:
+            preguntas_data.append({
+                "id_pregunta": p.id_pregunta,
+                "texto_pregunta": p.texto_pregunta,
+                "tipo_respuesta": p.tipo_respuesta.nombre_tipo,
+                "opciones_respuesta_json": p.opciones_respuesta_json
+            })
+
+        return jsonify({"preguntas": preguntas_data}), 200
+
+    except Exception as e:
+        print(f"Error al obtener preguntas para análisis: {e}")
+        return jsonify({"error": f"Error interno del servidor: {str(e)}"}), 500
+
+# NUEVA RUTA: Para obtener datos agregados de respuestas para gráficos
+@api.route('/formularios/<int:form_id>/respuestas/analytics', methods=['GET'])
+@jwt_required()
+def get_responses_for_analytics(form_id):
+    try:
+        current_user_id = get_jwt_identity()
+        usuario = Usuario.query.get(int(current_user_id))
+        if not usuario:
+            return jsonify({"error": "Usuario no encontrado."}), 404
+
+        formulario = Formulario.query.get(form_id)
+        if not formulario:
+            return jsonify({"error": "Formulario no encontrado."}), 404
+
+        # Control de acceso
+        if usuario.rol != 'owner':
+            is_allowed_template = False
+            if formulario.es_plantilla:
+                if formulario.es_plantilla_global:
+                    is_allowed_template = True
+                elif usuario.id_empresa in formulario.compartir_con_empresas_ids:
+                    is_allowed_template = True
+            
+            if not is_allowed_template and formulario.id_empresa != usuario.id_empresa:
+                return jsonify({"error": "No tienes permisos para acceder a este formulario."}), 403
+
+        question_id = request.args.get('question_id', type=int)
+        
+        # Filtro de fecha opcional
+        start_date_str = request.args.get('start_date')
+        end_date_str = request.args.get('end_date')
+
+        query = db.session.query(Respuesta, Pregunta, TipoRespuesta).\
+            join(Pregunta, Respuesta.id_pregunta == Pregunta.id_pregunta).\
+            join(TipoRespuesta, Pregunta.tipo_respuesta_id == TipoRespuesta.id_tipo_respuesta).\
+            join(EnvioFormulario, Respuesta.id_envio == EnvioFormulario.id_envio).\
+            filter(EnvioFormulario.id_formulario == form_id)
+
+        if question_id:
+            query = query.filter(Respuesta.id_pregunta == question_id)
+        
+        if start_date_str:
+            start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
+            query = query.filter(EnvioFormulario.fecha_hora_envio >= start_date)
+        
+        if end_date_str:
+            end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
+            # Para incluir el día completo, sumamos un día y filtramos por menor que
+            query = query.filter(EnvioFormulario.fecha_hora_envio < (end_date + timedelta(days=1)))
+
+        results = query.all()
+
+        if not results:
+            return jsonify({"data": [], "chart_type": "none", "message": "No hay datos para mostrar el gráfico."}), 200
+
+        # Si no se especificó una pregunta, o si es la primera vez, tomamos la primera pregunta para el tipo de gráfico
+        # En un escenario real, podrías querer un resumen o forzar la selección de una pregunta.
+        # Para este caso, si no hay question_id, retornamos "none" para el chart_type.
+        if not question_id:
+             return jsonify({"data": [], "chart_type": "none", "message": "Selecciona una pregunta para ver el gráfico."}), 200
+
+        # Obtener el tipo de respuesta de la pregunta seleccionada
+        selected_question_type = None
+        for _, pregunta, tipo_respuesta in results:
+            if pregunta.id_pregunta == question_id:
+                selected_question_type = tipo_respuesta.nombre_tipo
+                break
+        
+        if not selected_question_type:
+            return jsonify({"data": [], "chart_type": "none", "message": "Tipo de respuesta de la pregunta no encontrado."}), 404
+
+        chart_data = []
+        chart_type = "none"
+
+        if selected_question_type == 'booleano':
+            true_count = sum(1 for r, _, _ in results if r.valor_booleano is True)
+            false_count = sum(1 for r, _, _ in results if r.valor_booleano is False)
+            chart_data = [
+                {"name": "Sí", "value": true_count},
+                {"name": "No", "value": false_count}
+            ]
+            chart_type = "pie" # O "bar"
+        elif selected_question_type == 'numerico':
+            numeric_values = [r.valor_numerico for r, _, _ in results if r.valor_numerico is not None]
+            if numeric_values:
+                min_val = min(numeric_values)
+                max_val = max(numeric_values)
+                
+                if min_val == max_val:
+                    chart_data = [{"range": str(min_val), "count": len(numeric_values)}]
+                else:
+                    num_bins = 5 
+                    bin_width = (max_val - min_val) / num_bins
+                    bins = [0] * num_bins
+                    
+                    for val in numeric_values:
+                        if val == max_val: 
+                            bin_index = num_bins - 1
+                        else:
+                            bin_index = int((val - min_val) / bin_width)
+                        bins[bin_index] += 1
+                    
+                    for i in range(num_bins):
+                        lower_bound = round(min_val + i * bin_width, 2)
+                        upper_bound = round(min_val + (i + 1) * bin_width, 2)
+                        chart_data.append({"range": f"{lower_bound}-{upper_bound}", "count": bins[i]})
+                chart_type = "bar" 
+            else:
+                chart_data = []
+        elif selected_question_type == 'seleccion_unica':
+            counts = Counter()
+            for r, _, _ in results:
+                if r.valor_texto: 
+                    counts[r.valor_texto] += 1
+                elif r.valores_multiples_json: 
+                    try:
+                        val = json.loads(r.valores_multiples_json)
+                        if isinstance(val, list) and len(val) == 1: 
+                            counts[str(val[0])] += 1 
+                        elif isinstance(val, str): 
+                            counts[val] += 1
+                    except (json.JSONDecodeError, TypeError):
+                        pass
+            chart_data = [{"name": item, "value": count} for item, count in counts.items()]
+            chart_type = "pie" 
+        elif selected_question_type == 'seleccion_multiple' or selected_question_type == 'seleccion_recursos':
+            counts = Counter()
+            
+            # MODIFICADO: Obtener la ID de la empresa del formulario
+            form_company_id = formulario.id_empresa
+
+            # Pre-fetch all resources for the FORM'S company to map IDs to names
+            all_espacios = {e.id_espacio: e.nombre_espacio for e in Espacio.query.filter_by(id_empresa=form_company_id).all()}
+            all_subespacios = {s.id_subespacio: s.nombre_subespacio for s in SubEspacio.query.join(Espacio).filter(Espacio.id_empresa == form_company_id).all()}
+            all_objetos = {o.id_objeto: o.nombre_objeto for o in Objeto.query.join(SubEspacio).join(Espacio).filter(Espacio.id_empresa == form_company_id).all()}
+            resource_names_map = {**all_espacios, **all_subespacios, **all_objetos}
+
+            for r, _, _ in results:
+                if r.valores_multiples_json:
+                    try:
+                        selected_options = json.loads(r.valores_multiples_json)
+                        if isinstance(selected_options, list):
+                            for option_id in selected_options:
+                                # Asegúrate de que option_id sea tratado como un entero para la búsqueda
+                                name = resource_names_map.get(int(option_id), f"ID Desconocido: {option_id}")
+                                counts[name] += 1
+                        elif isinstance(selected_options, (int, str)): # Manejar un solo ID de recurso almacenado directamente
+                            name = resource_names_map.get(int(selected_options), f"ID Desconocido: {selected_options}")
+                            counts[name] += 1
+                    except (json.JSONDecodeError, TypeError) as e:
+                        print(f"Error parsing valores_multiples_json for multi/resource selection: {r.valores_multiples_json} - {e}")
+                        pass # Ignorar entradas problemáticas
+            
+            chart_data = [{"name": item, "value": count} for item, count in counts.items()]
+            chart_type = "bar"
+        elif selected_question_type == 'texto':
+            chart_data = []
+            chart_type = "none"
+        elif selected_question_type in ['firma', 'dibujo']:
+            chart_data = []
+            chart_type = "none"
+
+        return jsonify({"data": chart_data, "chart_type": chart_type, "message": "Datos de gráfico generados exitosamente."}), 200
+
+    except Exception as e:
+        print(f"Error al obtener datos de análisis: {e}")
         return jsonify({"error": f"Error interno del servidor: {str(e)}"}), 500

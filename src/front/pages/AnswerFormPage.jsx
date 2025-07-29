@@ -1,5 +1,4 @@
-// src/pages/AnswerForms.jsx
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import useGlobalReducer from '../hooks/useGlobalReducer';
 
@@ -13,8 +12,8 @@ export const AnswerFormPage = () => {
 
   const currentUser = store.user;
   const isLoggedIn = store.isLoggedIn;
-  const allTiposRespuesta = store.tiposRespuesta; // Del store
-  // Acceder directamente a los arrays del store para los mapas
+  const allTiposRespuesta = store.tiposRespuesta; // From the store
+  // Access arrays directly from the store for maps
   const storeEspacios = store.espacios;
   const storeSubEspacios = store.subEspacios;
   const storeObjetos = store.objetos;
@@ -25,37 +24,51 @@ export const AnswerFormPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [submitting, setSubmitting] = useState(false);
-  // Estado: Conteo de envíos del usuario para este formulario en el período actual
+  // State: User submission count for this form in the current period
   const [userSubmissionsInPeriod, setUserSubmissionsInPeriod] = useState(0);
-  // Estado: Mensaje de límite de envíos
+  // State: Submission limit message
   const [submissionLimitMessage, setSubmissionLimitMessage] = useState('');
 
+  // REFERENCES FOR THE SIGNATURE CANVAS
+  const canvasRefs = useRef({}); // Stores references to canvas elements by questionId
+  const drawingContexts = useRef({}); // Stores the 2D contexts of each canvas
+  const isDrawingMap = useRef({}); // Tracks if drawing is active on each canvas
 
-  // --- OPTIMIZACIÓN: Crear mapas para búsquedas rápidas de recursos ---
+  // NEW: Ref to hold the latest answers state without being a useEffect dependency
+  const latestAnswers = useRef(answers);
+  useEffect(() => {
+      latestAnswers.current = answers;
+  }, [answers]); // This effect only updates the ref when answers change
+
+
+  // --- OPTIMIZATION: Create maps for quick resource lookups ---
+  // Estos mapas ahora contendrán los recursos de la empresa del usuario actual,
+  // asumiendo que las llamadas a la API de backend para /api/espacios, etc.,
+  // ya devuelven datos filtrados por la empresa del usuario logeado.
   const espaciosMap = useMemo(() => {
     return storeEspacios.reduce((acc, espacio) => {
-      acc[espacio.id_espacio] = espacio.nombre_espacio;
+      acc[espacio.id_espacio] = espacio;
       return acc;
     }, {});
-  }, [storeEspacios]); // Dependencia: storeEspacios
+  }, [storeEspacios]);
 
   const subEspaciosMap = useMemo(() => {
     return storeSubEspacios.reduce((acc, subEspacio) => {
-      acc[subEspacio.id_subespacio] = subEspacio.nombre_subespacio;
+      acc[subEspacio.id_subespacio] = subEspacio;
       return acc;
     }, {});
-  }, [storeSubEspacios]); // Dependencia: storeSubEspacios
+  }, [storeSubEspacios]);
 
   const objetosMap = useMemo(() => {
     return storeObjetos.reduce((acc, objeto) => {
-      acc[objeto.id_objeto] = objeto.nombre_objeto;
+      acc[objeto.id_objeto] = objeto;
       return acc;
     }, {});
-  }, [storeObjetos]); // Dependencia: storeObjetos
-  // --- FIN OPTIMIZACIÓN ---
+  }, [storeObjetos]);
+  // --- END OPTIMIZATION ---
 
 
-  // Efecto para cargar los detalles del formulario y los recursos globales
+  // Effect to load form details and global resources
   useEffect(() => {
     if (!isLoggedIn || !currentUser) {
       navigate('/login');
@@ -73,7 +86,7 @@ export const AnswerFormPage = () => {
       setLoading(true);
       setError(null);
       try {
-        // Siempre obtener los detalles del formulario y sus preguntas
+        // Always get form details and its questions
         const formResponse = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/formularios/${formId}`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -92,24 +105,23 @@ export const AnswerFormPage = () => {
                   case 'seleccion_unica': initialAnswers[q.id_pregunta] = ''; break;
                   case 'seleccion_multiple':
                   case 'seleccion_recursos': initialAnswers[q.id_pregunta] = []; break;
-                  case 'firma': initialAnswers[q.id_pregunta] = ''; break;
+                  case 'dibujo': initialAnswers[q.id_pregunta] = ''; break; // 'dibujo' type for canvas
                   default: initialAnswers[q.id_pregunta] = '';
                 }
               });
             } else {
-              console.warn(`Formulario ${formId} no tiene una propiedad 'preguntas' que sea un array o está vacía.`);
-              setError('Este formulario no tiene preguntas definidas o no se pudieron cargar.');
+              console.warn(`Form ${formId} does not have a 'preguntas' property that is an array or is empty.`);
+              setError('This form has no questions defined or could not be loaded.');
             }
             setAnswers(initialAnswers);
         } else {
-            setError(formData.error || 'Error al cargar el formulario.');
-            dispatch({ type: 'SET_MESSAGE', payload: { type: 'error', text: `Error al cargar formulario: ${formData.error}` } });
+            setError(formData.error || 'Error loading form.');
+            dispatch({ type: 'SET_MESSAGE', payload: { type: 'error', text: `Error loading form: ${formData.error}` } });
             setFormDetails(null);
         }
 
-        // Siempre obtener todos los tipos de respuesta, espacios, sub-espacios y objetos
-        // Esto asegura que los mapas (espaciosMap, subEspaciosMap, objetosMap)
-        // estén siempre actualizados con los recursos de la empresa del usuario actual.
+        // Always get all response types, spaces, sub-spaces, and objects
+        // These API calls should ideally return resources scoped to the current user's company.
         const [tiposRespuestaRes, espaciosRes, subEspaciosRes, objetosRes] = await Promise.all([
             fetch(`${import.meta.env.VITE_BACKEND_URL}/api/tipos-respuesta`, { headers: { 'Authorization': `Bearer ${token}` } }),
             fetch(`${import.meta.env.VITE_BACKEND_URL}/api/espacios`, { headers: { 'Authorization': `Bearer ${token}` } }),
@@ -125,35 +137,45 @@ export const AnswerFormPage = () => {
         const espaciosData = await espaciosRes.json();
         if (espaciosRes.ok && espaciosData.espacios) {
             dispatch({ type: 'SET_ESPACIOS', payload: espaciosData.espacios });
+        } else {
+            console.error('Error al cargar espacios:', espaciosData.error);
+            dispatch({ type: 'SET_MESSAGE', payload: { type: 'error', text: 'Error al cargar espacios.' } });
         }
 
         const subEspaciosData = await subEspaciosRes.json();
         if (subEspaciosRes.ok && subEspaciosData.sub_espacios) {
             dispatch({ type: 'SET_SUBESPACIOS', payload: subEspaciosData.sub_espacios });
+        } else {
+            console.error('Error al cargar sub-espacios:', subEspaciosData.error);
+            dispatch({ type: 'SET_MESSAGE', payload: { type: 'error', text: 'Error al cargar sub-espacios.' } });
         }
 
         const objetosData = await objetosRes.json();
         if (objetosRes.ok && objetosData.objetos) {
             dispatch({ type: 'SET_OBJETOS', payload: objetosData.objetos });
+        } else {
+            console.error('Error al cargar objetos:', objetosData.error);
+            dispatch({ type: 'SET_MESSAGE', payload: { type: 'error', text: 'Error al cargar objetos.' } });
         }
 
       } catch (err) {
         console.error('Error fetching data:', err);
-        setError('Error de conexión al cargar los datos necesarios.');
-        dispatch({ type: 'SET_MESSAGE', payload: { type: 'error', text: 'Error de conexión.' } });
+        setError('Connection error while loading necessary data.');
+        dispatch({ type: 'SET_MESSAGE', payload: { type: 'error', text: 'Connection error.' } });
       } finally {
         setLoading(false);
       }
     };
 
-    // Asegurarse de que currentUser esté disponible antes de iniciar la carga de datos
-    // Esto es importante porque las llamadas a la API dependen del token de autenticación del usuario.
+    // Ensure currentUser is available before starting data loading
+    // This is important because API calls depend on the user's authentication token.
     if (formId && currentUser) {
       fetchData();
     }
-  }, [formId, isLoggedIn, currentUser, navigate, dispatch]); // Dependencias del useEffect
+  }, [formId, isLoggedIn, currentUser, navigate, dispatch]);
 
-  // NUEVO useEffect para obtener el conteo de envíos del usuario en el período
+
+  // NEW useEffect to get user submission count in the period
   useEffect(() => {
     const fetchUserSubmissionCount = async () => {
       if (formDetails && currentUser) {
@@ -161,42 +183,42 @@ export const AnswerFormPage = () => {
         if (!token) return;
 
         try {
-          // La ruta del backend ya debe manejar el conteo según el período definido en el formulario
-          // CORREGIDO: URL para que coincida con la ruta del backend
+          // The backend route should already handle counting based on the form's defined period
           const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/formularios/${formDetails.id_formulario}/user_submissions_in_period_count`, {
             headers: { 'Authorization': `Bearer ${token}` }
           });
           const data = await response.json();
           if (response.ok) {
             setUserSubmissionsInPeriod(data.count);
-            // Establecer mensaje si el límite ya está alcanzado
+            // Set message if limit is already reached
             if (formDetails.max_submissions_per_period > 0 && data.count >= formDetails.max_submissions_per_period) {
               setSubmissionLimitMessage(
-                `Ya has alcanzado el límite de ${formDetails.max_submissions_per_period} diligencia(s) para este formulario en los últimos ${formDetails.submission_period_days} día(s).`
+                `You have already reached the limit of ${formDetails.max_submissions_per_period} submission(s) for this form in the last ${formDetails.submission_period_days} day(s).`
               );
             } else {
-              setSubmissionLimitMessage(''); // Limpiar mensaje si no se ha alcanzado el límite
+              setSubmissionLimitMessage(''); // Clear message if limit is not reached
             }
           } else {
-            console.error('Error al obtener el conteo de envíos del usuario:', data.error);
-            setSubmissionLimitMessage(`Error al verificar el límite de envíos: ${data.error}`);
+            console.error('Error getting user submission count:', data.error);
+            setSubmissionLimitMessage(`Error verifying submission limit: ${data.error}`);
           }
         } catch (err) {
-          console.error('Error de conexión al obtener el conteo de envíos del usuario:', err);
-          setSubmissionLimitMessage('Error de conexión al verificar el límite de envíos.');
+          console.error('Connection error getting user submission count:', err);
+          setSubmissionLimitMessage('Connection error verifying submission limit.');
         }
       }
     };
 
     fetchUserSubmissionCount();
-  }, [formDetails, currentUser]); // Depende de formDetails y currentUser
+  }, [formDetails, currentUser]); // Depends on formDetails and currentUser
 
-  const handleAnswerChange = (questionId, value, type) => {
+  const handleAnswerChange = useCallback((questionId, value, type) => {
     setAnswers(prevAnswers => {
       const newAnswers = { ...prevAnswers };
       if (type === 'seleccion_multiple' || type === 'seleccion_recursos') {
         const currentValues = newAnswers[questionId] || [];
-        const parsedValue = type === 'seleccion_recursos' ? parseInt(value) : value;
+        // Ensure value is a number (ID) for seleccion_recursos
+        const parsedValue = (type === 'seleccion_recursos') ? parseInt(value) : value;
 
         if (currentValues.includes(parsedValue)) {
           newAnswers[questionId] = currentValues.filter(item => item !== parsedValue);
@@ -205,35 +227,278 @@ export const AnswerFormPage = () => {
         }
       } else if (type === 'booleano') {
         newAnswers[questionId] = value === 'true';
-      } else {
+      } else if (type === 'numerico') { // Ensure numeric is also parsed
+        newAnswers[questionId] = value; // Parsed to float in handleSubmitForm
+      } else if (type === 'dibujo') { // 'dibujo' type for canvas
+        newAnswers[questionId] = value; // Value will be the Base64 string of the drawing
+      }
+      else {
         newAnswers[questionId] = value;
       }
       return newAnswers;
     });
-  };
+  }, []); // Empty dependency array for useCallback, as setAnswers is stable
 
-  // Función: Manejar la selección/deselección de todos los recursos
-  const handleSelectAllResources = (questionId, allResourceIds, isChecked) => {
+  // Function: Handle select/deselect all resources
+  const handleSelectAllResources = useCallback((questionId, allResourceIds, isChecked) => {
     setAnswers(prevAnswers => {
       const newAnswers = { ...prevAnswers };
       if (isChecked) {
-        newAnswers[questionId] = [...allResourceIds]; // Seleccionar todos
+        newAnswers[questionId] = [...allResourceIds]; // Select all
       } else {
-        newAnswers[questionId] = []; // Deseleccionar todos
+        newAnswers[questionId] = []; // Deselect all
       }
       return newAnswers;
     });
-  };
+  }, []); // Empty dependency array for useCallback
 
-  const getTipoRespuestaNombre = (tipoId) => {
+  const getTipoRespuestaNombre = useCallback((tipoId) => {
+    // Ensure allTiposRespuesta is an array before trying to find
+    if (!Array.isArray(allTiposRespuesta)) {
+        console.warn("allTiposRespuesta is not an array or is null/undefined.");
+        return null; // Or handle as appropriate
+    }
     return allTiposRespuesta.find(t => t.id_tipo_respuesta === tipoId)?.nombre_tipo;
-  };
+  }, [allTiposRespuesta]); // Dependency is correct here
+
+  // NEW: Helper function to get resources relevant to the current user's company
+  const getAvailableResourcesForQuestion = useCallback((question) => {
+    const availableResources = [];
+    const opciones = question.opciones_respuesta_json;
+    const currentCompanyId = currentUser?.empresa?.id_empresa;
+
+    if (!currentCompanyId || !opciones || typeof opciones !== 'object') {
+      return [];
+    }
+
+    // Determine which resource types are requested by the question
+    // Prioritize 'resource_types' array if present (cleaner for templates)
+    const requestedResourceTypes = Array.isArray(opciones.resource_types)
+      ? opciones.resource_types
+      : [];
+
+    // Fallback: If 'resource_types' is not explicitly defined,
+    // infer from presence of 'espacios', 'subespacios', 'objetos' keys
+    // in opciones_respuesta_json (even if their values are empty arrays or specific IDs).
+    // This makes it robust to different template structures.
+    if (requestedResourceTypes.length === 0) {
+        if (opciones.espacios !== undefined) requestedResourceTypes.push('espacios');
+        if (opciones.subespacios !== undefined) requestedResourceTypes.push('subespacios');
+        if (opciones.objetos !== undefined) requestedResourceTypes.push('objetos');
+    }
+
+    // Filter and add spaces that belong to the current user's company
+    if (requestedResourceTypes.includes('espacios')) {
+      storeEspacios.forEach(espacio => {
+        if (espacio.id_empresa === currentCompanyId) {
+          availableResources.push({
+            id: espacio.id_espacio,
+            name: espacio.nombre_espacio,
+            type: 'Espacio' // Display type for clarity
+          });
+        }
+      });
+    }
+
+    // Filter and add sub-spaces that belong to the current user's company
+    if (requestedResourceTypes.includes('subespacios')) {
+      storeSubEspacios.forEach(subEspacio => {
+        // Find parent espacio to verify company ID
+        const parentEspacio = storeEspacios.find(e => e.id_espacio === subEspacio.id_espacio_padre);
+        if (parentEspacio && parentEspacio.id_empresa === currentCompanyId) {
+          availableResources.push({
+            id: subEspacio.id_subespacio,
+            name: subEspacio.nombre_subespacio,
+            type: 'Sub-Espacio'
+          });
+        }
+      });
+    }
+
+    // Filter and add objects that belong to the current user's company
+    if (requestedResourceTypes.includes('objetos')) {
+      storeObjetos.forEach(objeto => {
+        // Find parent subEspacio and then espacio to verify company ID
+        const parentSubEspacio = storeSubEspacios.find(s => s.id_subespacio === objeto.id_subespacio_padre);
+        if (parentSubEspacio) {
+            const parentEspacio = storeEspacios.find(e => e.id_espacio === parentSubEspacio.id_espacio_padre);
+            if (parentEspacio && parentEspacio.id_empresa === currentCompanyId) {
+                availableResources.push({
+                    id: objeto.id_objeto,
+                    name: objeto.nombre_objeto,
+                    type: 'Objeto'
+                });
+            }
+        }
+      });
+    }
+    return availableResources;
+  }, [currentUser, storeEspacios, storeSubEspacios, storeObjetos]); // Dependencies for useCallback
+
+
+  // --- Signature Canvas Logic (Directly in AnswerFormPage) ---
+
+  // Helper to get pointer position (mouse or touch)
+  const getPointerPos = useCallback((e, canvas) => {
+    const rect = canvas.getBoundingClientRect();
+    let clientX, clientY;
+
+    if (e.touches && e.touches.length > 0) {
+      clientX = e.touches[0].clientX;
+      clientY = e.touches[0].clientY;
+    } else {
+      clientX = e.clientX;
+      clientY = e.clientY;
+    }
+
+    // Calculate position relative to canvas and scale if canvas has a different visual size
+    return {
+      x: (clientX - rect.left) * (canvas.width / rect.width),
+      y: (clientY - rect.top) * (canvas.height / rect.height)
+    };
+  }, []);
+
+  // Function to start drawing for a specific questionId
+  const startDrawing = useCallback((e, questionId) => {
+    e.preventDefault(); // Prevent scroll on touch devices
+    const ctx = drawingContexts.current[questionId];
+    if (!ctx) return;
+    isDrawingMap.current[questionId] = true; // Update drawing state for this canvas
+    const canvas = canvasRefs.current[questionId];
+    const { x, y } = getPointerPos(e, canvas);
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+  }, [getPointerPos]);
+
+  // Function to draw for a specific questionId
+  const draw = useCallback((e, questionId) => {
+    if (!isDrawingMap.current[questionId]) return; // Only draw if isDrawing is true for this canvas
+    e.preventDefault(); // Prevent scroll on touch devices
+    const ctx = drawingContexts.current[questionId];
+    if (!ctx) return;
+    const canvas = canvasRefs.current[questionId];
+    const { x, y } = getPointerPos(e, canvas);
+    ctx.lineTo(x, y);
+    ctx.stroke();
+  }, [getPointerPos]); // Removed isDrawingMap from dependencies, as isDrawingMap.current is stable
+
+  // Function to stop drawing and save signature for a specific questionId
+  const stopDrawing = useCallback((questionId) => {
+    const ctx = drawingContexts.current[questionId];
+    if (!ctx) return;
+    isDrawingMap.current[questionId] = false; // Update drawing state
+    ctx.closePath();
+    const canvas = canvasRefs.current[questionId];
+    // Get signature as Base64
+    const signatureData = canvas.toDataURL('image/png');
+    // Update form answers state
+    handleAnswerChange(questionId, signatureData, 'dibujo'); // 'dibujo' type
+  }, [handleAnswerChange]); // handleAnswerChange is a stable useCallback
+
+  // Function to clear the canvas for a specific questionId
+  const clearCanvas = useCallback((questionId) => {
+    const ctx = drawingContexts.current[questionId];
+    if (!ctx) return;
+    const canvas = canvasRefs.current[questionId];
+    ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear the canvas
+    handleAnswerChange(questionId, '', 'dibujo'); // Clear the answer in state
+  }, [handleAnswerChange]); // handleAnswerChange is a stable useCallback
+
+  // Effect to initialize canvas contexts and add/remove listeners
+  useEffect(() => {
+    // Only if formDetails and allTiposRespuesta are loaded
+    if (!formDetails || !formDetails.preguntas || !Array.isArray(allTiposRespuesta) || allTiposRespuesta.length === 0) return;
+
+    // Filter only 'dibujo' type questions
+    const drawingQuestions = formDetails.preguntas.filter(q => getTipoRespuestaNombre(q.tipo_respuesta_id) === 'dibujo');
+
+    // Store cleanup functions for each canvas
+    const cleanupFunctions = [];
+
+    drawingQuestions.forEach(question => {
+      const canvas = canvasRefs.current[question.id_pregunta];
+      if (!canvas) return;
+
+      const context = canvas.getContext('2d');
+      context.lineWidth = 2; // Line thickness
+      context.lineCap = 'round'; // Rounded line ends
+      context.strokeStyle = '#000000'; // Line color (black)
+      drawingContexts.current[question.id_pregunta] = context; // Store the context
+
+      // Load initial signature using the ref
+      // Access answers via ref to avoid answers in dependency array
+      const initialSignature = latestAnswers.current[question.id_pregunta];
+      if (initialSignature && initialSignature !== '') {
+        const img = new Image();
+        img.onload = () => {
+          // Only clear and draw if the canvas is truly empty or needs update
+          // This prevents re-drawing over existing content if not needed
+          const currentCanvasData = canvas.toDataURL('image/png');
+          if (currentCanvasData !== initialSignature) { // Only draw if different
+            context.clearRect(0, 0, canvas.width, canvas.height); // Clear before drawing
+            context.drawImage(img, 0, 0, canvas.width, canvas.height);
+          }
+        };
+        img.src = initialSignature;
+      } else {
+        // Ensure canvas is clean if no initial signature or it was cleared
+        context.clearRect(0, 0, canvas.width, canvas.height);
+      }
+
+      // Wrap drawing functions to pass the questionId
+      const start = (e) => startDrawing(e, question.id_pregunta);
+      const move = (e) => draw(e, question.id_pregunta);
+      const end = () => stopDrawing(question.id_pregunta);
+
+      // Add mouse event listeners
+      canvas.addEventListener('mousedown', start);
+      canvas.addEventListener('mousemove', move);
+      canvas.addEventListener('mouseup', end);
+      canvas.addEventListener('mouseout', end); // Stop drawing if mouse leaves canvas
+
+      // Add touch event listeners
+      canvas.addEventListener('touchstart', start, { passive: false }); // passive: false to allow preventDefault
+      canvas.addEventListener('touchmove', move, { passive: false });
+      canvas.addEventListener('touchend', end);
+      canvas.addEventListener('touchcancel', end);
+
+      // Store the cleanup function for this canvas
+      cleanupFunctions.push(() => {
+        canvas.removeEventListener('mousedown', start);
+        canvas.removeEventListener('mousemove', move);
+        canvas.removeEventListener('mouseup', end);
+        canvas.removeEventListener('mouseout', end);
+
+        canvas.removeEventListener('touchstart', start);
+        canvas.removeEventListener('touchmove', move);
+        canvas.removeEventListener('touchend', end);
+        canvas.removeEventListener('touchcancel', end);
+      });
+    });
+
+    // The useEffect return function runs on unmount or before re-execution
+    return () => {
+      cleanupFunctions.forEach(cleanup => cleanup()); // Execute all cleanup functions
+    };
+  }, [
+    formDetails,
+    allTiposRespuesta, // Still needed here because getTipoRespuestaNombre depends on it
+    getPointerPos,
+    startDrawing,
+    draw,
+    stopDrawing,
+    clearCanvas,
+    // latestAnswers ref is used, not the state directly in dependencies
+  ]);
+
+  // --- END Signature Canvas Logic ---
+
 
   const handleSubmitForm = async (e) => {
     e.preventDefault();
     setSubmitting(true);
     setError(null);
-    setSubmissionLimitMessage(''); // Limpiar el mensaje de límite al intentar enviar
+    setSubmissionLimitMessage(''); // Clear limit message when attempting to submit
 
     const token = localStorage.getItem('access_token');
     if (!token) {
@@ -244,18 +509,18 @@ export const AnswerFormPage = () => {
     }
 
     if (!formDetails || !Array.isArray(formDetails.preguntas)) {
-      dispatch({ type: 'SET_MESSAGE', payload: { type: 'error', text: 'No se pueden enviar respuestas: Formulario o preguntas no cargadas.' } });
+      dispatch({ type: 'SET_MESSAGE', payload: { type: 'error', text: 'Cannot submit answers: Form or questions not loaded.' } });
       setSubmitting(false);
       return;
     }
 
-    // Verificación proactiva antes de enviar al backend
-    // Solo aplica el límite si max_submissions_per_period es mayor que 0
+    // Proactive check before sending to backend
+    // Only apply limit if max_submissions_per_period is greater than 0
     if (formDetails.max_submissions_per_period > 0 && userSubmissionsInPeriod >= formDetails.max_submissions_per_period) {
         setSubmissionLimitMessage(
-          `Ya has alcanzado el límite de ${formDetails.max_submissions_per_period} diligencia(s) para este formulario en los últimos ${formDetails.submission_period_days} día(s).`
+          `You have already reached the limit of ${formDetails.max_submissions_per_period} submission(s) for this form in the last ${formDetails.submission_period_days} day(s).`
         );
-        dispatch({ type: 'SET_MESSAGE', payload: { type: 'error', text: submissionLimitMessage || `Límite de envíos alcanzado (${formDetails.max_submissions_per_period}).` } });
+        dispatch({ type: 'SET_MESSAGE', payload: { type: 'error', text: submissionLimitMessage || `Submission limit reached (${formDetails.max_submissions_per_period}).` } });
         setSubmitting(false);
         return;
     }
@@ -265,7 +530,7 @@ export const AnswerFormPage = () => {
       const tipoNombre = getTipoRespuestaNombre(q.tipo_respuesta_id);
       const answer = answers[q.id_pregunta];
 
-      if (tipoNombre === 'texto' || tipoNombre === 'firma') {
+      if (tipoNombre === 'texto' || tipoNombre === 'dibujo') { // 'dibujo' type
         return !answer || String(answer).trim() === '';
       } else if (tipoNombre === 'numerico') {
         return !answer || isNaN(parseFloat(answer));
@@ -278,7 +543,7 @@ export const AnswerFormPage = () => {
     });
 
     if (missingAnswers.length > 0) {
-      dispatch({ type: 'SET_MESSAGE', payload: { type: 'error', text: 'Por favor, responde todas las preguntas.' } });
+      dispatch({ type: 'SET_MESSAGE', payload: { type: 'error', text: 'Please answer all questions.' } });
       setSubmitting(false);
       return;
     }
@@ -291,26 +556,31 @@ export const AnswerFormPage = () => {
         valorRespuesta = parseFloat(valorRespuesta);
         if (isNaN(valorRespuesta)) valorRespuesta = null;
       } else if (tipoNombre === 'booleano') {
-        // Ya convertido
+        // Already converted
       } else if (tipoNombre === 'seleccion_unica') {
-        // El valor es el string seleccionado
+        // Value is the selected string
       } else if (tipoNombre === 'seleccion_multiple' || tipoNombre === 'seleccion_recursos') {
-        valorRespuesta = valorRespuesta || [];
-      } else {
+        // Convert array to JSON string
+        valorRespuesta = JSON.stringify(valorRespuesta || []); 
+      } else if (tipoNombre === 'dibujo') { // 'dibujo' type
+        // For 'dibujo' type, valor_texto will contain the Base64 of the drawing
+        valorRespuesta = valorRespuesta; // Already Base64
+      }
+      else {
         valorRespuesta = String(valorRespuesta);
       }
 
       return {
         pregunta_id: q.id_pregunta,
-        valor_texto: (tipoNombre === 'texto' || tipoNombre === 'firma' || tipoNombre === 'seleccion_unica') ? valorRespuesta : null,
+        valor_texto: (tipoNombre === 'texto' || tipoNombre === 'dibujo' || tipoNombre === 'seleccion_unica') ? valorRespuesta : null, // 'dibujo' type
         valor_booleano: (tipoNombre === 'booleano') ? valorRespuesta : null,
         valor_numerico: (tipoNombre === 'numerico') ? valorRespuesta : null,
+        // Assign JSON string to valores_multiples_json
         valores_multiples_json: (tipoNombre === 'seleccion_multiple' || tipoNombre === 'seleccion_recursos') ? valorRespuesta : null,
-        // firma_base64: ... si tuvieras una forma de capturar la firma como base64
       };
     });
 
-    console.log("DEBUG FRONTEND: Payload de respuestas a enviar:", payloadRespuestas);
+    console.log("DEBUG FRONTEND: Payload of answers to send:", payloadRespuestas);
 
     try {
       const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/envios-formulario`, {
@@ -323,7 +593,8 @@ export const AnswerFormPage = () => {
           id_formulario: parseInt(formId),
           respuestas: payloadRespuestas,
           id_usuario: currentUser.id_usuario,
-          espacios_cubiertos_ids: [], // Estos se llenarán en el backend si es necesario
+          // Estos campos se llenarán automáticamente en el backend si el formulario está asociado a recursos
+          espacios_cubiertos_ids: [], 
           subespacios_cubiertos_ids: [],
           objetos_cubiertos_ids: [],
         })
@@ -331,40 +602,40 @@ export const AnswerFormPage = () => {
 
       const data = await response.json();
       if (response.ok) {
-        dispatch({ type: 'SET_MESSAGE', payload: { type: 'success', text: data.message || 'Formulario respondido exitosamente.' } });
-        // Al enviar exitosamente, actualiza el conteo local y el mensaje de límite
+        dispatch({ type: 'SET_MESSAGE', payload: { type: 'success', text: data.message || 'Form submitted successfully.' } });
+        // On successful submission, update local count and limit message
         setUserSubmissionsInPeriod(prevCount => prevCount + 1);
-        if ((userSubmissionsInPeriod + 1) >= formDetails.max_submissions_per_period) {
+        if (formDetails.max_submissions_per_period > 0 && (userSubmissionsInPeriod + 1) >= formDetails.max_submissions_per_period) {
             setSubmissionLimitMessage(
-              `Ya has alcanzado el límite de ${formDetails.max_submissions_per_period} diligencia(s) para este formulario en los últimos ${formDetails.submission_period_days} día(s).`
+              `You have already reached the limit of ${formDetails.max_submissions_per_period} submission(s) for this form in the last ${formDetails.submission_period_days} day(s).`
             );
         }
-        navigate('/Answerforms'); // Redirigir a la lista de formularios después de enviar
+        navigate('/Answerforms'); // Redirect to forms list after submitting
       } else {
-        setError(data.error || 'Error al enviar el formulario.');
-        dispatch({ type: 'SET_MESSAGE', payload: { type: 'error', text: `Error al enviar formulario: ${data.error}` } });
-        // Si el error es por el límite, actualiza el mensaje de límite
-        if (data.error && data.error.includes("límite de") && data.error.includes("diligencias para este formulario")) {
+        setError(data.error || 'Error submitting form.');
+        dispatch({ type: 'SET_MESSAGE', payload: { type: 'error', text: `Error submitting form: ${data.error}` } });
+        // If the error is due to the limit, update the limit message
+        if (data.error && data.error.includes("limit of") && data.error.includes("submissions for this form")) {
             setSubmissionLimitMessage(data.error);
         }
       }
     } catch (err) {
       console.error('Error submitting form:', err);
-      setError('Error de conexión al enviar el formulario.');
-      dispatch({ type: 'SET_MESSAGE', payload: { type: 'error', text: 'Error de conexión.' } });
+      setError('Connection error submitting form.');
+      dispatch({ type: 'SET_MESSAGE', payload: { type: 'error', text: 'Connection error.' } });
     } finally {
       setSubmitting(false);
     }
   };
 
-  // Determinar si el botón de envío debe estar deshabilitado
-  // Se deshabilita si se está enviando O si el límite de llenado es > 0 y se ha alcanzado el límite
+  // Determine if the submit button should be disabled
+  // Disabled if submitting OR if submission limit is > 0 and limit has been reached
   const isSubmitDisabled = submitting || (formDetails && formDetails.max_submissions_per_period > 0 && userSubmissionsInPeriod >= formDetails.max_submissions_per_period);
 
   if (loading) {
     return (
       <div className="loading-spinner-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', fontSize: '2em', color: 'var(--primary-dark)' }}>
-        Cargando formulario...
+        Loading form...
       </div>
     );
   }
@@ -372,8 +643,8 @@ export const AnswerFormPage = () => {
   if (error) {
     return (
       <div className="error-message-container" style={{ textAlign: 'center', padding: '50px', fontSize: '1.2em', color: 'var(--danger-color)' }}>
-        <p>Error al cargar el formulario: {error}</p>
-        <button className="btn-secondary" onClick={() => navigate('/answer-forms')}>Volver a Formularios</button>
+        <p>Error loading form: {error}</p>
+        <button className="btn-secondary" onClick={() => navigate('/answer-forms')}>Back to Forms</button>
       </div>
     );
   }
@@ -381,8 +652,8 @@ export const AnswerFormPage = () => {
   if (!formDetails) {
     return (
       <div className="no-form-found" style={{ textAlign: 'center', padding: '50px', fontSize: '1.2em', color: 'var(--text-color-medium)' }}>
-        <p>Formulario no encontrado o no disponible.</p>
-        <button className="btn-secondary" onClick={() => navigate('/answer-forms')}>Volver a Formularios</button>
+        <p>Form not found or unavailable.</p>
+        <button className="btn-secondary" onClick={() => navigate('/answer-forms')}>Back to Forms</button>
       </div>
     );
   }
@@ -390,7 +661,7 @@ export const AnswerFormPage = () => {
   return (
     <>
       <header className="main-header">
-        <h1 className="headline">Responder Formulario: {formDetails?.nombre_formulario || 'Cargando...'}</h1>
+        <h1 className="headline">Answer Form: {formDetails?.nombre_formulario || 'Loading...'}</h1>
         <div className="header-right">
           <i className="fas fa-bell header-icon"></i>
           <i className="fas fa-cog header-icon"></i>
@@ -399,13 +670,13 @@ export const AnswerFormPage = () => {
 
       <div className="form-answer-container">
         <div className="form-details-card">
-          <h2>{formDetails?.nombre_formulario || 'Cargando...'}</h2>
-          <p className="form-description">{formDetails?.descripcion || 'Cargando descripción...'}</p>
-          {/* Mostrar la frecuencia máxima de llenado como "máxima" para el usuario */}
+          <h2>{formDetails?.nombre_formulario || 'Loading...'}</h2>
+          <p className="form-description">{formDetails?.descripcion || 'Loading description...'}</p>
+          {/* Display max submission frequency as "max" for the user */}
           {formDetails.max_submissions_per_period > 0 && (
             <p className="form-frequency">
-              Límite de diligencias: {formDetails.max_submissions_per_period} cada {formDetails.submission_period_days} día(s).
-              Has diligenciado {userSubmissionsInPeriod} vez(es) en este período.
+              Submission Limit: {formDetails.max_submissions_per_period} every {formDetails.submission_period_days} day(s).
+              You have submitted {userSubmissionsInPeriod} time(s) in this period.
             </p>
           )}
           {submissionLimitMessage && (
@@ -421,16 +692,6 @@ export const AnswerFormPage = () => {
                 const tipoNombre = getTipoRespuestaNombre(question.tipo_respuesta_id);
                 const currentAnswer = answers[question.id_pregunta];
 
-                // Obtener todos los IDs de recursos disponibles para la pregunta actual
-                // NO USAR useMemo AQUÍ, YA QUE ESTÁ DENTRO DE UN BUCLE DE RENDERIZADO
-                const allResourceIdsForQuestion = (question.tipo_respuesta_nombre === 'seleccion_recursos' && question.opciones_respuesta_json && typeof question.opciones_respuesta_json === 'object')
-                  ? [
-                      ...(question.opciones_respuesta_json.espacios || []),
-                      ...(question.opciones_respuesta_json.subespacios || []),
-                      ...(question.opciones_respuesta_json.objetos || [])
-                    ]
-                  : [];
-
                 return (
                   <div key={question.id_pregunta} className="question-card">
                     <p className="question-text">{question.orden}. {question.texto_pregunta}</p>
@@ -439,7 +700,7 @@ export const AnswerFormPage = () => {
                         <textarea
                           value={currentAnswer || ''}
                           onChange={(e) => handleAnswerChange(question.id_pregunta, e.target.value, tipoNombre)}
-                          placeholder="Escribe tu respuesta aquí..."
+                          placeholder="Write your answer here..."
                           className="text-input"
                         />
                       )}
@@ -453,7 +714,7 @@ export const AnswerFormPage = () => {
                               value="true"
                               checked={currentAnswer === true}
                               onChange={(e) => handleAnswerChange(question.id_pregunta, e.target.value, tipoNombre)}
-                            /> Sí
+                            /> Yes
                           </label>
                           <label className="radio-item">
                             <input
@@ -472,7 +733,7 @@ export const AnswerFormPage = () => {
                           type="number"
                           value={currentAnswer || ''}
                           onChange={(e) => handleAnswerChange(question.id_pregunta, e.target.value, tipoNombre)}
-                          placeholder="Introduce un número"
+                          placeholder="Enter a number"
                           className="number-input"
                         />
                       )}
@@ -493,125 +754,66 @@ export const AnswerFormPage = () => {
                               </label>
                             ))
                           ) : (
-                            <p className="no-options-message">No hay opciones definidas para esta pregunta.</p>
+                            <p className="no-options-message">No options defined for this question.</p>
                           )}
                         </div>
                       )}
 
-                      {tipoNombre === 'firma' && (
-                        <div className="signature-area">
-                          <input
-                            type="text"
-                            value={currentAnswer || ''}
-                            onChange={(e) => handleAnswerChange(question.id_pregunta, e.target.value, tipoNombre)}
-                            placeholder="Escribe tu nombre para firmar o 'FIRMADO'"
-                            className="text-input"
-                          />
-                          <small>En un entorno real, aquí iría un componente de captura de firma.</small>
-                        </div>
-                      )}
-
+                      {/* Renderizado para 'seleccion_recursos' */}
                       {tipoNombre === 'seleccion_recursos' && (
-                        <div className="options-group resource-selection-group">
-                          {/* El bloque de opciones_respuesta_json debe existir y ser un objeto para mostrar el select-all y las categorías */}
-                          {question.opciones_respuesta_json && typeof question.opciones_respuesta_json === 'object' && (
-                            <>
-                              {/* Checkbox "Seleccionar Todo" */}
-                              {allResourceIdsForQuestion.length > 0 && (
-                                <div className="resource-select-all-container"> {/* Nuevo contenedor */}
-                                  <label className="select-all-item">
-                                    <input
-                                      type="checkbox"
-                                      // Marcar si todas las opciones disponibles están en las respuestas actuales
-                                      checked={
-                                        allResourceIdsForQuestion.length > 0 &&
-                                        allResourceIdsForQuestion.every(id => (currentAnswer || []).includes(id))
-                                      }
-                                      onChange={(e) => {
-                                        handleSelectAllResources(question.id_pregunta, allResourceIdsForQuestion, e.target.checked);
-                                      }}
-                                    />
-                                    Seleccionar Todo
-                                  </label>
-                                </div>
-                              )}
-                              {/* Eliminamos el hr aquí */}
-                            </>
-                          )}
-
-                          {/* Renderizar Espacios */}
-                          {question.opciones_respuesta_json?.espacios?.length > 0 && (
-                            <div className="resource-category resource-category-espacios"> {/* Nueva clase específica */}
-                              <h4 className="resource-category-title">Espacios</h4> {/* Nueva clase para el h4 */}
-                              <div className="resource-options-list"> {/* Nuevo contenedor para la lista de opciones */}
-                                {question.opciones_respuesta_json.espacios.map((resourceId) => {
-                                  const resourceName = espaciosMap[resourceId] || `Espacio ${resourceId}`;
-                                  return (
-                                    <label key={`espacio-${resourceId}`} className="option-item resource-option-item"> {/* Nueva clase específica */}
+                        <div className="options-group">
+                          {(() => {
+                            const resourcesToDisplay = getAvailableResourcesForQuestion(question);
+                            if (resourcesToDisplay.length > 0) {
+                              return (
+                                <>
+                                  <div className="select-all-resources-control">
+                                    <label className="option-item">
                                       <input
                                         type="checkbox"
-                                        value={resourceId}
-                                        checked={(currentAnswer || []).includes(resourceId)}
-                                        onChange={(e) => handleAnswerChange(question.id_pregunta, parseInt(e.target.value), tipoNombre)}
+                                        checked={(currentAnswer || []).length === resourcesToDisplay.length && resourcesToDisplay.length > 0}
+                                        onChange={(e) => handleSelectAllResources(question.id_pregunta, resourcesToDisplay.map(r => r.id), e.target.checked)}
                                       />
-                                      {resourceName}
+                                      Seleccionar/Deseleccionar Todos
                                     </label>
-                                  );
-                                })}
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Renderizar Sub-Espacios */}
-                          {question.opciones_respuesta_json?.subespacios?.length > 0 && (
-                            <div className="resource-category resource-category-subespacios"> {/* Nueva clase específica */}
-                              <h4 className="resource-category-title">Sub-Espacios</h4> {/* Nueva clase para el h4 */}
-                              <div className="resource-options-list"> {/* Nuevo contenedor para la lista de opciones */}
-                                {question.opciones_respuesta_json.subespacios.map((resourceId) => {
-                                  const resourceName = subEspaciosMap[resourceId] || `Sub-Espacio ${resourceId}`;
-                                  return (
-                                    <label key={`subespacio-${resourceId}`} className="option-item resource-option-item"> {/* Nueva clase específica */}
+                                  </div>
+                                  {resourcesToDisplay.map(resource => (
+                                    <label key={resource.id} className="option-item">
                                       <input
                                         type="checkbox"
-                                        value={resourceId}
-                                        checked={(currentAnswer || []).includes(resourceId)}
-                                        onChange={(e) => handleAnswerChange(question.id_pregunta, parseInt(e.target.value), tipoNombre)}
+                                        name={`question-${question.id_pregunta}-resource-${resource.id}`}
+                                        value={resource.id}
+                                        checked={(currentAnswer || []).includes(resource.id)}
+                                        onChange={(e) => handleAnswerChange(question.id_pregunta, e.target.value, tipoNombre)}
                                       />
-                                      {resourceName}
+                                      {resource.name} ({resource.type})
                                     </label>
-                                  );
-                                })}
-                              </div>
-                            </div>
-                          )}
+                                  ))}
+                                </>
+                              );
+                            } else {
+                              return <p className="no-options-message">No resources available for this question in your company.</p>;
+                            }
+                          })()}
+                        </div>
+                      )}
 
-                          {/* Renderizar Objetos */}
-                          {question.opciones_respuesta_json?.objetos?.length > 0 && (
-                            <div className="resource-category resource-category-objetos"> {/* Nueva clase específica */}
-                              <h4 className="resource-category-title">Objetos</h4> {/* Nueva clase para el h4 */}
-                              <div className="resource-options-list"> {/* Nuevo contenedor para la lista de opciones */}
-                                {question.opciones_respuesta_json.objetos.map((resourceId) => {
-                                  const resourceName = objetosMap[resourceId] || `Objeto ${resourceId}`;
-                                  return (
-                                    <label key={`objeto-${resourceId}`} className="option-item resource-option-item"> {/* Nueva clase específica */}
-                                      <input
-                                        type="checkbox"
-                                        value={resourceId}
-                                        checked={(currentAnswer || []).includes(resourceId)}
-                                        onChange={(e) => handleAnswerChange(question.id_pregunta, parseInt(e.target.value), tipoNombre)}
-                                      />
-                                      {resourceName}
-                                    </label>
-                                  );
-                                })}
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Mensaje si no hay recursos disponibles */}
-                          {allResourceIdsForQuestion.length === 0 && (
-                            <p className="no-options-message">No hay recursos disponibles para esta pregunta en tu empresa.</p>
-                          )}
+                      {/* Render Signature Canvas for 'dibujo' type */}
+                      {tipoNombre === 'dibujo' && (
+                        <div className="signature-area">
+                          <canvas
+                            ref={el => canvasRefs.current[question.id_pregunta] = el}
+                            width={600} // Internal canvas resolution
+                            height={300} // Internal canvas resolution (taller for more drawing space)
+                            className="signature-canvas" // CSS class for styling
+                          />
+                          <button
+                            type="button"
+                            onClick={() => clearCanvas(question.id_pregunta)}
+                            className="clear-canvas-btn"
+                          >
+                            Clear Signature
+                          </button>
                         </div>
                       )}
                     </div>
@@ -619,17 +821,12 @@ export const AnswerFormPage = () => {
                 );
               })
           ) : (
-            <p className="no-questions-message">Este formulario no tiene preguntas definidas.</p>
+            <p className="no-questions-message">No questions defined for this form.</p>
           )}
 
-          <div className="form-submit-actions">
-            <button type="submit" className="btn-primary" disabled={isSubmitDisabled}>
-              {submitting ? 'Enviando...' : 'Enviar Formulario'}
-            </button>
-            <button type="button" className="btn-secondary" onClick={() => navigate('/Answerforms')} disabled={submitting}>
-              Cancelar
-            </button>
-          </div>
+          <button type="submit" className="submit-form-btn" disabled={isSubmitDisabled}>
+            {submitting ? 'Submitting...' : 'Submit Form'}
+          </button>
         </form>
       </div>
     </>

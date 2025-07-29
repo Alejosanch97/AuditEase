@@ -238,14 +238,14 @@ body {
     /* Define las áreas del grid */
     grid-template-areas:
         "profile calendar"
-        "upcoming-events upcoming-events"
-        "owner-companies owner-companies"
-        "forms-to-fill occupation-info" /* MODIFICADO: Formularios y Ocupación lado a lado */
-        "basic-info basic-info" /* Basic info ahora ocupa todo el ancho si no es owner */
+        "admin-users owner-companies" /* admin-users y owner-companies comparten una fila */
+        "inactive-companies inactive-companies" /* NUEVO: Empresas inactivas en una fila completa */
+        "forms-to-fill occupation-info"
+        "basic-info basic-info"
         "onboarding onboarding"
         "chart-1 data-table"
         "progress progress";
-    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); /* Mantiene el ancho mínimo y se adapta */
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
     gap: 25px;
 }
 
@@ -300,7 +300,7 @@ body {
 
 /* Profile Card Specific Styles */
 .profile-card {
-    grid-area: profile; /* Asigna a la primera área */
+    grid-area: profile;
     display: flex;
     flex-direction: column;
 }
@@ -395,7 +395,7 @@ body {
 
 /* Calendar Card Specific Styles */
 .calendar-card {
-    grid-area: calendar; /* Asigna a la segunda área */
+    grid-area: calendar;
     display: flex;
     flex-direction: column;
     padding: 25px;
@@ -479,9 +479,9 @@ body {
     box-shadow: 0 2px 8px rgba(26, 188, 156, 0.3);
 }
 
-/* Upcoming Events Card Specific Styles */
+/* Upcoming Events Card Specific Styles (Mantenemos por si el rol no es admin/owner) */
 .upcoming-events-card {
-    grid-area: upcoming-events; /* Asigna al área */
+    grid-area: upcoming-events; /* Se mantiene para roles que no son admin/owner */
 }
 
 .upcoming-events-card .card-header {
@@ -550,8 +550,8 @@ body {
 
 /* Information Cards (Basic, Personal) Styles */
 .basic-info-card {
-    grid-area: basic-info; /* Asigna al área */
-    grid-column: span 2; /* Ocupa todo el ancho en pantallas grandes */
+    grid-area: basic-info;
+    grid-column: span 2;
 }
 
 .info-group {
@@ -581,8 +581,8 @@ body {
 
 /* INFORMACIÓN DE LA EMPRESA (Occupation Info Card) */
 .occupation-info-card {
-    grid-area: occupation-info; /* Asigna al área */
-    grid-column: span 1; /* Asegura que ocupe una columna */
+    grid-area: occupation-info;
+    grid-column: span 1;
     grid-row: span 1;
     padding: 25px;
     display: flex;
@@ -664,7 +664,7 @@ body {
 
 /* Onboarding Card Specific Styles */
 .onboarding-card {
-    grid-area: onboarding; /* Asigna al área */
+    grid-area: onboarding;
     grid-column: span 2;
 }
 
@@ -747,7 +747,7 @@ body {
 
 /* Chart Card Styles (Example 1) */
 .chart-card-1 {
-    grid-area: chart-1; /* Asigna al área */
+    grid-area: chart-1;
 }
 
 .chart-card-1 .card-header select {
@@ -779,7 +779,7 @@ body {
 
 /* Data Table Card Styles (Example 2) */
 .data-table-card {
-    grid-area: data-table; /* Asigna al área */
+    grid-area: data-table;
 }
 
 .data-table-card table {
@@ -835,7 +835,7 @@ body {
 
 /* Progress Overview Card Styles (Example 3) */
 .progress-overview-card {
-    grid-area: progress; /* Asigna al área */
+    grid-area: progress;
 }
 
 .progress-overview-card .progress-item {
@@ -873,7 +873,7 @@ body {
 
 /* Estilos para la tarjeta de Empresas del Owner */
 .owner-companies-card {
-    grid-area: owner-companies; /* Asigna al área */
+    grid-area: owner-companies;
 }
 
 .owner-companies-card .card-header {
@@ -967,27 +967,10 @@ body {
     color: #e74c3c; /* error-color */
 }
 
-.company-item .manage-company-btn {
-    background-color: #3498db; /* info-color */
-    color: white;
-    border: none;
-    padding: 6px 12px;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 0.85em;
-    transition: background-color 0.3s ease;
-    margin-left: auto;
-    white-space: nowrap;
-}
-
-.company-item .manage-company-btn:hover {
-    background-color: #2980b9; /* info-color-darker */
-}
-
 /* --- ESTILOS PARA "FORMULARIOS A DILIGENCIAR" --- */
 .forms-to-fill-card {
-    grid-area: forms-to-fill; /* Asigna al área */
-    grid-column: span 1; /* Asegura que ocupe una columna */
+    grid-area: forms-to-fill;
+    grid-column: span 1;
 }
 
 .forms-to-fill-card .card-header {
@@ -1147,9 +1130,10 @@ body {
         grid-template-columns: 1fr 1fr;
         grid-template-areas:
             "profile calendar"
-            "upcoming-events owner-companies"
-            "forms-to-fill occupation-info" /* MODIFICADO: Formularios y Ocupación lado a lado */
-            "basic-info basic-info" /* Basic info ahora ocupa todo el ancho si no es owner */
+            "admin-users owner-companies" /* admin-users y owner-companies comparten una fila */
+            "inactive-companies inactive-companies" /* NUEVO: Empresas inactivas en una fila completa */
+            "forms-to-fill occupation-info"
+            "basic-info basic-info"
             "onboarding onboarding"
             "chart-1 data-table"
             "progress progress";
@@ -1157,15 +1141,31 @@ body {
     /* Asegura que las tarjetas ocupen su área correctamente */
     .profile-card { grid-area: profile; }
     .calendar-card { grid-area: calendar; }
-    .upcoming-events-card { grid-area: upcoming-events; }
+    .upcoming-events-card { grid-area: upcoming-events; } /* Se mantiene para otros roles */
+    .admin-users-card { grid-area: admin-users; } /* Nueva área para admin-users */
     .owner-companies-card { grid-area: owner-companies; }
+    .inactive-companies-card { grid-area: inactive-companies; } /* NUEVO: Asigna área */
     .basic-info-card { grid-area: basic-info; }
     .forms-to-fill-card { grid-area: forms-to-fill; }
     .occupation-info-card { grid-area: occupation-info; }
     .onboarding-card { grid-area: onboarding; }
-    .chart-card-1 { grid-area: chart-1; }
+    .chart-1 { grid-area: chart-1; }
     .data-table-card { grid-area: data-table; }
     .progress-overview-card { grid-area: progress; }
+
+    /* Los ítems de usuarios administradores deben estar en columna dentro de su tarjeta */
+    .admin-users-card .users-list {
+        flex-direction: column;
+        flex-wrap: nowrap;
+        justify-content: flex-start;
+        align-items: stretch;
+        gap: 15px;
+    }
+
+    .admin-users-card .user-item {
+        flex-basis: auto;
+        max-width: none;
+    }
 }
 
 @media (max-width: 991px) {
@@ -1178,11 +1178,13 @@ body {
     .calendar-card,
     .upcoming-events-card,
     .owner-companies-card,
+    .admin-users-card,
+    .inactive-companies-card, /* NUEVO: Asegurarse de que esta también se adapte */
     .basic-info-card,
     .forms-to-fill-card,
     .occupation-info-card,
     .onboarding-card,
-    .chart-card-1,
+    .chart-1,
     .data-table-card,
     .progress-overview-card {
         grid-column: span 1; /* Todas las tarjetas ocupan una columna */
@@ -1207,6 +1209,14 @@ body {
         width: 100%;
         justify-content: center;
     }
+    /* Asegurar que los ítems de usuario admin se apilen en pantallas pequeñas */
+    .admin-users-card .users-list {
+        flex-direction: column;
+    }
+    .admin-users-card .user-item {
+        flex-basis: auto;
+        max-width: none;
+    }
 }
 
 @media (max-width: 480px) {
@@ -1227,4 +1237,784 @@ body {
         font-size: 0.8em;
         padding: 6px 10px;
     }
+}
+
+
+/* --- ESTILOS PARA "USUARIOS ADMINISTRADORES" --- */
+.admin-users-card {
+    grid-area: admin-users;
+}
+
+.admin-users-card .users-list {
+    margin-top: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.admin-users-card .user-item {
+    display: flex;
+    align-items: center;
+    background-color: #f8f9fa;
+    border: 1px solid #e0e6ec;
+    border-radius: 8px;
+    padding: 15px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    flex-grow: 1;
+    flex-basis: auto;
+}
+
+.admin-users-card .user-item:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.admin-users-card .user-list-picture {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-right: 15px;
+    border: 2px solid #1abc9c;
+    flex-shrink: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 1.5em;
+    color: #ffffff;
+    background-color: #1abc9c;
+}
+
+.admin-users-card .user-details {
+    flex-grow: 1;
+}
+
+.admin-users-card .user-details h4 {
+    margin: 0 0 5px 0;
+    color: #2c3e50;
+    font-size: 1.1em;
+}
+
+.admin-users-card .user-details p {
+    margin: 0;
+    font-size: 0.85em;
+    color: #666666;
+    line-height: 1.4;
+}
+
+.admin-users-card .user-details .user-role {
+    font-size: 0.8em;
+    font-weight: bold;
+    margin-top: 5px;
+    color: #3498db;
+}
+
+/* Estilos para el mensaje informativo cuando admin_empresa ve la sección */
+.admin-users-card .info-message {
+    text-align: center;
+    color: #888888;
+    font-style: italic;
+    padding: 15px;
+    font-size: 0.9em;
+    background-color: #f0f3f5;
+    border-radius: 8px;
+    border: 1px solid #e0e6ec;
+    margin-top: 20px;
+}
+
+/* Asegurar que el botón "Ver Todos" en admin-users-card tenga el estilo correcto */
+.admin-users-card .view-all-btn {
+    background-color: #34495e;
+    color: white;
+    padding: 8px 12px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.85em;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    transition: background-color 0.3s ease;
+    text-decoration: none;
+}
+
+.admin-users-card .view-all-btn:hover {
+    background-color: #2c3e50;
+}
+
+/* --- NUEVOS ESTILOS PARA BOTONES DE ACCIÓN EN ÍTEMS --- */
+.item-actions {
+    display: flex;
+    gap: 8px;
+    margin-left: auto;
+    flex-shrink: 0;
+}
+
+.manage-item-btn {
+    background-color: #3498db; /* info-color */
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.85em;
+    transition: background-color 0.3s ease, opacity 0.3s ease;
+    white-space: nowrap;
+}
+
+.manage-item-btn:hover {
+    background-color: #2980b9; /* info-color-darker */
+}
+
+.manage-item-btn.delete-btn {
+    background-color: #e74c3c; /* error-color */
+}
+
+.manage-item-btn.delete-btn:hover {
+    background-color: #c0392b; /* Un tono más oscuro de error-color */
+}
+
+/* NUEVO: Estilo para el botón Reactivar */
+.manage-item-btn.reactivate-btn {
+    background-color: #1abc9c; /* secondary-accent */
+}
+
+.manage-item-btn.reactivate-btn:hover {
+    background-color: #16a085; /* Un tono más oscuro de secondary-accent */
+}
+
+
+/* Estilos para ítems inactivos (empresas y usuarios) */
+.company-item.inactive-item,
+.user-item.inactive-item {
+    opacity: 0.6;
+    background-color: #f0f3f5;
+    border-color: #d0d6dc;
+    pointer-events: none; /* Deshabilita clics en el ítem completo, excepto en botones explícitos */
+    box-shadow: none;
+}
+
+/* Habilitar clics en los botones dentro de ítems inactivos */
+.company-item.inactive-item .item-actions .manage-item-btn,
+.user-item.inactive-item .item-actions .manage-item-btn {
+    pointer-events: auto; /* Re-habilita los eventos de puntero para los botones */
+}
+
+
+.company-item.inactive-item:hover,
+.user-item.inactive-item:hover {
+    transform: none;
+    box-shadow: none;
+}
+
+/* Asegurar que los botones dentro de ítems inactivos estén deshabilitados visualmente */
+.company-item.inactive-item .manage-item-btn,
+.user-item.inactive-item .manage-item-btn {
+    opacity: 1; /* Mantener la opacidad normal para los botones reactivados */
+    cursor: pointer; /* Cursor normal para los botones */
+}
+
+/* Si un botón está deshabilitado por el atributo 'disabled', entonces sí se atenúa */
+.manage-item-btn[disabled] {
+    opacity: 0.4;
+    cursor: not-allowed;
+    background-color: #cccccc !important; /* Color gris para botones deshabilitados */
+}
+.manage-item-btn[disabled]:hover {
+    background-color: #cccccc !important; /* Mantener el color gris en hover */
+}
+
+
+/* Estilo para el texto "Inactivo" en el perfil de usuario */
+.status-inactive-text {
+    font-size: 0.8em;
+    font-weight: bold;
+    color: #e74c3c; /* error-color */
+    margin-top: 5px;
+}
+
+/* Asegurar que el logo del usuario admin se vea bien si no hay imagen de perfil */
+.admin-users-card .user-list-picture {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-right: 15px;
+    border: 2px solid #1abc9c;
+    flex-shrink: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 1.5em; /* Tamaño del texto AD */
+    color: #ffffff;
+    background-color: #1abc9c;
+}
+
+/* --- NUEVO: Estilos para la tarjeta de Empresas Inactivas --- */
+.inactive-companies-card {
+    grid-area: inactive-companies; /* Asigna al área definida en el grid */
+}
+
+/* Reutiliza los estilos de .owner-companies-card .companies-list y .company-item */
+.inactive-companies-card .companies-list {
+    margin-top: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.inactive-companies-card .company-item {
+    display: flex;
+    align-items: center;
+    background-color: #f8f9fa;
+    border: 1px solid #e0e6ec;
+    border-radius: 8px;
+    padding: 15px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.inactive-companies-card .company-item:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.inactive-companies-card .company-list-logo {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-right: 15px;
+    border: 2px solid #7f8c8d; /* Color de borde para inactivos */
+    flex-shrink: 0;
+}
+
+.inactive-companies-card .company-details {
+    flex-grow: 1;
+}
+
+.inactive-companies-card .company-details h4 {
+    margin: 0 0 5px 0;
+    color: #2c3e50;
+    font-size: 1.1em;
+}
+
+.inactive-companies-card .company-details p {
+    margin: 0;
+    font-size: 0.85em;
+    color: #666666;
+    line-height: 1.4;
+}
+
+.inactive-companies-card .company-status.inactive {
+    font-size: 0.8em;
+    font-weight: bold;
+    margin-top: 5px;
+    color: #e74c3c; /* error-color */
+}
+
+/* Media Queries para responsividad */
+@media (min-width: 992px) {
+    .dashboard-grid {
+        grid-template-columns: 1fr 1fr;
+        grid-template-areas:
+            "profile calendar"
+            "admin-users owner-companies"
+            "inactive-companies inactive-companies" /* NUEVO: Empresas inactivas en una fila completa */
+            "forms-to-fill occupation-info"
+            "basic-info basic-info"
+            "onboarding onboarding"
+            "chart-1 data-table"
+            "progress progress";
+    }
+    .profile-card { grid-area: profile; }
+    .calendar-card { grid-area: calendar; }
+    .upcoming-events-card { grid-area: upcoming-events; }
+    .admin-users-card { grid-area: admin-users; }
+    .owner-companies-card { grid-area: owner-companies; }
+    .inactive-companies-card { grid-area: inactive-companies; } /* Asigna área */
+    .basic-info-card { grid-area: basic-info; }
+    .forms-to-fill-card { grid-area: forms-to-fill; }
+    .occupation-info-card { grid-area: occupation-info; }
+    .onboarding-card { grid-area: onboarding; }
+    .chart-1 { grid-area: chart-1; }
+    .data-table-card { grid-area: data-table; }
+    .progress-overview-card { grid-area: progress; }
+
+    .admin-users-card .users-list {
+        flex-direction: column;
+        flex-wrap: nowrap;
+        justify-content: flex-start;
+        align-items: stretch;
+        gap: 15px;
+    }
+
+    .admin-users-card .user-item {
+        flex-basis: auto;
+        max-width: none;
+    }
+}
+
+@media (max-width: 991px) {
+    .dashboard-grid {
+        grid-template-columns: 1fr;
+        grid-template-areas: none;
+    }
+    .profile-card,
+    .calendar-card,
+    .upcoming-events-card,
+    .owner-companies-card,
+    .admin-users-card,
+    .inactive-companies-card, /* Asegurarse de que esta también se adapte */
+    .basic-info-card,
+    .forms-to-fill-card,
+    .occupation-info-card,
+    .onboarding-card,
+    .chart-1,
+    .data-table-card,
+    .progress-overview-card {
+        grid-column: span 1;
+        grid-area: unset;
+    }
+
+    .forms-to-fill-card .card-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    .forms-to-fill-card .view-all-forms-btn {
+        width: 100%;
+        text-align: center;
+    }
+    .forms-to-fill-card .favorite-form-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+    .forms-to-fill-card .fill-form-btn {
+        width: 100%;
+        justify-content: center;
+    }
+    .admin-users-card .users-list {
+        flex-direction: column;
+    }
+    .admin-users-card .user-item {
+        flex-basis: auto;
+        max-width: none;
+    }
+}
+
+@media (max-width: 480px) {
+    .forms-to-fill-card .card-header h3 {
+        font-size: 1.1em;
+    }
+    .forms-to-fill-card .view-all-forms-btn {
+        font-size: 0.8em;
+        padding: 6px 10px;
+    }
+    .forms-to-fill-card .form-info h4 {
+        font-size: 0.9em;
+    }
+    .forms-to-fill-card .form-info p {
+        font-size: 0.8em;
+    }
+    .forms-to-fill-card .fill-form-btn {
+        font-size: 0.8em;
+        padding: 6px 10px;
+    }
+}
+
+/* src/styles/dashboard.css - Código CSS Completo y Unificado */
+
+/* ... (Mantén todo tu CSS existente arriba) ... */
+
+/* Media Queries para responsividad */
+@media (min-width: 992px) {
+    .dashboard-grid {
+        /* Define un layout de 2 columnas para pantallas grandes */
+        grid-template-columns: 1fr 1fr;
+        grid-template-areas:
+            "profile calendar"
+            "admin-users owner-companies" /* admin-users y owner-companies comparten una fila */
+            "inactive-companies inactive-companies" /* NUEVO: Empresas inactivas en una fila completa */
+            "forms-to-fill occupation-info"
+            "basic-info basic-info"
+            "onboarding onboarding"
+            "chart-1 data-table"
+            "progress progress";
+    }
+    /* Asegura que las tarjetas ocupen su área correctamente */
+    .profile-card { grid-area: profile; }
+    .calendar-card { grid-area: calendar; }
+    .upcoming-events-card { grid-area: upcoming-events; } /* Se mantiene para otros roles */
+    .admin-users-card { grid-area: admin-users; } /* Nueva área para admin-users */
+    .owner-companies-card { grid-area: owner-companies; }
+    .inactive-companies-card { grid-area: inactive-companies; } /* Asigna área */
+    .basic-info-card { grid-area: basic-info; }
+    .forms-to-fill-card { grid-area: forms-to-fill; }
+    .occupation-info-card { grid-area: occupation-info; }
+    .onboarding-card { grid-area: onboarding; }
+    .chart-1 { grid-area: chart-1; }
+    .data-table-card { grid-area: data-table; }
+    .progress-overview-card { grid-area: progress; }
+
+    /* Los ítems de usuarios administradores deben estar en columna dentro de su tarjeta */
+    .admin-users-card .users-list {
+        flex-direction: column;
+        flex-wrap: nowrap;
+        justify-content: flex-start;
+        align-items: stretch;
+        gap: 15px;
+    }
+
+    .admin-users-card .user-item {
+        flex-basis: auto;
+        max-width: none;
+    }
+}
+
+@media (max-width: 991px) {
+    /* En pantallas medianas y pequeñas, vuelve a un diseño de una columna si es necesario */
+    .dashboard-grid {
+        grid-template-columns: 1fr;
+        grid-template-areas: none;
+    }
+    .profile-card,
+    .calendar-card,
+    .upcoming-events-card,
+    .owner-companies-card,
+    .admin-users-card,
+    .inactive-companies-card, /* NUEVO: Asegurarse de que esta también se adapte */
+    .basic-info-card,
+    .forms-to-fill-card,
+    .occupation-info-card,
+    .onboarding-card,
+    .chart-1,
+    .data-table-card,
+    .progress-overview-card {
+        grid-column: span 1;
+        grid-area: unset;
+    }
+
+    .forms-to-fill-card .card-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    .forms-to-fill-card .view-all-forms-btn {
+        width: 100%;
+        text-align: center;
+    }
+    .forms-to-fill-card .favorite-form-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+    .forms-to-fill-card .fill-form-btn {
+        width: 100%;
+        justify-content: center;
+    }
+    .admin-users-card .users-list {
+        flex-direction: column;
+    }
+    .admin-users-card .user-item {
+        flex-basis: auto;
+        max-width: none;
+    }
+}
+
+@media (max-width: 480px) {
+    .forms-to-fill-card .card-header h3 {
+        font-size: 1.1em;
+    }
+    .forms-to-fill-card .view-all-forms-btn {
+        font-size: 0.8em;
+        padding: 6px 10px;
+    }
+    .forms-to-fill-card .form-info h4 {
+        font-size: 0.9em;
+    }
+    .forms-to-fill-card .form-info p {
+        font-size: 0.8em;
+    }
+    .forms-to-fill-card .fill-form-btn {
+        font-size: 0.8em;
+        padding: 6px 10px;
+    }
+}
+
+
+/* --- ESTILOS PARA "USUARIOS ADMINISTRADORES" --- */
+.admin-users-card {
+    grid-area: admin-users;
+}
+
+.admin-users-card .users-list {
+    margin-top: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.admin-users-card .user-item {
+    display: flex;
+    align-items: center;
+    background-color: #f8f9fa;
+    border: 1px solid #e0e6ec;
+    border-radius: 8px;
+    padding: 15px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    flex-grow: 1;
+    flex-basis: auto;
+}
+
+.admin-users-card .user-item:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.admin-users-card .user-list-picture {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-right: 15px;
+    border: 2px solid #1abc9c;
+    flex-shrink: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 1.5em;
+    color: #ffffff;
+    background-color: #1abc9c;
+}
+
+.admin-users-card .user-details {
+    flex-grow: 1;
+}
+
+.admin-users-card .user-details h4 {
+    margin: 0 0 5px 0;
+    color: #2c3e50;
+    font-size: 1.1em;
+}
+
+.admin-users-card .user-details p {
+    margin: 0;
+    font-size: 0.85em;
+    color: #666666;
+    line-height: 1.4;
+}
+
+.admin-users-card .user-details .user-role {
+    font-size: 0.8em;
+    font-weight: bold;
+    margin-top: 5px;
+    color: #3498db;
+}
+
+/* Estilos para el mensaje informativo cuando admin_empresa ve la sección */
+.admin-users-card .info-message {
+    text-align: center;
+    color: #888888;
+    font-style: italic;
+    padding: 15px;
+    font-size: 0.9em;
+    background-color: #f0f3f5;
+    border-radius: 8px;
+    border: 1px solid #e0e6ec;
+    margin-top: 20px;
+}
+
+/* Asegurar que el botón "Ver Todos" en admin-users-card tenga el estilo correcto */
+.admin-users-card .view-all-btn {
+    background-color: #34495e;
+    color: white;
+    padding: 8px 12px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.85em;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    transition: background-color 0.3s ease;
+    text-decoration: none;
+}
+
+.admin-users-card .view-all-btn:hover {
+    background-color: #2c3e50;
+}
+
+/* --- NUEVOS ESTILOS PARA BOTONES DE ACCIÓN EN ÍTEMS --- */
+.item-actions {
+    display: flex;
+    gap: 8px;
+    margin-left: auto;
+    flex-shrink: 0;
+}
+
+.manage-item-btn {
+    background-color: #3498db; /* info-color */
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.85em;
+    transition: background-color 0.3s ease, opacity 0.3s ease;
+    white-space: nowrap;
+}
+
+.manage-item-btn:hover {
+    background-color: #2980b9; /* info-color-darker */
+}
+
+.manage-item-btn.delete-btn {
+    background-color: #e74c3c; /* error-color */
+}
+
+.manage-item-btn.delete-btn:hover {
+    background-color: #c0392b; /* Un tono más oscuro de error-color */
+}
+
+/* Estilo para el botón Reactivar */
+.manage-item-btn.reactivate-btn {
+    background-color: #1abc9c; /* secondary-accent */
+}
+
+.manage-item-btn.reactivate-btn:hover {
+    background-color: #16a085; /* Un tono más oscuro de secondary-accent */
+}
+
+
+/* Estilos para ítems inactivos (empresas y usuarios) */
+.company-item.inactive-item,
+.user-item.inactive-item {
+    opacity: 0.6;
+    background-color: #f0f3f5;
+    border-color: #d0d6dc;
+    pointer-events: none; /* Deshabilita clics en el ítem completo, excepto en botones explícitos */
+    box-shadow: none;
+}
+
+/* Habilitar clics en los botones dentro de ítems inactivos */
+.company-item.inactive-item .item-actions .manage-item-btn,
+.user-item.inactive-item .item-actions .manage-item-btn {
+    pointer-events: auto; /* Re-habilita los eventos de puntero para los botones */
+}
+
+
+.company-item.inactive-item:hover,
+.user-item.inactive-item:hover {
+    transform: none;
+    box-shadow: none;
+}
+
+/* Asegurar que los botones dentro de ítems inactivos estén deshabilitados visualmente */
+.company-item.inactive-item .manage-item-btn,
+.user-item.inactive-item .manage-item-btn {
+    opacity: 1; /* Mantener la opacidad normal para los botones reactivados */
+    cursor: pointer; /* Cursor normal para los botones */
+}
+
+/* Si un botón está deshabilitado por el atributo 'disabled', entonces sí se atenúa */
+.manage-item-btn[disabled] {
+    opacity: 0.4;
+    cursor: not-allowed;
+    background-color: #cccccc !important; /* Color gris para botones deshabilitados */
+}
+.manage-item-btn[disabled]:hover {
+    background-color: #cccccc !important; /* Mantener el color gris en hover */
+}
+
+
+/* Estilo para el texto "Inactivo" en el perfil de usuario */
+.status-inactive-text {
+    font-size: 0.8em;
+    font-weight: bold;
+    color: #e74c3c; /* error-color */
+    margin-top: 5px;
+}
+
+/* Asegurar que el logo del usuario admin se vea bien si no hay imagen de perfil */
+.admin-users-card .user-list-picture {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-right: 15px;
+    border: 2px solid #1abc9c;
+    flex-shrink: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 1.5em;
+    color: #ffffff;
+    background-color: #1abc9c;
+}
+
+/* --- NUEVO: Estilos para la tarjeta de Empresas Inactivas --- */
+.inactive-companies-card {
+    grid-area: inactive-companies; /* Asigna al área definida en el grid */
+}
+
+/* Reutiliza los estilos de .owner-companies-card .companies-list y .company-item */
+.inactive-companies-card .companies-list {
+    margin-top: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.inactive-companies-card .company-item {
+    display: flex;
+    align-items: center;
+    background-color: #f8f9fa;
+    border: 1px solid #e0e6ec;
+    border-radius: 8px;
+    padding: 15px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.inactive-companies-card .company-item:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.inactive-companies-card .company-list-logo {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-right: 15px;
+    border: 2px solid #7f8c8d; /* Color de borde para inactivos */
+    flex-shrink: 0;
+}
+
+.inactive-companies-card .company-details {
+    flex-grow: 1;
+}
+
+.inactive-companies-card .company-details h4 {
+    margin: 0 0 5px 0;
+    color: #2c3e50;
+    font-size: 1.1em;
+}
+
+.inactive-companies-card .company-details p {
+    margin: 0;
+    font-size: 0.85em;
+    color: #666666;
+    line-height: 1.4;
+}
+
+.inactive-companies-card .company-status.inactive {
+    font-size: 0.8em;
+    font-weight: bold;
+    margin-top: 5px;
+    color: #e74c3c;
 }

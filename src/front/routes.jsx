@@ -22,6 +22,8 @@ import { SpaceManagement } from './components/SpaceManagement';
 import { CreateForms } from "./pages/CreateForms";
 import { AnswerForms } from "./pages/AnswerForms"; // Asumo que esta es la lista de formularios
 import { AnswerFormPage} from "./pages/AnswerFormPage"; // La página para responder un formulario específico
+import { Analytics } from './pages/Analytics';
+import { UserManagement } from "./components/UserManagement"; 
 
 
 export const router = createBrowserRouter(
@@ -48,6 +50,8 @@ export const router = createBrowserRouter(
             <Route path="/CreateForms" element={<CreateForms />} />
             <Route path="/Answerforms" element={<AnswerForms />} /> {/* Lista de formularios para contestar */}
             <Route path="/answer-form/:formId" element={<AnswerFormPage />} /> {/* Página para contestar un formulario específico */}
+            <Route path="/analytics" element={<Analytics />} />
+            <Route path="/user-management" element={<UserManagement />} />
             {/* Si tienes otras rutas protegidas, añádelas aquí */}
         </Route>
       </>

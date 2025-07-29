@@ -18,27 +18,19 @@ export const AnswerForms = () => {
   const [loadingForms, setLoadingForms] = useState(true);
   const [errorForms, setErrorForms] = useState(null);
 
-  // MODIFICADO: selectedCompanyId ahora puede ser 'template'
   const [selectedCompanyId, setSelectedCompanyId] = useState(''); 
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
 
-  // favoriteForms will be managed from the backend user data
-  // Using a Set for efficient lookups (O(1))
   const [favoriteForms, setFavoriteForms] = useState(new Set());
 
   const [allCompanies, setAllCompanies] = useState([]);
 
-  // NUEVO: Estado para almacenar el conteo de envíos manuales por formulario
   const [manualSubmissionsCounts, setManualSubmissionsCounts] = useState({});
-  // NUEVO: Estado para almacenar la hora de automatización programada por formulario
   const [scheduledAutomationTimes, setScheduledAutomationTimes] = useState({});
-  // NUEVO: Estado para almacenar el conteo de envíos en el período actual por formulario
   const [userSubmissionsInPeriodCounts, setUserSubmissionsInPeriodCounts] = useState({});
-  // NUEVO: Estado para almacenar la última fecha de ejecución de automatización por formulario
   const [lastAutomationRunDates, setLastAutomationRunDates] = useState({});
 
 
-  // --- MODIFIED: fetchUserFavorites - Ahora solo inicializa el estado local de favoritos
   const updateLocalFavoriteState = useCallback(() => {
     if (currentUser && currentUser.favoritos) {
       setFavoriteForms(new Set(currentUser.favoritos.map(String)));
@@ -49,7 +41,6 @@ export const AnswerForms = () => {
     }
   }, [currentUser]);
 
-  // --- MODIFIED: Función para añadir/eliminar un formulario de favoritos a través del backend ---
   const toggleFavorite = async (formId, isFavorite) => {
     console.log(`Attempting to ${isFavorite ? 'add' : 'remove'} favorite for formId: ${formId}`);
     
@@ -96,7 +87,6 @@ export const AnswerForms = () => {
     }
   };
 
-  // NUEVA FUNCIÓN: Para establecer la hora de automatización para un formulario
   const handleSetAutomationTime = async (formId, timeString) => {
     const token = localStorage.getItem('access_token');
     if (!token || !userRole || (userRole !== 'owner' && userRole !== 'admin_empresa')) {
@@ -118,8 +108,6 @@ export const AnswerForms = () => {
       if (response.ok) {
         setScheduledAutomationTimes(prev => ({ ...prev, [formId]: timeString }));
         dispatch({ type: 'SET_MESSAGE', payload: { type: 'success', text: data.message } });
-        // Opcional: Recargar los formularios para asegurar que last_automated_run_date se actualice si es relevante
-        // fetchData(); // Podría ser costoso, solo si es estrictamente necesario que el frontend sepa la fecha de la última ejecución inmediatamente
       } else {
         dispatch({ type: 'SET_MESSAGE', payload: { type: 'error', text: `Error al programar automatización: ${data.error}` } });
       }
@@ -130,7 +118,6 @@ export const AnswerForms = () => {
   };
 
 
-  // --- Carga de Formularios y Datos Adicionales desde el Backend ---
   const fetchData = useCallback(async () => {
     setLoadingForms(true);
     setErrorForms(null);
@@ -149,14 +136,12 @@ export const AnswerForms = () => {
       const formsData = await formsResponse.json();
 
       if (formsResponse.ok) {
-        // Inicializar los estados de conteo y programación
         const initialManualCounts = {};
         const initialUserSubmissionsInPeriodCounts = {};
         const initialScheduledTimes = {};
         const initialLastRunDates = {};
 
         const formsWithExtraData = await Promise.all(formsData.formularios.map(async (form) => {
-          // Fetch manual submissions count for the current user
           let manualCount = 0;
           try {
             const manualCountRes = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/formularios/${form.id_formulario}/manual_submissions_count`, {
@@ -173,7 +158,6 @@ export const AnswerForms = () => {
           }
           initialManualCounts[form.id_formulario] = manualCount;
 
-          // Fetch user submissions in current period for the current user
           let userSubmissionsInPeriod = 0;
           try {
             const userSubmissionsRes = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/formularios/${form.id_formulario}/user_submissions_in_period_count`, {
@@ -190,8 +174,7 @@ export const AnswerForms = () => {
           }
           initialUserSubmissionsInPeriodCounts[form.id_formulario] = userSubmissionsInPeriod;
 
-          // Initialize scheduled time and last run date from form data
-          initialScheduledTimes[form.id_formulario] = form.scheduled_automation_time ? form.scheduled_automation_time.substring(0, 5) : '15:00'; // Default 3 PM
+          initialScheduledTimes[form.id_formulario] = form.scheduled_automation_time ? form.scheduled_automation_time.substring(0, 5) : '15:00';
           initialLastRunDates[form.id_formulario] = form.last_automated_run_date;
 
           return {
@@ -220,7 +203,6 @@ export const AnswerForms = () => {
       setLoadingForms(false);
     }
 
-    // Cargar empresas (solo para rol 'owner')
     if (userRole === 'owner') {
       try {
         const companiesResponse = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/empresas`, {
@@ -244,52 +226,44 @@ export const AnswerForms = () => {
       navigate('/login');
       return;
     }
-    // Solo cargar datos si currentUser está disponible (para permisos y IDs)
     if (currentUser) {
       fetchData();
     }
   }, [isLoggedIn, currentUser, fetchData]);
 
-  // --- NUEVO useEffect para sincronizar favoriteForms con store.user.favoritos ---
   useEffect(() => {
     updateLocalFavoriteState();
   }, [updateLocalFavoriteState]);
 
-  // --- Lógica de Filtrado de Formularios ---
   const filteredForms = forms.filter(form => {
-    // Filtro por empresa
     if (selectedCompanyId) {
       if (selectedCompanyId === 'template') {
-        // Si se selecciona 'Plantillas', solo mostrar formularios que son plantillas
         if (!form.es_plantilla) {
           return false;
         }
       } else {
-        // Si se selecciona una empresa, filtrar por id_empresa
         if (form.id_empresa !== parseInt(selectedCompanyId)) {
           return false;
         }
       }
     }
     
-    // Filtro para mostrar solo favoritos
     if (showFavoritesOnly && !favoriteForms.has(String(form.id_formulario))) {
       return false;
     }
     return true;
   });
 
-  // Función para obtener el mensaje de hover de automatización
   const getAutomationHoverMessage = useCallback((form) => {
     const manualCount = manualSubmissionsCounts[form.id_formulario] || 0;
     const currentSubmissionsInPeriod = userSubmissionsInPeriodCounts[form.id_formulario] || 0;
     const maxSubmissions = form.max_submissions_per_period;
-    const scheduledTime = scheduledAutomationTimes[form.id_formulario]; // Hora programada local
-    const lastRunDate = lastAutomationRunDates[form.id_formulario]; // Última fecha de ejecución
+    const scheduledTime = scheduledAutomationTimes[form.id_formulario];
+    const lastRunDate = lastAutomationRunDates[form.id_formulario];
 
     const today = new Date();
-    const todayDateString = today.toISOString().split('T')[0]; // YYYY-MM-DD
-    const lastRunDateObj = lastRunDate ? new Date(lastRunDate + 'T00:00:00Z') : null; // Convertir a Date object (UTC)
+    const todayDateString = today.toISOString().split('T')[0];
+    const lastRunDateObj = lastRunDate ? new Date(lastRunDate + 'T00:00:00Z') : null;
     const lastRunDateString = lastRunDateObj ? lastRunDateObj.toISOString().split('T')[0] : null;
 
     if (!form.automatizacion_activa) {
@@ -304,16 +278,11 @@ export const AnswerForms = () => {
         return `Límite de diligencias alcanzado (${maxSubmissions} cada ${form.submission_period_days} día(s)). Automatización completada para este período.`;
     }
 
-    // Convertir la hora programada a un objeto Date para comparar con la hora actual
-    // Asumimos que scheduledTime es HH:MM
     const [hours, minutes] = (scheduledTime || '15:00').split(':').map(Number);
     const scheduledDateTime = new Date();
-    scheduledDateTime.setHours(hours, minutes, 0, 0); // Hora local del cliente
-
-    // Convertir now_utc a hora local del cliente para la comparación
+    scheduledDateTime.setHours(hours, minutes, 0, 0);
     const nowLocal = new Date();
 
-    // Si la hora programada ya pasó hoy (en hora local) y no se ha ejecutado hoy (en fecha UTC)
     if (nowLocal.getTime() >= scheduledDateTime.getTime() && lastRunDateString !== todayDateString) {
       return `Automatización Live: Se ejecutará pronto o ya se ejecutó hoy a las ${scheduledTime}.`;
     } else if (lastRunDateString === todayDateString) {
@@ -324,7 +293,6 @@ export const AnswerForms = () => {
     
   }, [manualSubmissionsCounts, userSubmissionsInPeriodCounts, scheduledAutomationTimes, lastAutomationRunDates]);
 
-  // NUEVA FUNCIÓN: getAutomationStatusClass
   const getAutomationStatusClass = useCallback((form, manualCount, currentSubmissionsInPeriod, scheduledTime, lastRunDate) => {
     const maxSubmissions = form.max_submissions_per_period;
     const today = new Date();
@@ -333,34 +301,31 @@ export const AnswerForms = () => {
     const lastRunDateString = lastRunDateObj ? lastRunDateObj.toISOString().split('T')[0] : null;
 
     if (!form.automatizacion_activa) {
-      return ''; // No aplica clase de color si está inactiva
+      return '';
     }
 
     if (manualCount < 5) {
-      return 'af-automation-pending'; // Amarillo
+      return 'af-automation-pending';
     }
 
     if (maxSubmissions > 0 && currentSubmissionsInPeriod >= maxSubmissions) {
-      return 'af-automation-completed'; // Verde (Success)
+      return 'af-automation-completed';
     }
 
-    // Convertir la hora programada a un objeto Date para comparar con la hora actual
     const [hours, minutes] = (scheduledTime || '15:00').split(':').map(Number);
     const scheduledDateTime = new Date();
     scheduledDateTime.setHours(hours, minutes, 0, 0);
     const nowLocal = new Date();
 
-    // Si la hora programada ya pasó hoy (en hora local) y no se ha ejecutado hoy (en fecha UTC)
     if (nowLocal.getTime() >= scheduledDateTime.getTime() && lastRunDateString !== todayDateString) {
-      return 'af-automation-live'; // Azul (Live) - se ejecutará pronto o ya se ejecutó hoy
+      return 'af-automation-live';
     } else if (lastRunDateString === todayDateString) {
-      return 'af-automation-completed'; // Verde (Success) - ya se ejecutó hoy
+      return 'af-automation-completed';
     } else {
-      return 'af-automation-live'; // Azul (Live) - programada para más tarde
+      return 'af-automation-live';
     }
   }, []);
 
-  // Renderizado condicional mientras carga o si no hay usuario
   if (!currentUser) {
     return (
       <div className="loading-spinner-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', fontSize: '2em', color: 'var(--primary-dark)' }}>
@@ -394,7 +359,7 @@ export const AnswerForms = () => {
                       className="af-filter-select"
                     >
                       <option value="">Todas las Empresas</option>
-                      <option value="template">Solo Plantillas</option> {/* NUEVA OPCIÓN */}
+                      <option value="template">Solo Plantillas</option>
                       {(allCompanies || []).map(comp => (
                         <option key={comp.id_empresa} value={comp.id_empresa}>
                           {comp.nombre_empresa}
@@ -426,8 +391,7 @@ export const AnswerForms = () => {
                   <div key={form.id_formulario} className="af-form-card">
                     <div className="af-form-card-header">
                       <h4 className="af-form-card-title">{form.nombre_formulario}</h4>
-                      <div className="af-card-header-actions"> {/* Contenedor para botones de acción en el header */}
-                        {/* Botón de Favoritos */}
+                      <div className="af-card-header-actions">
                         <button
                           className={`af-favorite-btn ${favoriteForms.has(String(form.id_formulario)) ? 'favorited' : ''}`}
                           onClick={() => toggleFavorite(form.id_formulario, !favoriteForms.has(String(form.id_formulario)))}
@@ -470,6 +434,7 @@ export const AnswerForms = () => {
                                         >
                                             <i className="fas fa-robot"></i>
                                         </button>
+                                        {/* ELIMINADO: span.af-automation-status-text */}
                                     </div>
                                     <div className="af-automation-schedule-control">
                                         <input
@@ -483,7 +448,7 @@ export const AnswerForms = () => {
                                             onClick={() => handleSetAutomationTime(form.id_formulario, scheduledAutomationTimes[form.id_formulario] || '15:00')}
                                             title="Establecer hora de automatización"
                                         >
-                                            <i className="fas fa-clock"></i> {/* Solo el icono del reloj */}
+                                            <i className="fas fa-clock"></i>
                                         </button>
                                     </div>
                                 </>

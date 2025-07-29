@@ -23,14 +23,28 @@ export const Sidebar = ({ currentUser, handleLogout }) => {
       <nav className="sidebar-nav">
         <ul>
           {/* Usamos location.pathname para aplicar la clase 'active' dinámicamente */}
-          <li className={location.pathname === '/profile' ? 'active' : ''}>
-            <Link to="/profile"><i className="fas fa-user"></i> Mi Perfil</Link>
-          </li>
+          {currentUser.rol === 'owner' && (
+            <li className={location.pathname === '/profile' ? 'active' : ''}>
+              <Link to="/profile"><i className="fas fa-user"></i> Mi Perfil</Link>
+            </li>
+          )}
+
+          {(currentUser.rol === 'admin_empresa' || currentUser.rol === 'usuario_formulario') && (
+            <li className={location.pathname === '/usersprofile' ? 'active' : ''}>
+              <Link to="/usersprofile"><i className="fas fa-user"></i> Mi Perfil</Link>
+            </li>
+          )}
+
           {currentUser.rol === 'owner' && (
             <li className={location.pathname === '/user-company-management' ? 'active' : ''}>
               <Link to="/user-company-management"><i className="fas fa-users"></i> Gestión de Empresas y Usuarios</Link>
             </li>
           )}
+          {(currentUser.rol === 'admin_empresa') && (
+          <li className={location.pathname === '/user-management' ? 'active' : ''}>
+            <Link to="/user-management"><i className="fas fa-users-cog"></i> Gestión de Usuarios</Link> {/* Nuevo icono y texto */}
+          </li>
+        )}
           {(currentUser.rol === 'owner' || currentUser.rol === 'admin_empresa') && (
             <li className={location.pathname === '/manage-spaces' ? 'active' : ''}>
               <Link to="/manage-spaces"><i className="fas fa-map-marked-alt"></i> Gestión de Espacios</Link>
@@ -44,11 +58,9 @@ export const Sidebar = ({ currentUser, handleLogout }) => {
           <li className={location.pathname.startsWith('/Answerforms') ? 'active' : ''}>
             <Link to="/Answerforms"><i className="fas fa-clipboard-check"></i> Contestar Formularios</Link>
           </li>
-          <li className={location.pathname === '/form-templates' ? 'active' : ''}>
-            <Link to="/form-templates"><i className="fas fa-clipboard-list"></i> Plantillas de Formularios</Link>
-          </li>
-          <li className={location.pathname === '/generate-reports' ? 'active' : ''}>
-            <Link to="/generate-reports"><i className="fas fa-chart-line"></i> Generar Reportes</Link>
+          
+          <li className={location.pathname === '/analytics' ? 'active' : ''}>
+            <Link to="/analytics"><i className="fas fa-chart-line"></i> Generar Graficas</Link>
           </li>
           <li className={location.pathname === '/agenda' ? 'active' : ''}>
             <Link to="/agenda"><i className="fas fa-calendar-alt"></i> Agenda y Citas</Link>
@@ -56,9 +68,7 @@ export const Sidebar = ({ currentUser, handleLogout }) => {
           <li className={location.pathname === '/notifications' ? 'active' : ''}>
             <Link to="/notifications"><i className="fas fa-bell"></i> Notificaciones</Link>
           </li>
-          <li className={location.pathname === '/settings' ? 'active' : ''}>
-            <Link to="/settings"><i className="fas fa-cogs"></i> Configuraciones</Link>
-          </li>
+          
           <li className={location.pathname === '/help-support' ? 'active' : ''}>
             <Link to="/help-support"><i className="fas fa-question-circle"></i> Ayuda y Soporte</Link>
           </li>

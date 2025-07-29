@@ -236,21 +236,6 @@ export const Login = () => {
                 </button>
             </form>
 
-            <div className="sgsst-login-divider-text">o continuar con</div>
-
-            <div className="sgsst-login-social-buttons-container">
-                <button type="button" className="sgsst-login-social-button">
-                    <img src="https://i.pinimg.com/736x/04/9d/ac/049dac30948c53eb1cbb7dc4f5237574.jpg" alt="Google" />
-                </button>
-                <button type="button" className="sgsst-login-social-button">
-                    <img src="https://upload.wikimedia.org/wikipedia/commons/5/51/Facebook_f_logo_%282019%29.svg" alt="Facebook" />
-                </button>
-                <button type="button" className="sgsst-login-social-button">
-                    {/* Placeholder for Apple, you might want to use a proper SVG */}
-                    <img src="https://i.pinimg.com/1200x/0a/c7/79/0ac779ae571ea30081e79384face9797.jpg" alt="Apple" />
-                </button>
-            </div>
-
             <p className="sgsst-login-signup-text">
                 ¿No tienes una cuenta? <Link to="/register" className="sgsst-login-signup-link">Regístrate ahora</Link>
             </p>

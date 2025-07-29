@@ -1,0 +1,292 @@
+/* src/styles/analytics.css - Estilos mejorados para la página de análisis y gráficas */
+
+/* Contenedor principal de la sección de análisis */
+.analytics-content-area {
+    padding: 30px; /* Más padding para espacio */
+    max-width: 1300px; /* Ancho máximo ligeramente mayor */
+    margin: 30px auto; /* Centrar y más margen vertical */
+    background-color: #f5f7fa; /* Fondo suave para la página */
+    border-radius: 15px; /* Bordes más redondeados */
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1); /* Sombra más pronunciada y moderna */
+}
+
+/* Estilos generales de la tarjeta contenedora (filtros o gráficos) */
+.analytics-card {
+    background-color: #ffffff;
+    border-radius: 12px; /* Bordes consistentes */
+    box-shadow: 0 5px 18px rgba(0, 0, 0, 0.08); /* Sombra ligeramente más suave */
+    margin-bottom: 35px; /* Más espacio entre tarjetas */
+    padding: 30px; /* Más padding interno */
+    border: 1px solid #e6eaf0; /* Borde sutil */
+}
+
+.analytics-full-width-card {
+    width: 100%;
+}
+
+/* Encabezado de la tarjeta (título y filtros) */
+.analytics-card-header {
+    display: flex;
+    flex-direction: column; /* Apila el título y los filtros */
+    gap: 25px; /* Más espacio entre título y filtros */
+    margin-bottom: 30px; /* Más espacio debajo del encabezado */
+    padding-bottom: 25px;
+    border-bottom: 1px solid #e0e6ec; /* Línea divisoria más definida */
+}
+
+.analytics-card-header h3 {
+    font-size: 2.2em; /* Título más grande y prominente */
+    color: #2c3e50; /* Azul oscuro primario */
+    font-weight: 700;
+    text-align: center;
+    letter-spacing: -0.5px; /* Ligero ajuste de espaciado para mejor lectura */
+}
+
+/* Contenedor de los filtros */
+.analytics-filters-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 25px; /* Espacio uniforme entre los grupos de filtros */
+    align-items: flex-end; /* Alinea los elementos en la parte inferior */
+    justify-content: center; /* Centra los filtros */
+}
+
+.analytics-filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px; /* Espacio entre label y input/select */
+    /* Ajuste de ancho para los grupos de filtros */
+    flex-basis: calc(33% - 25px); /* Intenta 3 columnas, ajusta el gap */
+    min-width: 220px; /* Ancho mínimo para evitar que se aprieten demasiado */
+    max-width: 300px; /* Ancho máximo para evitar que se estiren demasiado */
+}
+
+.analytics-filter-group label {
+    font-size: 1em; /* Tamaño de fuente ligeramente mayor para labels */
+    color: #555;
+    font-weight: 500;
+    margin-bottom: 2px; /* Pequeño margen para separar de los inputs */
+}
+
+.analytics-filter-group select,
+.analytics-filter-group input[type="date"] {
+    padding: 12px 15px; /* Más padding para inputs/selects */
+    border: 1px solid #c0cdd9; /* Borde más definido */
+    border-radius: 10px; /* Bordes más redondeados */
+    font-size: 1em; /* Tamaño de fuente estándar */
+    width: 100%; /* Ocupa el 100% del ancho de su grupo */
+    background-color: #fcfdff; /* Fondo muy claro */
+    cursor: pointer;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    appearance: none; /* Elimina estilos por defecto del navegador */
+    background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23666666%22%20d%3D%22M287%2C114.7L159.2%2C242.5c-3.2%2C3.2-8.3%2C3.2-11.5%2C0L5.4%2C114.7c-3.2-3.2-3.2-8.3%2C0-11.5l11.5-11.5c3.2-3.2%2C8.3-3.2%2C11.5%2C0l118.8%2C118.8L264%2C91.7c3.2-3.2%2C8.3-3.2%2C11.5%2C0l11.5%2C11.5C290.2%2C106.4%2C290.2%2C111.5%2C287%2C114.7z%22%2F%3E%3C%2Fsvg%3E'); /* Flecha SVG personalizada para select */
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 12px;
+    padding-right: 30px; /* Espacio para la flecha */
+}
+
+.analytics-filter-group input[type="date"] {
+    /* Ajustes específicos para el icono de calendario si el navegador lo soporta */
+    padding-right: 15px;
+}
+
+
+.analytics-filter-group select:focus,
+.analytics-filter-group input[type="date"]:focus {
+    border-color: #1abc9c;
+    outline: none;
+    box-shadow: 0 0 0 4px rgba(26, 188, 156, 0.25); /* Sombra de enfoque más pronunciada */
+}
+
+.analytics-btn-apply-filters {
+    background-color: #1abc9c;
+    color: white;
+    padding: 12px 25px; /* Más padding para el botón */
+    border: none;
+    border-radius: 10px; /* Bordes más redondeados */
+    font-size: 1.05em; /* Tamaño de fuente ligeramente mayor */
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.1s ease, box-shadow 0.2s ease;
+    align-self: flex-end; /* Alinea el botón con la parte inferior de los inputs */
+    box-shadow: 0 4px 10px rgba(26, 188, 156, 0.3); /* Sombra para el botón */
+}
+
+.analytics-btn-apply-filters:hover {
+    background-color: #16a085;
+    transform: translateY(-3px); /* Efecto de "levantar" más pronunciado */
+    box-shadow: 0 8px 18px rgba(26, 188, 156, 0.4); /* Sombra más grande al pasar el ratón */
+}
+
+.analytics-btn-apply-filters:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+    box-shadow: none;
+    transform: none;
+    opacity: 0.7; /* Ligeramente transparente cuando está deshabilitado */
+}
+
+/* Área del gráfico */
+.analytics-chart-area {
+    min-height: 400px; /* Altura mínima más generosa para el gráfico */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 25px; /* Más padding */
+    background-color: #fcfcfc; /* Fondo muy claro */
+    border-radius: 10px; /* Bordes redondeados */
+    border: 1px solid #e6eaf0; /* Borde sutil */
+    box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.03); /* Sombra interna sutil */
+    position: relative; /* Para posicionar mensajes internos */
+}
+
+.analytics-loading-message,
+.analytics-error-message,
+.analytics-info-message {
+    text-align: center;
+    font-size: 1.2em; /* Mensajes más grandes */
+    color: #666;
+    padding: 20px;
+    background-color: #ffffff; /* Fondo blanco para mensajes */
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    position: absolute; /* Centrar sobre el área del gráfico */
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 80%; /* Ancho para el mensaje */
+    max-width: 400px;
+}
+
+.analytics-error-message {
+    color: #e74c3c;
+    font-weight: 600;
+    border: 1px solid #e74c3c;
+    background-color: #ffebeb;
+}
+
+.analytics-info-message {
+    color: #3498db;
+    border: 1px solid #3498db;
+    background-color: #eaf6ff;
+}
+
+/* Media Queries para responsividad */
+@media (max-width: 992px) {
+    .analytics-content-area {
+        padding: 25px;
+        margin: 25px auto;
+    }
+    .analytics-card {
+        padding: 25px;
+        margin-bottom: 30px;
+    }
+    .analytics-card-header h3 {
+        font-size: 2em;
+    }
+    .analytics-filters-container {
+        gap: 20px; /* Ajustar el gap para pantallas medianas */
+    }
+    .analytics-filter-group {
+        flex-basis: calc(50% - 20px); /* 2 columnas */
+        max-width: unset; /* Eliminar el max-width para que se ajusten mejor */
+    }
+    .analytics-filter-group select,
+    .analytics-filter-group input[type="date"] {
+        padding: 10px 12px;
+    }
+    .analytics-btn-apply-filters {
+        padding: 10px 20px;
+        font-size: 0.95em;
+    }
+    .analytics-chart-area {
+        min-height: 350px;
+    }
+}
+
+@media (max-width: 768px) {
+    .analytics-content-area {
+        padding: 15px;
+        margin: 15px auto;
+    }
+    .analytics-card {
+        padding: 20px;
+        margin-bottom: 25px;
+    }
+    .analytics-card-header {
+        gap: 15px;
+        margin-bottom: 20px;
+        padding-bottom: 15px;
+    }
+    .analytics-card-header h3 {
+        font-size: 1.8em;
+    }
+    .analytics-filters-container {
+        flex-direction: column; /* Apila los elementos en una sola columna */
+        align-items: stretch; /* Estira los elementos para ocupar el ancho completo */
+        gap: 15px;
+    }
+    .analytics-filter-group {
+        width: 100%; /* Asegura que cada grupo ocupe todo el ancho */
+        flex-basis: auto; /* Restablecer la base flexible */
+        min-width: unset; /* Eliminar el ancho mínimo */
+    }
+    .analytics-filter-group select,
+    .analytics-filter-group input[type="date"] {
+        width: 100%; /* Ocupa todo el ancho disponible */
+        padding: 10px 12px;
+        font-size: 0.9em;
+    }
+    .analytics-btn-apply-filters {
+        width: 100%; /* Ocupa todo el ancho disponible */
+        padding: 10px 18px;
+        font-size: 0.95em;
+    }
+    .analytics-chart-area {
+        min-height: 300px;
+        padding: 15px;
+    }
+    .analytics-loading-message,
+    .analytics-error-message,
+    .analytics-info-message {
+        font-size: 1.1em;
+        width: 90%;
+    }
+}
+
+@media (max-width: 480px) {
+    .analytics-content-area {
+        padding: 10px;
+        margin: 10px auto;
+    }
+    .analytics-card {
+        padding: 15px;
+        margin-bottom: 20px;
+    }
+    .analytics-card-header h3 {
+        font-size: 1.5em;
+    }
+    .analytics-filter-group label {
+        font-size: 0.9em;
+    }
+    .analytics-filter-group select,
+    .analytics-filter-group input[type="date"] {
+        font-size: 0.85em;
+        padding: 8px 10px;
+    }
+    .analytics-btn-apply-filters {
+        font-size: 0.9em;
+        padding: 8px 15px;
+    }
+    .analytics-chart-area {
+        min-height: 250px;
+        padding: 10px;
+    }
+    .analytics-loading-message,
+    .analytics-error-message,
+    .analytics-info-message {
+        font-size: 1em;
+        padding: 15px;
+    }
+}

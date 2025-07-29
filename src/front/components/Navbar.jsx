@@ -131,9 +131,6 @@ export const Navbar = () => {
             <Link className="nav-link me-3" to="/login">
               Iniciar sesión
             </Link>
-            <button className="btn btn-outline-primary rounded-pill me-3">
-              Registrar empresa
-            </button>
             {/* CAMBIO AQUÍ: `to="/login"` */}
             <Link className="btn btn-primary rounded-pill d-flex align-items-center" to="/login">
               <span>Empezar ahora</span>

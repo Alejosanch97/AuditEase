@@ -119,10 +119,11 @@ textarea.text-input {
     margin-top: 12px;
 }
 
+/* Corrección clave para alineación de checkboxes/radios */
 .radio-item,
 .option-item {
     display: flex;
-    align-items: center;
+    align-items: center; /* Alinea verticalmente el input y el texto */
     font-size: 1.05em; /* Opciones ligeramente más grandes */
     color: #333333; /* Texto oscuro para las opciones */
     cursor: pointer;
@@ -135,6 +136,9 @@ textarea.text-input {
     width: 20px; /* Tamaño ligeramente más grande */
     height: 20px;
     cursor: pointer;
+    /* Asegurarse de que no haya márgenes inesperados que desalineen */
+    margin-top: 0;
+    margin-bottom: 0;
 }
 
 .no-options-message,
@@ -163,49 +167,32 @@ textarea.text-input {
     border-top: 1px solid #e0e6ec; /* Línea divisoria suave */
 }
 
-.form-submit-actions .btn-primary,
-.form-submit-actions .btn-secondary {
+.submit-form-btn { /* Clase directa para el botón de submit */
     padding: 14px 30px; /* Más padding para botones */
     font-size: 1.1em; /* Texto de botón más grande */
     border-radius: 8px;
     cursor: pointer;
     transition: background-color 0.2s ease, transform 0.1s ease, box-shadow 0.2s ease;
     font-weight: 600;
-}
-
-.form-submit-actions .btn-primary {
     background-color: #1abc9c; /* Verde/Azul de acento como primario */
     color: white;
     border: none;
     box-shadow: 0 4px 10px rgba(26, 188, 156, 0.3);
 }
 
-.form-submit-actions .btn-primary:hover:not(:disabled) {
+.submit-form-btn:hover:not(:disabled) {
     background-color: #16a085; /* Tono más oscuro al pasar el ratón */
     transform: translateY(-2px);
     box-shadow: 0 6px 15px rgba(26, 188, 156, 0.4);
 }
 
-.form-submit-actions .btn-secondary {
-    background-color: #e0e6ec; /* Gris claro para secundario */
-    color: #34495e; /* Texto azul oscuro */
-    border: 1px solid #c0cdd9; /* Borde un poco más oscuro */
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
-}
-
-.form-submit-actions .btn-secondary:hover:not(:disabled) {
-    background-color: #d0dbe6; /* Tono más oscuro al pasar el ratón */
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-}
-
-.form-submit-actions .btn-primary:disabled,
-.form-submit-actions .btn-secondary:disabled {
+.submit-form-btn:disabled {
     opacity: 0.6;
     cursor: not-allowed;
     transform: none;
     box-shadow: none;
 }
+
 
 /* Mensajes de carga y error */
 .loading-spinner-container,
@@ -231,73 +218,21 @@ textarea.text-input {
 }
 
 /* --- ESTILOS ESPECÍFICOS PARA SELECCIÓN DE RECURSOS --- */
-.resource-selection-group {
-    border: 1px solid #e0e6ec;
-    border-radius: 8px;
-    padding: 15px;
-    background-color: #f9fbfd; /* Fondo ligeramente diferente para agrupar */
-    margin-top: 15px;
+/* Contenedor para el checkbox "Seleccionar/Deseleccionar Todos" */
+.select-all-resources-control {
+    padding-bottom: 10px;
+    border-bottom: 1px solid #e0e6ec;
+    margin-bottom: 12px; /* Espacio consistente con el gap de .options-group */
 }
 
-.resource-select-all-container { /* Contenedor para "Seleccionar Todo" */
-    padding-bottom: 10px; /* Espacio debajo del checkbox */
-    border-bottom: 1px solid #e0e6ec; /* Línea divisoria suave */
-    margin-bottom: 10px; /* Reducido para acercar a la primera categoría */
+/* Asegura que el checkbox y el texto estén alineados en "Seleccionar/Deseleccionar Todos" */
+.select-all-resources-control .option-item {
+    font-weight: 600; /* Negrita para el texto "Seleccionar/Deseleccionar Todos" */
+    color: #2c3e50;
 }
 
-.select-all-item {
-    display: flex;
-    align-items: center;
-    font-weight: 600; /* Negrita para "Seleccionar Todo" */
-    color: #2c3e50; /* Color primario */
-    margin: 0;
-    padding: 0;
-}
-
-.select-all-item input[type="checkbox"] {
-    margin-right: 10px;
-    /* Estilos existentes ya lo hacen grande y con acento */
-}
-
-/* El divisor <hr> se eliminó del JSX, así que este estilo ya no aplica */
-/* .select-all-divider { ... } */
-
-.resource-category {
-    margin-top: 0; /* Aseguramos que no haya margen superior extra */
-    padding-top: 15px; /* Espacio interno superior */
-    border-top: 1px dashed #e0e6ec; /* Divisor punteado para categorías */
-    padding-left: 20px; /* Añadimos padding-left aquí para alinear el contenido */
-}
-
-.resource-category:first-of-type {
-    margin-top: 0;
-    padding-top: 0;
-    border-top: none; /* No hay borde superior para la primera categoría */
-}
-
-.resource-category-title { /* Nueva clase para el h4 de la categoría */
-    font-size: 1.1em;
-    color: #34495e; /* Un gris azulado oscuro para los títulos de categoría */
-    margin-bottom: 10px; /* Reducido para acercar a las opciones */
-    font-weight: 700;
-    padding-bottom: 5px;
-    border-bottom: 2px solid #1abc9c; /* Subrayado de color de acento */
-    display: inline-block; /* Para que el subrayado se ajuste al texto */
-    /* Eliminamos los márgenes y paddings negativos aquí */
-    margin-left: 0;
-    padding-left: 0;
-}
-
-.resource-options-list { /* Contenedor para la lista de opciones */
-    display: flex;
-    flex-direction: column;
-    gap: 8px; /* Espacio entre las opciones individuales */
-    margin-top: 0; /* Eliminamos el margin-top aquí */
-}
-
-.resource-option-item { /* Estilos para cada opción de recurso */
-    /* Hereda de .option-item, pero podemos añadir específicos si es necesario */
-}
+/* No necesitamos .resource-category ni .resource-category-title si los recursos se listan planos */
+/* Si en el futuro se reintroducen categorías, estos estilos se pueden reevaluar */
 
 
 /* Responsividad */
@@ -315,9 +250,7 @@ textarea.text-input {
     .text-input, .number-input {
         padding: 10px 12px;
     }
-    .form-submit-actions {
-        gap: 20px;
-    }
+    /* .form-submit-actions ya no existe, ahora es .submit-form-btn */
 }
 
 @media (max-width: 768px) {
@@ -334,6 +267,9 @@ textarea.text-input {
     }
     .form-details-card .form-description {
         font-size: 1em;
+    }
+    .form-frequency {
+        font-size: 0.9em;
     }
     .question-card {
         padding: 20px;
@@ -357,24 +293,11 @@ textarea.text-input {
         height: 16px;
         margin-right: 8px;
     }
-    .form-submit-actions {
-        flex-direction: column;
-        gap: 15px;
-        margin-top: 30px;
-    }
-    .form-submit-actions .btn-primary,
-    .form-submit-actions .btn-secondary {
-        width: 100%;
+    /* .form-submit-actions ya no existe, ahora es .submit-form-btn */
+    .submit-form-btn {
+        width: 100%; /* El botón de submit ocupa todo el ancho en móvil */
         padding: 10px 20px;
         font-size: 1em;
-    }
-    .resource-category { /* Ajuste para móvil */
-        padding-left: 15px;
-    }
-    /* El h4 ya no necesita ajustes negativos en móvil si el padding-left está en el padre */
-    .resource-category-title {
-        margin-left: 0;
-        padding-left: 0;
     }
 }
 
@@ -401,12 +324,95 @@ textarea.text-input {
     .radio-item, .option-item {
         font-size: 0.9em;
     }
-    .form-submit-actions {
-        gap: 10px;
-    }
-    .form-submit-actions .btn-primary,
-    .form-submit-actions .btn-secondary {
+    /* .form-submit-actions ya no existe, ahora es .submit-form-btn */
+    .submit-form-btn {
         font-size: 0.9em;
         padding: 8px 15px;
+    }
+}
+
+/* --- ESTILOS PARA LA SECCIÓN DE FIRMA (CANVAS) --- */
+.signature-area {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    padding: 15px; /* Increased padding for more internal space */
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    background-color: #fcfcfc;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+    width: 100%; /* Occupies the full width of its parent */
+    max-width: 650px; /* Increased max width for more signature space */
+    margin: 0 auto; /* Centers the container */
+}
+
+.signature-canvas {
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    background-color: #ffffff;
+    cursor: crosshair;
+    touch-action: none; /* Important to prevent scroll on touch */
+    width: 100%; /* Makes the canvas responsive */
+    height: 280px; /* Increased visual height for more drawing space */
+    /* Ensures the canvas is not distorted if resized by CSS */
+    display: block;
+}
+
+.signature-area small {
+    font-size: 0.88em;
+    color: #777;
+    text-align: center;
+    margin-top: 5px; /* Adjusted top margin */
+}
+
+.clear-canvas-btn {
+    background-color: #e74c3c; /* Red for clearing */
+    color: white;
+    padding: 10px 20px; /* Increased padding for an easier-to-touch button */
+    border: none;
+    border-radius: 6px;
+    font-size: 1em; /* Increased font size */
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px; /* More space between icon and text */
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.clear-canvas-btn:hover {
+    background-color: #c0392b;
+    transform: translateY(-1px);
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Media Queries for signature responsiveness */
+@media (max-width: 768px) {
+    .signature-area {
+        padding: 10px;
+        gap: 8px;
+    }
+    .signature-canvas {
+        height: 220px; /* Slightly smaller on mobile */
+    }
+    .clear-signature-btn {
+        padding: 8px 15px;
+        font-size: 0.9em;
+        gap: 6px;
+    }
+    .signature-area small {
+        font-size: 0.8em;
+    }
+}
+
+@media (max-width: 480px) {
+    .signature-canvas {
+        height: 180px; /* Even smaller on very small screens */
+    }
+    .clear-signature-btn {
+        padding: 7px 12px;
+        font-size: 0.85em;
     }
 }
