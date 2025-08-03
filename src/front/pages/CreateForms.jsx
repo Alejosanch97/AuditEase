@@ -1,5 +1,4 @@
-// src/pages/CreateForms.jsx
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useGlobalReducer from '../hooks/useGlobalReducer';
 
@@ -25,7 +24,7 @@ export const CreateForms = () => {
   const [showCreateQuestionModal, setShowCreateQuestionModal] = useState(false);
   const [showEditQuestionModal, setShowEditQuestionModal] = useState(false);
   const [questionToEdit, setQuestionToEdit] = useState(null);
-  const [questionToDelete, setQuestionToDelete] = useState(null); // Estado para la pregunta a eliminar
+  const [questionToDelete, setQuestionToDelete] = useState(null);
 
   const [selectedFormForQuestions, setSelectedFormForQuestions] = useState(null);
 
@@ -135,14 +134,11 @@ export const CreateForms = () => {
       return;
     }
 
-    // Solo cargar si los datos no están ya en el store o si la lista de empresas no está completa para el owner
-    // Evita recargas innecesarias si los datos ya están presentes
     if (store.formularios.length === 0 || store.espacios.length === 0 || (userRole === 'owner' && allCompanies.length === 0)) {
-        fetchAllResources(token, currentUser.id_usuario, userRole);
+      fetchAllResources(token, currentUser.id_usuario, userRole);
     }
 
   }, [isLoggedIn, currentUser, userRole, navigate, dispatch, fetchAllResources, store.formularios.length, store.espacios.length, allCompanies.length]);
-
 
   const fetchQuestionsForSelectedForm = useCallback(async () => {
     const token = localStorage.getItem('access_token');
@@ -154,7 +150,6 @@ export const CreateForms = () => {
         const formData = await formResponse.json();
 
         if (formResponse.ok) {
-          // Actualizar el selectedFormForQuestions con los tipos de respuesta disponibles
           setSelectedFormForQuestions(formData.formulario);
           dispatch({ type: 'SET_CURRENT_FORM', payload: formData.formulario });
 
@@ -189,16 +184,14 @@ export const CreateForms = () => {
     dispatch({ type: 'ADD_FORMULARIO', payload: newFormData });
     setShowCreateFormModal(false);
     dispatch({ type: 'SET_MESSAGE', payload: { type: 'success', text: 'Formulario creado exitosamente.' } });
-    // Después de crear, recargar todos los recursos para asegurar la consistencia
     const token = localStorage.getItem('access_token');
     if (token && currentUser) {
-        fetchAllResources(token, currentUser.id_usuario, userRole);
+      fetchAllResources(token, currentUser.id_usuario, userRole);
     }
   };
 
   const handleUpdateFormSuccess = (updatedFormData) => {
     dispatch({ type: 'UPDATE_FORMULARIO', payload: updatedFormData });
-    // Si el formulario actualizado es el que estamos viendo, también actualiza currentForm
     if (selectedFormForQuestions && selectedFormForQuestions.id_formulario === updatedFormData.id_formulario) {
       setSelectedFormForQuestions(updatedFormData);
       dispatch({ type: 'SET_CURRENT_FORM', payload: updatedFormData });
@@ -206,10 +199,9 @@ export const CreateForms = () => {
     setShowEditFormModal(false);
     setFormToEdit(null);
     dispatch({ type: 'SET_MESSAGE', payload: { type: 'success', text: 'Formulario actualizado exitosamente.' } });
-    // Después de actualizar, recargar todos los recursos para asegurar la consistencia
     const token = localStorage.getItem('access_token');
     if (token && currentUser) {
-        fetchAllResources(token, currentUser.id_usuario, userRole);
+      fetchAllResources(token, currentUser.id_usuario, userRole);
     }
   };
 
@@ -227,15 +219,13 @@ export const CreateForms = () => {
       const data = await response.json();
       if (response.ok) {
         dispatch({ type: 'DELETE_FORMULARIO', payload: formToDelete.id_formulario });
-        // Si eliminamos el formulario que estamos viendo, deseleccionarlo
         if (selectedFormForQuestions && selectedFormForQuestions.id_formulario === formToDelete.id_formulario) {
           setSelectedFormForQuestions(null);
         }
         dispatch({ type: 'SET_MESSAGE', payload: { type: 'success', text: data.message } });
-        // Después de eliminar, recargar todos los recursos para asegurar la consistencia
         const token = localStorage.getItem('access_token');
         if (token && currentUser) {
-            fetchAllResources(token, currentUser.id_usuario, userRole);
+          fetchAllResources(token, currentUser.id_usuario, userRole);
         }
       } else {
         dispatch({ type: 'SET_MESSAGE', payload: { type: 'error', text: `Error al eliminar formulario: ${data.error}` } });
@@ -251,7 +241,6 @@ export const CreateForms = () => {
   const handleCreateQuestionSuccess = (newQuestionData) => {
     setShowCreateQuestionModal(false);
     dispatch({ type: 'SET_MESSAGE', payload: { type: 'success', text: 'Pregunta creada exitosamente.' } });
-    // Después de crear una pregunta, recargar las preguntas para el formulario seleccionado
     fetchQuestionsForSelectedForm();
   };
 
@@ -259,7 +248,6 @@ export const CreateForms = () => {
     setShowEditQuestionModal(false);
     setQuestionToEdit(null);
     dispatch({ type: 'SET_MESSAGE', payload: { type: 'success', text: 'Pregunta actualizada exitosamente.' } });
-    // Después de actualizar una pregunta, recargar las preguntas para el formulario seleccionado
     fetchQuestionsForSelectedForm();
   };
 
@@ -277,7 +265,6 @@ export const CreateForms = () => {
       const data = await response.json();
       if (response.ok) {
         dispatch({ type: 'SET_MESSAGE', payload: { type: 'success', text: data.message } });
-        // Después de eliminar una pregunta, recargar las preguntas para el formulario seleccionado
         fetchQuestionsForSelectedForm();
       } else {
         dispatch({ type: 'SET_MESSAGE', payload: { type: 'error', text: `Error al eliminar pregunta: ${data.error}` } });
@@ -289,6 +276,19 @@ export const CreateForms = () => {
       setQuestionToDelete(null);
     }
   };
+
+  // NUEVO: Filtra los formularios basados en el rol del usuario
+  const formulariosVisibles = useMemo(() => {
+    if (!currentUser) return [];
+
+    if (currentUser.rol === 'owner') {
+      // El owner puede ver todos los formularios
+      return store.formularios;
+    } else {
+      // Otros roles solo ven formularios que no son plantillas
+      return store.formularios.filter(form => !form.es_plantilla);
+    }
+  }, [store.formularios, currentUser]);
 
   if (!currentUser) {
     return (
@@ -319,7 +319,7 @@ export const CreateForms = () => {
             )}
           </div>
           <div className="cf-table-responsive">
-            {store.formularios.length > 0 ? (
+            {formulariosVisibles.length > 0 ? (
               <table className="cf-data-table">
                 <thead>
                   <tr>
@@ -331,7 +331,7 @@ export const CreateForms = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {store.formularios.map(form => (
+                  {formulariosVisibles.map(form => (
                     <tr key={form.id_formulario}>
                       <td>{form.nombre_formulario}</td>
                       <td>{form.descripcion || 'N/A'}</td>
@@ -390,7 +390,6 @@ export const CreateForms = () => {
                         <td>{question.orden}</td>
                         <td>{question.texto_pregunta}</td>
                         <td>{question.tipo_respuesta_nombre || 'N/A'}</td>
-                        {/* Lógica condicional para mostrar opciones/recursos */}
                         <td>
                           {question.tipo_respuesta_nombre === 'seleccion_multiple' || question.tipo_respuesta_nombre === 'seleccion_unica' ? (
                             Array.isArray(question.opciones_respuesta_json) ? question.opciones_respuesta_json.join(', ') : 'N/A'
@@ -400,10 +399,9 @@ export const CreateForms = () => {
                                 {question.opciones_respuesta_json.espacios?.length > 0 && `Espacios: ${question.opciones_respuesta_json.espacios.length} `}
                                 {question.opciones_respuesta_json.subespacios?.length > 0 && `Sub-Espacios: ${question.opciones_respuesta_json.subespacios.length} `}
                                 {question.opciones_respuesta_json.objetos?.length > 0 && `Objetos: ${question.opciones_respuesta_json.objetos.length}`}
-                                {/* Si no hay ninguna selección, pero es de recursos (plantilla), mostrar un mensaje */}
-                                {question.opciones_respuesta_json.espacios?.length === 0 && 
-                                 question.opciones_respuesta_json.subespacios?.length === 0 && 
-                                 question.opciones_respuesta_json.objetos?.length === 0 && 
+                                {question.opciones_respuesta_json.espacios?.length === 0 &&
+                                 question.opciones_respuesta_json.subespacios?.length === 0 &&
+                                 question.opciones_respuesta_json.objetos?.length === 0 &&
                                  'Definición de plantilla (recursos dinámicos)'}
                               </>
                             ) : 'N/A'
@@ -429,7 +427,7 @@ export const CreateForms = () => {
                 </table>
               ) : (
                 <p className="cf-no-data-message">Este formulario no tiene preguntas. {(userRole === 'owner' || userRole === 'admin_empresa') && "Añade una nueva pregunta."}</p>
-            )}
+              )}
             </div>
             <div className="cf-card-footer">
               <button className="cf-btn cf-btn-secondary" onClick={() => setSelectedFormForQuestions(null)}>
@@ -440,7 +438,6 @@ export const CreateForms = () => {
         )}
       </div>
 
-      {/* Modales */}
       {showCreateFormModal && (
         <CreateEditFormModal
           mode="create"
@@ -472,7 +469,6 @@ export const CreateForms = () => {
 
       {formToDelete && (
         <ConfirmationModal
-          // MENSAJE DE CONFIRMACIÓN ACTUALIZADO
           message={`¿Estás seguro de que quieres eliminar el formulario "${formToDelete.nombre_formulario}"? Esto eliminará PERMANENTEMENTE todas sus preguntas, envíos y respuestas asociadas, y no se puede deshacer.`}
           onConfirm={handleDeleteForm}
           onCancel={() => setFormToDelete(null)}
@@ -490,7 +486,7 @@ export const CreateForms = () => {
           allSubEspacios={store.subEspacios || []}
           allObjetos={store.objetos || []}
           currentUser={currentUser}
-          allCompanies={allCompanies || []} 
+          allCompanies={allCompanies || []}
         />
       )}
 
@@ -506,7 +502,7 @@ export const CreateForms = () => {
           allSubEspacios={store.subEspacios || []}
           allObjetos={store.objetos || []}
           currentUser={currentUser}
-          allCompanies={allCompanies || []} 
+          allCompanies={allCompanies || []}
         />
       )}
 

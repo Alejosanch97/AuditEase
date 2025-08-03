@@ -1,7 +1,7 @@
 # src/api/routes.py
 
 # ... (tus otras importaciones existentes)
-from flask import Flask, request, jsonify, url_for, Blueprint
+from flask import Flask, request, jsonify, url_for, Blueprint, redirect
 from api.models import db, Usuario, Empresa, Espacio, SubEspacio, Objeto, Formulario, Pregunta, TipoRespuesta, EnvioFormulario, Respuesta, Observacion, Notificacion, formulario_espacio, formulario_subespacio, formulario_objeto, formulario_tipo_respuesta
 from api.utils import generate_sitemap, APIException
 from flask_cors import CORS
@@ -742,7 +742,67 @@ def actualizar_empresa_por_owner(empresa_id):
         db.session.rollback()
         print(f"Error al actualizar empresa por owner: {e}")
         return jsonify({"error": f"Error interno del servidor al actualizar empresa: {str(e)}"}), 500
+@api.route('/owner/empresas/<int:empresa_id>/desactivar', methods=['DELETE'])
+@role_required(['owner'])
+@jwt_required()
+def desactivar_empresa(empresa_id):
+    """
+    Desactiva una empresa y a todos sus usuarios asociados.
+    """
+    try:
+        empresa = Empresa.query.get(empresa_id)
+        if not empresa:
+            return jsonify({"error": "Empresa no encontrada."}), 404
 
+        if not empresa.activo:
+            return jsonify({"message": "La empresa ya está inactiva."}), 200
+
+        empresa.activo = False
+        
+        # Desactivar usuarios asociados
+        usuarios_asociados = Usuario.query.filter_by(id_empresa=empresa_id, activo=True).all()
+        for user in usuarios_asociados:
+            user.activo = False
+        
+        db.session.commit()
+        return jsonify({"message": f"Empresa '{empresa.nombre_empresa}' y sus usuarios han sido desactivados.", "empresa_id": empresa_id}), 200
+
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error al desactivar empresa: {e}")
+        return jsonify({"error": f"Error interno del servidor: {str(e)}"}), 500
+
+
+@api.route('/owner/empresas/<int:empresa_id>/reactivar', methods=['PUT'])
+@role_required(['owner'])
+@jwt_required()
+def reactivar_empresa(empresa_id):
+    """
+    Reactivar una empresa y a todos sus usuarios asociados.
+    """
+    try:
+        empresa = Empresa.query.get(empresa_id)
+        if not empresa:
+            return jsonify({"error": "Empresa no encontrada."}), 404
+
+        if empresa.activo:
+            return jsonify({"message": "La empresa ya está activa."}), 200
+
+        empresa.activo = True
+
+        # Reactivar usuarios asociados
+        # Se ha cambiado 'User' por 'Usuario'
+        usuarios_asociados = Usuario.query.filter_by(id_empresa=empresa_id, activo=False).all()
+        for user in usuarios_asociados:
+            user.activo = True
+        
+        db.session.commit()
+        return jsonify({"message": f"Empresa '{empresa.nombre_empresa}' y sus usuarios han sido reactivados."}), 200
+
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error al reactivar empresa: {e}")
+        return jsonify({"error": f"Error interno del servidor: {str(e)}"}), 500
 
 # NUEVA RUTA: Eliminar (desactivar) una empresa por el OWNER
 @api.route('/owner/empresas/<int:empresa_id>', methods=['DELETE'])
@@ -983,82 +1043,98 @@ def crear_usuario_por_owner():
         print(f"Error al crear usuario por owner: {e}")
         return jsonify({"error": f"Error interno del servidor al crear usuario: {str(e)}"}), 500
 
+# NUEVA RUTA: Para editar un usuario específico por el OWNER
 @api.route('/owner/usuarios/<int:user_id>', methods=['PUT'])
 @role_required(['owner'])
-def actualizar_usuario_por_owner(user_id):
+def editar_usuario_por_owner(user_id):
     """
-    Permite al OWNER actualizar los datos de cualquier usuario,
-    incluyendo su rol y estado 'activo'.
+    Permite al OWNER editar los datos de un usuario específico.
+    Los campos a editar son: nombre_completo, email, telefono_personal, cargo.
+    IMPORTANTE: La imagen y la firma se gestionan en rutas separadas.
     """
     try:
-        usuario_a_actualizar = Usuario.query.get(user_id)
-        if not usuario_a_actualizar:
-            return jsonify({"error": "Usuario no encontrado."}), 404
-
-        # Un owner no debería poder cambiar su propio rol o desactivarse a sí mismo a través de esta ruta
-        current_user_id = get_jwt_identity()
-        if user_id == int(current_user_id) and ('rol' in request.get_json() or 'activo' in request.get_json()):
-            return jsonify({"error": "No puedes modificar tu propio rol o estado activo como owner a través de esta ruta."}), 403
-
         data = request.get_json()
 
         if not data:
-            return jsonify({"error": "No se recibieron datos"}), 400
+            return jsonify({"error": "No se recibieron datos para actualizar"}), 400
 
-        # Campos que pueden ser actualizados por el owner
+        # Encontrar el usuario a editar
+        usuario_a_editar = Usuario.query.get(user_id)
+        if not usuario_a_editar:
+            return jsonify({"error": "Usuario no encontrado."}), 404
+
+        # Validaciones de los campos
         nombre_completo = data.get('nombre_completo', '').strip()
         email = data.get('email', '').strip().lower()
-        telefono_personal = data.get('telefono_personal', '').strip()
-        cargo = data.get('cargo', '').strip()
-        rol = data.get('rol', '').strip().lower()
-        activo = data.get('activo') # Puede ser booleano directamente
-        id_empresa = data.get('id_empresa') # También puede cambiar la empresa de un usuario
+        telefono_personal = data.get('telefono_personal', '')
+        cargo = data.get('cargo', '')
 
+        # Validar y actualizar el nombre_completo
         if nombre_completo:
-            usuario_a_actualizar.nombre_completo = nombre_completo
+            usuario_a_editar.nombre_completo = nombre_completo
 
-        if email and email != usuario_a_actualizar.email:
+        # Validar y actualizar el email
+        if email:
             if not validate_email(email):
                 return jsonify({"error": "El formato del email no es válido."}), 400
+            
+            # Verificar si el nuevo email ya está en uso por otro usuario
             existing_user_with_new_email = Usuario.query.filter_by(email=email).first()
-            if existing_user_with_new_email and existing_user_with_new_email.id_usuario != user_id:
+            if existing_user_with_new_email and existing_user_with_new_email.id_usuario != usuario_a_editar.id_usuario:
                 return jsonify({"error": "Este email ya está en uso por otro usuario."}), 409
-            usuario_a_actualizar.email = email
-
+            
+            usuario_a_editar.email = email
+            
+        # Actualizar teléfono y cargo (pueden ser nulos)
+        # Se usa 'is not None' para permitir que el cliente envíe una cadena vacía para borrar el campo
         if telefono_personal is not None:
-            usuario_a_actualizar.telefono_personal = telefono_personal if telefono_personal else None
+            usuario_a_editar.telefono_personal = telefono_personal.strip() if telefono_personal else None
+        
         if cargo is not None:
-            usuario_a_actualizar.cargo = cargo if cargo else None
-
-        if rol and rol != usuario_a_actualizar.rol:
-            # El owner puede cambiar roles a admin_empresa, usuario_formulario
-            if rol not in ['admin_empresa', 'usuario_formulario', 'owner']: # Owner puede asignar owner a otro usuario (ceder el rol)
-                return jsonify({"error": "Rol no válido para asignación por el owner."}), 400
-            # Prevenir que un owner cambie su propio rol si no es un paso de "transferencia"
-            # (ya lo manejamos arriba, pero redundancia no está mal)
-            if user_id == int(current_user_id) and rol != 'owner':
-                return jsonify({"error": "Un owner no puede cambiar su propio rol a algo diferente de 'owner'."}), 403
-            usuario_a_actualizar.rol = rol
-
-        if activo is not None and isinstance(activo, bool):
-            # Un owner no puede desactivarse a sí mismo
-            if user_id == int(current_user_id) and not activo:
-                return jsonify({"error": "Un owner no puede desactivarse a sí mismo."}), 403
-            usuario_a_actualizar.activo = activo
-
-        if id_empresa is not None and id_empresa != usuario_a_actualizar.id_empresa:
-            new_empresa = Empresa.query.get(id_empresa)
-            if not new_empresa:
-                return jsonify({"error": "La nueva empresa especificada no existe."}), 404
-            usuario_a_actualizar.id_empresa = id_empresa
+            usuario_a_editar.cargo = cargo.strip() if cargo else None
 
         db.session.commit()
-        return jsonify({"message": "Usuario actualizado exitosamente por el owner.", "usuario": usuario_a_actualizar.serialize()}), 200
+        return jsonify({
+            "message": "Usuario actualizado exitosamente por el owner.",
+            "usuario": usuario_a_editar.serialize()
+        }), 200
 
     except Exception as e:
         db.session.rollback()
-        print(f"Error al actualizar usuario por owner: {e}")
-        return jsonify({"error": f"Error interno del servidor al actualizar usuario: {str(e)}"}), 500
+        print(f"Error al editar usuario por owner: {e}")
+        return jsonify({"error": f"Error interno del servidor: {str(e)}"}), 500
+    
+
+# NUEVA RUTA: Reactivar un usuario
+@api.route('/owner/usuarios/reactivate/<int:user_id>', methods=['PUT'])
+@jwt_required()
+def reactivate_user(user_id):
+    """
+    Permite al OWNER reactivar un usuario que se encuentra inactivo.
+    """
+    current_user_id = get_jwt_identity()
+    current_user = Usuario.query.get(current_user_id)
+
+    if current_user.rol != 'owner':
+        return jsonify({'error': 'Acceso denegado. Solo el owner puede reactivar usuarios.'}), 403
+
+    user = Usuario.query.get(user_id)
+    if not user:
+        return jsonify({'error': 'Usuario no encontrado.'}), 404
+
+    if user.activo:
+        return jsonify({'message': 'El usuario ya está activo.'}), 400
+
+    try:
+        user.activo = True
+        db.session.commit()
+        return jsonify({'message': f'Usuario {user.nombre_completo} reactivado exitosamente.', 'user': user.serialize()}), 200
+
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error al reactivar usuario: {e}")
+        return jsonify({'error': 'Error interno del servidor al reactivar el usuario.'}), 500
+
 
 @api.route('/owner/usuarios/<int:user_id>', methods=['DELETE'])
 @role_required(['owner'])
@@ -1096,6 +1172,79 @@ def eliminar_usuario_por_owner(user_id):
         db.session.rollback()
         print(f"Error al desactivar usuario por owner: {e}")
         return jsonify({"error": f"Error interno del servidor al desactivar usuario: {str(e)}"}), 500
+
+@api.route('/usuarios/permanently/<int:user_id>', methods=['DELETE'])
+@jwt_required()
+@role_required(['owner', 'admin_empresa'])
+def permanently_delete_user(user_id):
+    """
+    Elimina permanentemente a un usuario y sus datos relacionados (respuestas de formulario).
+    Accesible para 'owner' y 'admin_empresa'.
+    """
+    current_user_id = get_jwt_identity()
+    current_user = Usuario.query.get(int(current_user_id))
+
+    # 1. Buscar el usuario a eliminar
+    user_to_delete = Usuario.query.get(user_id)
+
+    if not user_to_delete:
+        return jsonify({'error': 'Usuario no encontrado.'}), 404
+
+    # 2. No permitir que un usuario se elimine a sí mismo
+    if user_to_delete.id_usuario == current_user_id:
+        return jsonify({'error': 'No puedes eliminarte a ti mismo permanentemente.'}), 400
+
+    try:
+        # Lógica para 'owner'
+        if current_user.rol == 'owner':
+            # El owner puede eliminar a cualquier usuario, pero con validaciones adicionales
+            
+            # Si el usuario a eliminar es un 'admin_empresa', verificar si hay otros
+            if user_to_delete.rol == 'admin_empresa':
+                otros_admins = Usuario.query.filter(
+                    Usuario.id_empresa == user_to_delete.id_empresa,
+                    Usuario.rol == 'admin_empresa',
+                    Usuario.id_usuario != user_to_delete.id_usuario
+                ).count()
+                
+                if otros_admins == 0:
+                    return jsonify({
+                        'error': 'No se puede eliminar a este admin de empresa porque es el único. Asigna a otro admin o cambia su rol antes de eliminarlo.'
+                    }), 400
+        
+        # Lógica para 'admin_empresa'
+        elif current_user.rol == 'admin_empresa':
+            # Verificar que el admin solo pueda eliminar usuarios de su propia empresa
+            if user_to_delete.id_empresa != current_user.id_empresa:
+                return jsonify({'error': 'Acceso denegado. No puedes eliminar usuarios de otra empresa.'}), 403
+
+            # Verificar que el admin no pueda eliminar a otro admin
+            if user_to_delete.rol == 'admin_empresa':
+                return jsonify({'error': 'Acceso denegado. Un admin no puede eliminar a otro admin de la misma empresa.'}), 403
+
+            # El admin solo puede eliminar a 'usuario_formulario'
+            if user_to_delete.rol != 'usuario_formulario':
+                return jsonify({'error': 'Acceso denegado. Solo puedes eliminar usuarios con el rol "usuario_formulario".'}), 403
+
+        # 3. Eliminar datos relacionados (respuestas y envíos de formularios)
+        # Esto es crucial para mantener la integridad de los datos.
+        # Primero, obtenemos los envíos de formularios del usuario a eliminar.
+        user_submissions = EnvioFormulario.query.filter_by(id_usuario=user_to_delete.id_usuario).all()
+        for submission in user_submissions:
+            # Eliminar las respuestas asociadas a cada envío
+            RespuestasFormulario.query.filter_by(id_envio=submission.id_envio).delete()
+            # Luego, eliminar el envío del formulario
+            db.session.delete(submission)
+
+        # 4. Eliminar el usuario
+        db.session.delete(user_to_delete)
+        db.session.commit()
+
+        return jsonify({'message': f'El usuario con ID {user_id} y sus datos relacionados han sido eliminados permanentemente.'}), 200
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': f'Error al eliminar el usuario: {str(e)}'}), 500
 
 
 @api.route('/owner/usuarios', methods=['GET'])
@@ -1189,88 +1338,101 @@ def crear_usuario_por_admin_empresa():
         return jsonify({"error": f"Error interno del servidor al crear usuario: {str(e)}"}), 500
 
 @api.route('/empresa/usuarios/<int:user_id>', methods=['PUT'])
-@jwt_required() # Añadir jwt_required()
+@jwt_required()
 @role_required(['admin_empresa'])
-def actualizar_usuario_por_admin_empresa(user_id):
+def editar_usuario_por_admin_empresa(user_id):
     """
-    Permite a un ADMIN_EMPRESA actualizar los datos de usuarios
-    dentro de SU empresa. Puede modificar roles a 'admin_empresa' o 'usuario_formulario'.
+    Permite a un ADMIN_EMPRESA editar los datos de un usuario dentro de SU empresa.
+    - Los campos opcionales para actualizar son: nombre_completo, email, password, rol,
+      telefono_personal, cargo y 'activo'.
+    - Un ADMIN_EMPRESA no puede cambiarse a sí mismo a inactivo.
     """
     try:
         current_user_id = get_jwt_identity()
         admin_empresa = Usuario.query.get(int(current_user_id))
 
-        usuario_a_actualizar = Usuario.query.get(user_id)
-        if not usuario_a_actualizar:
-            return jsonify({"error": "Usuario no encontrado."}), 404
+        if not admin_empresa or not admin_empresa.id_empresa:
+            return jsonify({"error": "El administrador de empresa no está asociado a una empresa válida."}), 403
 
-        # 1. Restricción: Admin_empresa solo puede modificar usuarios de SU empresa
-        if usuario_a_actualizar.id_empresa != admin_empresa.id_empresa:
-            return jsonify({"error": "No tienes permiso para modificar usuarios de otras empresas."}), 403
-        
+        usuario_a_editar = Usuario.query.get(user_id)
+        if not usuario_a_editar:
+            return jsonify({"error": f"Usuario con ID {user_id} no encontrado."}), 404
+
+        if usuario_a_editar.id_empresa != admin_empresa.id_empresa:
+            return jsonify({"error": "No tiene permisos para editar a este usuario."}), 403
+
         data = request.get_json()
         if not data:
-            return jsonify({"error": "No se recibieron datos"}), 400
+            return jsonify({"error": "No se recibieron datos para actualizar."}), 400
 
-        # 2. Restricción: Un admin_empresa no puede modificarse a sí mismo (rol o activo)
-        if user_id == admin_empresa.id_usuario:
-            if 'rol' in data and data['rol'].lower() != admin_empresa.rol:
-                return jsonify({"error": "No puedes modificar tu propio rol como administrador de empresa."}), 403
-            if 'activo' in data and not data['activo']:
-                return jsonify({"error": "No puedes desactivarte a ti mismo como administrador de empresa."}), 403
-
-        # 3. Restricción: Un admin_empresa no puede asignar el rol 'owner'
-        if 'rol' in data and data['rol'].lower() == 'owner':
-            return jsonify({"error": "Un administrador de empresa no puede asignar el rol 'owner'."}), 403
-
-        # 4. Restricción: Un admin_empresa no puede desactivar a otro admin_empresa (manejo de 'activo')
-        if 'activo' in data and not data['activo'] and usuario_a_actualizar.rol == 'admin_empresa':
-             return jsonify({"error": "Un administrador de empresa no puede desactivar a otro administrador de empresa."}), 403
-
-        # 5. Restricción: Un admin_empresa no puede cambiar la empresa de un usuario
-        if 'id_empresa' in data and data['id_empresa'] != usuario_a_actualizar.id_empresa:
-            return jsonify({"error": "Un administrador de empresa no puede cambiar la empresa de un usuario."}), 403
-
-
+        # Procesar los campos a actualizar
         nombre_completo = data.get('nombre_completo', '').strip()
         email = data.get('email', '').strip().lower()
+        password = data.get('password', '')
+        rol = data.get('rol', '').strip().lower()
         telefono_personal = data.get('telefono_personal', '').strip()
         cargo = data.get('cargo', '').strip()
-        rol = data.get('rol', '').strip().lower() # Puede ser 'admin_empresa' o 'usuario_formulario'
-        activo = data.get('activo')
+        activo = data.get('activo') # Nuevo campo para activar/desactivar
 
         if nombre_completo:
-            usuario_a_actualizar.nombre_completo = nombre_completo
+            usuario_a_editar.nombre_completo = nombre_completo
 
-        if email and email != usuario_a_actualizar.email:
+        if email and email != usuario_a_editar.email:
             if not validate_email(email):
-                return jsonify({"error": "El formato del email no es válido."}), 400
-            existing_user_with_new_email = Usuario.query.filter_by(email=email).first()
-            if existing_user_with_new_email and existing_user_with_new_email.id_usuario != user_id:
-                return jsonify({"error": "Este email ya está en uso por otro usuario."}), 409
-            usuario_a_actualizar.email = email
+                return jsonify({"error": "El formato del email del usuario no es válido."}), 400
+            
+            existing_user_by_email = Usuario.query.filter(Usuario.email == email, Usuario.id_usuario != user_id).first()
+            if existing_user_by_email:
+                return jsonify({"error": "Ya existe un usuario con este email."}), 409
+            
+            usuario_a_editar.email = email
+
+        if password:
+            is_valid_password, password_message = validate_password(password)
+            if not is_valid_password:
+                return jsonify({"error": password_message}), 400
+            
+            usuario_a_editar.contrasena_hash = generate_password_hash(password)
+            usuario_a_editar.cambio_password_requerido = True
+
+        if rol:
+            if rol not in ['admin_empresa', 'usuario_formulario']:
+                return jsonify({"error": "Rol inválido. Un administrador de empresa solo puede asignar roles 'admin_empresa' o 'usuario_formulario'."}), 403
+            
+            # Un admin no puede cambiar su propio rol
+            if user_id == admin_empresa.id_usuario and rol != admin_empresa.rol:
+                 return jsonify({"error": "No puedes cambiar tu propio rol."}), 403
+
+            usuario_a_editar.rol = rol
 
         if telefono_personal is not None:
-            usuario_a_actualizar.telefono_personal = telefono_personal if telefono_personal else None
+            usuario_a_editar.telefono_personal = telefono_personal
+            
         if cargo is not None:
-            usuario_a_actualizar.cargo = cargo if cargo else None
+            usuario_a_editar.cargo = cargo
 
-        if rol and rol != usuario_a_actualizar.rol:
-            # Un admin_empresa solo puede cambiar a admin_empresa o usuario_formulario
-            if rol not in ['admin_empresa', 'usuario_formulario']:
-                return jsonify({"error": "Rol no válido para asignación por el administrador de empresa."}), 403
-            usuario_a_actualizar.rol = rol
-
+        # NUEVA LÓGICA PARA ACTIVAR/DESACTIVAR
         if activo is not None and isinstance(activo, bool):
-            usuario_a_actualizar.activo = activo
+            if user_id == admin_empresa.id_usuario and not activo:
+                return jsonify({"error": "No puedes desactivarte a ti mismo."}), 403
+            # Restricción: un admin_empresa no puede desactivar a otro admin_empresa
+            if usuario_a_editar.rol == 'admin_empresa' and usuario_a_editar.id_usuario != admin_empresa.id_usuario and not activo:
+                return jsonify({"error": "No tienes permiso para desactivar a otro administrador de la empresa."}), 403
+
+            usuario_a_editar.activo = activo
 
         db.session.commit()
-        return jsonify({"message": "Usuario actualizado exitosamente por el administrador de empresa.", "usuario": usuario_a_actualizar.serialize()}), 200
+
+        return jsonify({
+            "message": "Usuario actualizado exitosamente por el administrador de empresa.",
+            "usuario": usuario_a_editar.serialize()
+        }), 200
 
     except Exception as e:
         db.session.rollback()
-        print(f"Error al actualizar usuario por admin de empresa: {e}")
-        return jsonify({"error": f"Error interno del servidor al actualizar usuario: {str(e)}"}), 500
+        print(f"Error al editar usuario por admin de empresa: {e}")
+        return jsonify({"error": f"Error interno del servidor al editar usuario: {str(e)}"}), 500
+
 
 @api.route('/empresa/usuarios', methods=['GET'])
 @jwt_required() # Añadir jwt_required()
@@ -1298,45 +1460,47 @@ def listar_usuarios_por_empresa():
 @api.route('/empresa/usuarios/<int:user_id>', methods=['DELETE'])
 @jwt_required()
 @role_required(['admin_empresa'])
-def desactivar_usuario_por_admin_empresa(user_id):
+def eliminar_usuario_por_admin_empresa(user_id):
     """
-    Permite a un ADMIN_EMPRESA desactivar (soft delete) un usuario
-    con rol 'usuario_formulario' dentro de SU empresa.
+    Permite a un ADMIN_EMPRESA ELIMINAR PERMANENTEMENTE un usuario
+    con rol 'usuario_formulario' de SU empresa.
     """
     try:
         current_user_id = get_jwt_identity()
         admin_empresa = Usuario.query.get(int(current_user_id))
 
-        usuario_a_desactivar = Usuario.query.get(user_id)
-        if not usuario_a_desactivar:
+        usuario_a_eliminar = Usuario.query.get(user_id)
+        if not usuario_a_eliminar:
             return jsonify({"error": "Usuario no encontrado."}), 404
 
-        # 1. Restricción: Admin_empresa solo puede desactivar usuarios de SU empresa
-        if usuario_a_desactivar.id_empresa != admin_empresa.id_empresa:
-            return jsonify({"error": "No tienes permiso para desactivar usuarios de otra empresa."}), 403
+        # 1. Restricción: Admin_empresa solo puede eliminar usuarios de SU empresa
+        if usuario_a_eliminar.id_empresa != admin_empresa.id_empresa:
+            return jsonify({"error": "No tienes permiso para eliminar usuarios de otra empresa."}), 403
 
-        # 2. Restricción: No puede desactivarse a sí mismo
+        # 2. Restricción: No puede eliminarse a sí mismo
         if user_id == admin_empresa.id_usuario:
-            return jsonify({"error": "No puedes desactivarte a ti mismo."}), 403
+            return jsonify({"error": "No puedes eliminarte a ti mismo."}), 403
+
+        # 3. Restricción: Solo puede eliminar permanentemente 'usuario_formulario'
+        if usuario_a_eliminar.rol != 'usuario_formulario':
+            return jsonify({"error": "No tienes permiso para eliminar un usuario con este rol (solo 'usuario_formulario')."}), 403
         
-        # 3. Restricción: Solo puede desactivar usuarios_formulario
-        if usuario_a_desactivar.rol != 'usuario_formulario':
-            return jsonify({"error": "No tienes permiso para desactivar un usuario con este rol (solo 'usuario_formulario')."}), 403
+        # Opcional: Podrías añadir una validación para evitar borrar usuarios activos,
+        # obligando a que se desactiven primero.
+        if usuario_a_eliminar.activo:
+            return jsonify({"error": "El usuario debe estar inactivo para ser eliminado permanentemente. Desactívalo primero."}), 403
 
-        if not usuario_a_desactivar.activo:
-            return jsonify({"message": "El usuario ya está inactivo."}), 200
-
-        usuario_a_desactivar.activo = False
-        db.session.add(usuario_a_desactivar)
+        # Eliminar el usuario de la base de datos
+        db.session.delete(usuario_a_eliminar)
         db.session.commit()
 
-        return jsonify({"message": f"Usuario '{usuario_a_desactivar.nombre_completo}' ha sido desactivado exitosamente por el administrador de empresa."}), 200
+        return jsonify({"message": f"Usuario '{usuario_a_eliminar.nombre_completo}' ha sido eliminado permanentemente."}), 200
 
     except Exception as e:
         db.session.rollback()
-        print(f"Error al desactivar usuario por admin de empresa: {e}")
-        return jsonify({"error": f"Error interno del servidor al desactivar usuario: {str(e)}"}), 500
-
+        print(f"Error al eliminar usuario por admin de empresa: {e}")
+        return jsonify({"error": f"Error interno del servidor al eliminar usuario: {str(e)}"}), 500
+    
 # --- Ajustes en la ruta de cambio de contraseña para incluir el flag ---
 @api.route('/cambiar-password-inicial', methods=['PUT'])
 @jwt_required()
@@ -2446,47 +2610,33 @@ def delete_formulario(form_id):
 # --- INICIO DE RUTAS PARA PREGUNTAS ---
 
 @api.route('/formularios/<int:form_id>/preguntas', methods=['GET'])
+@jwt_required()
 @role_required(['owner', 'admin_empresa', 'usuario_formulario'])
 def get_preguntas_by_formulario(form_id):
     try:
         current_user_id = get_jwt_identity()
-        usuario = Usuario.query.options(joinedload(Usuario.empresa)).get(int(current_user_id)) # Cargar la empresa del usuario
+        usuario = Usuario.query.options(joinedload(Usuario.empresa)).get(int(current_user_id))
         
-        formulario = Formulario.query.options(joinedload(Formulario.preguntas).joinedload(Pregunta.tipo_respuesta)).get(form_id) # Cargar preguntas y sus tipos
+        formulario = Formulario.query.options(joinedload(Formulario.preguntas).joinedload(Pregunta.tipo_respuesta)).get(form_id)
         if not formulario:
             return jsonify({"error": "Formulario no encontrado."}), 404
 
-        # Control de acceso por empresa (MODIFICADO para incluir plantillas)
         if usuario.rol != 'owner':
-            is_allowed_template = False
             if formulario.es_plantilla:
-                if formulario.es_plantilla_global:
-                    is_allowed_template = True
-                elif usuario.id_empresa in formulario.compartir_con_empresas_ids:
-                    is_allowed_template = True
-            
-            if not is_allowed_template and formulario.id_empresa != usuario.id_empresa:
+                if not (formulario.es_plantilla_global or usuario.id_empresa in (formulario.compartir_con_empresas_ids or [])):
+                    return jsonify({"error": "No tienes permisos para acceder a las preguntas de este formulario."}), 403
+            elif formulario.id_empresa != usuario.id_empresa:
                 return jsonify({"error": "No tienes permisos para acceder a las preguntas de este formulario."}), 403
 
+        if formulario.es_plantilla:
+            return redirect(url_for('api.get_preguntas_de_plantilla', form_id=form_id))
+
         preguntas_data = []
-        for p in formulario.preguntas: # Iterar sobre las preguntas cargadas
+        for p in formulario.preguntas:
             p_data = p.serialize()
             p_data['tipo_respuesta_nombre'] = p.tipo_respuesta.nombre_tipo if p.tipo_respuesta else None
-
-            # LÓGICA CLAVE: Si es una plantilla y la pregunta es de selección de recursos
-            # Se devuelven los recursos de la empresa del usuario que CONSUME la plantilla
-            if formulario.es_plantilla and p.tipo_respuesta and p.tipo_respuesta.nombre_tipo == 'seleccion_recursos':
-                # Obtener todos los espacios, subespacios y objetos de la empresa del usuario actual
-                all_espacios_for_current_company = Espacio.query.filter_by(id_empresa=usuario.id_empresa).all()
-                all_subespacios_for_current_company = SubEspacio.query.join(Espacio).filter(Espacio.id_empresa == usuario.id_empresa).all()
-                all_objetos_for_current_company = Objeto.query.join(SubEspacio).join(Espacio).filter(Espacio.id_empresa == usuario.id_empresa).all()
-
-                p_data['opciones_respuesta_json'] = {
-                    'espacios': [e.id_espacio for e in all_espacios_for_current_company],
-                    'subespacios': [s.id_subespacio for s in all_subespacios_for_current_company],
-                    'objetos': [o.id_objeto for o in all_objetos_for_current_company]
-                }
-            
+            # Asegúrate de enviar la columna `recurso_asociado`
+            # Nota: la serialización ya incluye esto si has actualizado el modelo.
             preguntas_data.append(p_data)
 
         return jsonify({"preguntas": preguntas_data}), 200
@@ -2495,6 +2645,66 @@ def get_preguntas_by_formulario(form_id):
         print(f"Error al obtener preguntas del formulario: {e}")
         return jsonify({"error": f"Error interno del servidor al obtener preguntas: {str(e)}"}), 500
 
+# --- RUTA GET /formularios/<form_id>/preguntas/plantilla (CORREGIDA) ---
+@api.route('/formularios/<int:form_id>/preguntas/plantilla', methods=['GET'])
+@jwt_required()
+@role_required(['owner', 'admin_empresa', 'usuario_formulario'])
+def get_preguntas_de_plantilla(form_id):
+    try:
+        current_user_id = get_jwt_identity()
+        usuario = Usuario.query.options(joinedload(Usuario.empresa)).get(int(current_user_id))
+        
+        formulario = Formulario.query.options(joinedload(Formulario.preguntas).joinedload(Pregunta.tipo_respuesta)).get(form_id)
+        if not formulario:
+            return jsonify({"error": "Formulario no encontrado."}), 404
+        
+        if not formulario.es_plantilla:
+            return redirect(url_for('api.get_preguntas_by_formulario', form_id=form_id))
+
+        is_allowed_template = False
+        if formulario.es_plantilla_global:
+            is_allowed_template = True
+        elif usuario.id_empresa in (formulario.compartir_con_empresas_ids or []):
+            is_allowed_template = True
+        
+        if not is_allowed_template and formulario.id_empresa != usuario.id_empresa:
+            return jsonify({"error": "No tienes permisos para acceder a las preguntas de esta plantilla."}), 403
+
+        preguntas_data = []
+        for p in formulario.preguntas:
+            p_data = p.serialize()
+            p_data['tipo_respuesta_nombre'] = p.tipo_respuesta.nombre_tipo if p.tipo_respuesta else None
+            
+            # --- LÓGICA CORREGIDA PARA PLANTILLAS DE SELECCIÓN DE RECURSOS ---
+            # Ahora usamos la nueva columna `recurso_asociado` para determinar qué enviar
+            if p.recurso_asociado:
+                opciones = {}
+                if p.recurso_asociado == 'espacio':
+                    opciones['espacios'] = []
+                elif p.recurso_asociado == 'subespacio':
+                    opciones['subespacios'] = []
+                elif p.recurso_asociado == 'objeto':
+                    opciones['objetos'] = []
+                p_data['opciones_respuesta_json'] = opciones
+            # Si `recurso_asociado` no está definido, o no es una pregunta de recursos,
+            # mantenemos la lógica anterior.
+            elif p.tipo_respuesta and p.tipo_respuesta.nombre_tipo == 'seleccion_recursos':
+                p_data['opciones_respuesta_json'] = {
+                    'espacios': [],
+                    'subespacios': [],
+                    'objetos': []
+                }
+            # --- FIN DE LÓGICA CORREGIDA ---
+            
+            preguntas_data.append(p_data)
+
+        return jsonify({"preguntas": preguntas_data}), 200
+
+    except Exception as e:
+        print(f"Error al obtener preguntas de plantilla: {e}")
+        return jsonify({"error": f"Error interno del servidor al obtener preguntas de plantilla: {str(e)}"}), 500
+
+# --- RUTA POST /formularios/<form_id>/preguntas (CORREGIDA) ---
 @api.route('/formularios/<int:form_id>/preguntas', methods=['POST'])
 @role_required(['owner', 'admin_empresa'])
 def create_pregunta(form_id):
@@ -2510,21 +2720,18 @@ def create_pregunta(form_id):
         if not formulario:
             return jsonify({"error": "Formulario no encontrado."}), 404
 
-        # Control de acceso por empresa (MODIFICADO para incluir plantillas)
-        if usuario.rol != 'owner': # Owner siempre puede añadir preguntas a sus plantillas
-            is_allowed_template_management = False
-            if formulario.es_plantilla:
-                # Solo el owner de la empresa de la plantilla puede añadir/modificar preguntas de plantilla
-                if usuario.id_empresa == formulario.id_empresa:
-                    is_allowed_template_management = True
-            
-            if not is_allowed_template_management and formulario.id_empresa != usuario.id_empresa:
-                return jsonify({"error": "No tienes permisos para añadir preguntas a este formulario."}), 403
+        # Validación: Esta ruta NO debe usarse para plantillas.
+        if formulario.es_plantilla:
+            return jsonify({"error": "Esta ruta no es válida para formularios de plantilla."}), 400
+
+        if usuario.rol != 'owner' and formulario.id_empresa != usuario.id_empresa:
+            return jsonify({"error": "No tienes permisos para añadir preguntas a este formulario."}), 403
 
         texto_pregunta = data.get('texto_pregunta', '').strip()
         tipo_respuesta_id = data.get('tipo_respuesta_id')
         orden = data.get('orden')
         opciones_respuesta_json = data.get('opciones_respuesta_json')
+        recurso_asociado = None # En esta ruta, este campo siempre será nulo.
 
         if not all([texto_pregunta, tipo_respuesta_id, orden is not None]):
             return jsonify({"error": "Texto de pregunta, tipo de respuesta y orden son requeridos."}), 400
@@ -2532,35 +2739,26 @@ def create_pregunta(form_id):
         tipo_respuesta = TipoRespuesta.query.get(tipo_respuesta_id)
         if not tipo_respuesta:
             return jsonify({"error": "Tipo de respuesta no válido."}), 400
-
-        # Validaciones específicas según el tipo de respuesta
+        
+        # --- Lógica de validación simplificada para formularios normales ---
         if tipo_respuesta.nombre_tipo in ['seleccion_multiple', 'seleccion_unica']:
-            if not isinstance(opciones_respuesta_json, list):
-                return jsonify({"error": "Para selección múltiple/única, 'opciones_respuesta_json' debe ser una lista de opciones."}), 400
+            if not isinstance(opciones_respuesta_json, list) or not opciones_respuesta_json:
+                return jsonify({"error": "Para selección múltiple/única, 'opciones_respuesta_json' debe ser una lista de opciones no vacía."}), 400
+        
         elif tipo_respuesta.nombre_tipo == 'seleccion_recursos':
-            # Para seleccion_recursos, esperamos un diccionario con listas de IDs
-            if not isinstance(opciones_respuesta_json, dict) or \
-               'espacios' not in opciones_respuesta_json or \
-               'subespacios' not in opciones_respuesta_json or \
-               'objetos' not in opciones_respuesta_json or \
-               not isinstance(opciones_respuesta_json['espacios'], list) or \
-               not isinstance(opciones_respuesta_json['subespacios'], list) or \
-               not isinstance(opciones_respuesta_json['objetos'], list):
-                return jsonify({"error": "Para 'seleccion_recursos', 'opciones_respuesta_json' debe ser un diccionario con listas de 'espacios', 'subespacios' y 'objetos'."}), 400
-            # No validar los IDs de recursos aquí si es una plantilla, solo guardarlos
-            # La validación de existencia de recursos se hace en el formulario padre si no es plantilla
-        elif tipo_respuesta.nombre_tipo in ['firma', 'dibujo'] and opciones_respuesta_json is not None:
-            return jsonify({"error": "Para tipo 'firma' o 'dibujo', 'opciones_respuesta_json' no debe ser proporcionado."}), 400
-        elif opciones_respuesta_json is not None: # Para otros tipos que no usan opciones
-             return jsonify({"error": f"El tipo de respuesta '{tipo_respuesta.nombre_tipo}' no soporta 'opciones_respuesta_json'."}), 400
-
+            if not isinstance(opciones_respuesta_json, dict) or not opciones_respuesta_json:
+                return jsonify({"error": "Para 'seleccion_recursos', 'opciones_respuesta_json' debe ser un diccionario de recursos."}), 400
+        
+        else:
+            opciones_respuesta_json = None
 
         nueva_pregunta = Pregunta(
             id_formulario=form_id,
             texto_pregunta=texto_pregunta,
             tipo_respuesta_id=tipo_respuesta_id,
             orden=orden,
-            opciones_respuesta_json=opciones_respuesta_json
+            opciones_respuesta_json=opciones_respuesta_json,
+            recurso_asociado=recurso_asociado
         )
         db.session.add(nueva_pregunta)
         db.session.commit()
@@ -2572,25 +2770,93 @@ def create_pregunta(form_id):
 
     except Exception as e:
         db.session.rollback()
-        print(f"Error al crear pregunta: {e}")
-        return jsonify({"error": f"Error interno del servidor al crear pregunta: {str(e)}"}), 500
+        print(f"Error al crear pregunta para formulario normal: {e}")
+        return jsonify({"error": f"Error interno del servidor: {str(e)}"}), 500
 
+
+@api.route('/formularios/plantillas/<int:form_id>/preguntas', methods=['POST'])
+@role_required(['owner']) # Solo el owner puede crear preguntas en plantillas.
+def create_pregunta_plantilla(form_id):
+    try:
+        current_user_id = get_jwt_identity()
+        usuario = Usuario.query.get(int(current_user_id))
+        data = request.get_json()
+
+        if not data:
+            return jsonify({"error": "No se recibieron datos"}), 400
+
+        formulario = Formulario.query.get(form_id)
+        if not formulario:
+            return jsonify({"error": "Formulario no encontrado."}), 404
+
+        # Validación: Esta ruta SOLO debe usarse para plantillas.
+        if not formulario.es_plantilla:
+            return jsonify({"error": "Esta ruta no es válida para formularios no plantilla."}), 400
+
+        # Verificación de permisos para plantillas
+        if usuario.rol != 'owner' and formulario.id_empresa != usuario.id_empresa:
+            return jsonify({"error": "No tienes permisos para añadir preguntas a esta plantilla."}), 403
+
+        texto_pregunta = data.get('texto_pregunta', '').strip()
+        tipo_respuesta_id = data.get('tipo_respuesta_id')
+        orden = data.get('orden')
+        opciones_respuesta_json = None # En esta ruta, este campo siempre será nulo.
+        recurso_asociado = data.get('recurso_asociado')
+
+
+        if not all([texto_pregunta, tipo_respuesta_id, orden is not None]):
+            return jsonify({"error": "Texto de pregunta, tipo de respuesta y orden son requeridos."}), 400
+
+        tipo_respuesta = TipoRespuesta.query.get(tipo_respuesta_id)
+        if not tipo_respuesta:
+            return jsonify({"error": "Tipo de respuesta no válido."}), 400
+        
+        # --- Lógica de validación simplificada para plantillas ---
+        if tipo_respuesta.nombre_tipo == 'seleccion_recursos':
+            if not recurso_asociado or recurso_asociado not in ['espacio', 'subespacio', 'objeto']:
+                return jsonify({"error": "Para 'seleccion_recursos', 'recurso_asociado' es requerido y debe ser 'espacio', 'subespacio' u 'objeto'."}), 400
+        
+        else: # Para todos los demás tipos de preguntas en plantillas
+            recurso_asociado = None
+
+        nueva_pregunta = Pregunta(
+            id_formulario=form_id,
+            texto_pregunta=texto_pregunta,
+            tipo_respuesta_id=tipo_respuesta_id,
+            orden=orden,
+            opciones_respuesta_json=opciones_respuesta_json,
+            recurso_asociado=recurso_asociado
+        )
+        db.session.add(nueva_pregunta)
+        db.session.commit()
+
+        pregunta_data = nueva_pregunta.serialize()
+        pregunta_data['tipo_respuesta_nombre'] = tipo_respuesta.nombre_tipo
+
+        return jsonify({"message": "Pregunta de plantilla creada exitosamente.", "pregunta": pregunta_data}), 201
+
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error al crear pregunta para plantilla: {e}")
+        return jsonify({"error": f"Error interno del servidor: {str(e)}"}), 500
+    
+
+# --- RUTA GET /preguntas/<pregunta_id> (CORREGIDA) ---
 @api.route('/preguntas/<int:pregunta_id>', methods=['GET'])
 @role_required(['owner', 'admin_empresa', 'usuario_formulario'])
 def get_pregunta(pregunta_id):
     try:
         current_user_id = get_jwt_identity()
-        usuario = Usuario.query.options(joinedload(Usuario.empresa)).get(int(current_user_id)) # Cargar la empresa del usuario
+        usuario = Usuario.query.options(joinedload(Usuario.empresa)).get(int(current_user_id))
 
         pregunta = Pregunta.query.options(joinedload(Pregunta.formulario).joinedload(Formulario.empresa), joinedload(Pregunta.tipo_respuesta)).get(pregunta_id)
         if not pregunta:
             return jsonify({"error": "Pregunta no encontrada."}), 404
 
-        formulario = pregunta.formulario # Acceder al formulario cargado
-        if not formulario: # Debería existir, pero por seguridad
+        formulario = pregunta.formulario
+        if not formulario:
             return jsonify({"error": "Formulario asociado a la pregunta no encontrado."}), 404
         
-        # Control de acceso por empresa del formulario padre (MODIFICADO para incluir plantillas)
         if usuario.rol != 'owner':
             is_allowed_template = False
             if formulario.es_plantilla:
@@ -2605,33 +2871,39 @@ def get_pregunta(pregunta_id):
         pregunta_data = pregunta.serialize()
         pregunta_data['tipo_respuesta_nombre'] = pregunta.tipo_respuesta.nombre_tipo if pregunta.tipo_respuesta else None
 
-        # LÓGICA CLAVE: Si es una plantilla y la pregunta es de selección de recursos
-        # Se devuelven los recursos de la empresa del usuario que CONSUME la plantilla
-        if formulario.es_plantilla and pregunta.tipo_respuesta and pregunta.tipo_respuesta.nombre_tipo == 'seleccion_recursos':
-            # Obtener todos los espacios, subespacios y objetos de la empresa del usuario actual
-            all_espacios_for_current_company = Espacio.query.filter_by(id_empresa=usuario.id_empresa).all()
-            all_subespacios_for_current_company = SubEspacio.query.join(Espacio).filter(Espacio.id_empresa == usuario.id_empresa).all()
-            all_objetos_for_current_company = Objeto.query.join(SubEspacio).join(Espacio).filter(Espacio.id_empresa == usuario.id_empresa).all()
+        # --- LÓGICA CLAVE CORREGIDA ---
+        # Si es una plantilla y la pregunta es de selección de recursos,
+        # usamos el nuevo campo `recurso_asociado` para filtrar.
+        if formulario.es_plantilla and pregunta.recurso_asociado:
+            recursos = []
+            if pregunta.recurso_asociado == 'espacio':
+                recursos = Espacio.query.filter_by(id_empresa=usuario.id_empresa).all()
+            elif pregunta.recurso_asociado == 'subespacio':
+                recursos = SubEspacio.query.join(Espacio).filter(Espacio.id_empresa == usuario.id_empresa).all()
+            elif pregunta.recurso_asociado == 'objeto':
+                recursos = Objeto.query.join(SubEspacio).join(Espacio).filter(Espacio.id_empresa == usuario.id_empresa).all()
 
             pregunta_data['opciones_respuesta_json'] = {
-                'espacios': [e.id_espacio for e in all_espacios_for_current_company],
-                'subespacios': [s.id_subespacio for s in all_subespacios_for_current_company],
-                'objetos': [o.id_objeto for o in all_objetos_for_current_company]
+                'espacios': [r.id_espacio for r in recursos if isinstance(r, Espacio)],
+                'subespacios': [r.id_subespacio for r in recursos if isinstance(r, SubEspacio)],
+                'objetos': [r.id_objeto for r in recursos if isinstance(r, Objeto)]
             }
-
+        
         return jsonify({"pregunta": pregunta_data}), 200
 
     except Exception as e:
         print(f"Error al obtener pregunta: {e}")
         return jsonify({"error": f"Error interno del servidor al obtener pregunta: {str(e)}"}), 500
 
-@api.route('/preguntas/<int:pregunta_id>', methods=['PUT'])
-@role_required(['owner', 'admin_empresa'])
-def update_pregunta(pregunta_id):
+# --- RUTA PUT /preguntas/<pregunta_id> (CORREGIDA) ---
+@api.route('/owner/preguntas/<int:pregunta_id>', methods=['PUT'])
+@role_required(['owner'])
+def update_pregunta_owner(pregunta_id):
+    """Permite al owner actualizar cualquier pregunta."""
     try:
-        current_user_id = get_jwt_identity()
-        usuario = Usuario.query.get(int(current_user_id))
         data = request.get_json()
+        if not data:
+            return jsonify({"error": "No se recibieron datos"}), 400
 
         pregunta = Pregunta.query.get(pregunta_id)
         if not pregunta:
@@ -2639,83 +2911,120 @@ def update_pregunta(pregunta_id):
 
         formulario = Formulario.query.get(pregunta.id_formulario)
         if not formulario:
-            return jsonify({"error": "Formulario asociado a la pregunta no encontrado."}), 404
+            return jsonify({"error": "Formulario asociado no encontrado."}), 404
+
+        # Actualización de campos
+        pregunta.texto_pregunta = data.get('texto_pregunta', pregunta.texto_pregunta).strip()
+        pregunta.orden = data.get('orden', pregunta.orden)
         
-        # Control de acceso por empresa (MODIFICADO para incluir plantillas)
-        if usuario.rol != 'owner':
-            is_allowed_template_management = False
-            if formulario.es_plantilla:
-                # Solo el owner de la empresa de la plantilla puede añadir/modificar preguntas de plantilla
-                if usuario.id_empresa == formulario.id_empresa:
-                    is_allowed_template_management = True
-            
-            if not is_allowed_template_management and formulario.id_empresa != usuario.id_empresa:
-                return jsonify({"error": "No tienes permisos para actualizar esta pregunta."}), 403
+        # El owner puede actualizar el recurso asociado y las opciones en plantillas
+        pregunta.recurso_asociado = data.get('recurso_asociado', pregunta.recurso_asociado)
+        pregunta.opciones_respuesta_json = data.get('opciones_respuesta_json', pregunta.opciones_respuesta_json)
 
-        if not data:
-            return jsonify({"error": "No se recibieron datos"}), 400
-
-        texto_pregunta = data.get('texto_pregunta', '').strip()
-        tipo_respuesta_id = data.get('tipo_respuesta_id')
-        orden = data.get('orden')
-        opciones_respuesta_json = data.get('opciones_respuesta_json')
-
-        if texto_pregunta:
-            pregunta.texto_pregunta = texto_pregunta
-
-        if orden is not None:
-            pregunta.orden = orden
-
-        # Si el tipo de respuesta cambia, actualiza y luego valida las opciones
-        if tipo_respuesta_id is not None:
+        # Si se cambia el tipo de respuesta, se actualiza
+        tipo_respuesta_id = data.get('tipo_respuesta_id', pregunta.tipo_respuesta_id)
+        if tipo_respuesta_id != pregunta.tipo_respuesta_id:
             tipo_respuesta_nueva = TipoRespuesta.query.get(tipo_respuesta_id)
             if not tipo_respuesta_nueva:
                 return jsonify({"error": "Tipo de respuesta no válido."}), 400
             pregunta.tipo_respuesta_id = tipo_respuesta_id
-            
-            # Si el nuevo tipo no usa opciones, asegúrate de que se limpien
-            if tipo_respuesta_nueva.nombre_tipo not in ['seleccion_multiple', 'seleccion_unica', 'seleccion_recursos']:
-                pregunta.opciones_respuesta_json = None
-        
-        # Actualizar opciones de respuesta solo si el tipo actual de la pregunta lo permite
+
+        # Validaciones de datos según el tipo de respuesta
         if pregunta.tipo_respuesta.nombre_tipo in ['seleccion_multiple', 'seleccion_unica']:
-            if opciones_respuesta_json is not None:
-                if not isinstance(opciones_respuesta_json, list):
-                    return jsonify({"error": "Para tipos de selección múltiple/única, 'opciones_respuesta_json' debe ser una lista."}), 400
-                pregunta.opciones_respuesta_json = opciones_respuesta_json
-            # Si opciones_respuesta_json es None, no se modifica el valor existente
+            if not isinstance(pregunta.opciones_respuesta_json, list):
+                pregunta.opciones_respuesta_json = None
+                # Opcionalmente, puedes retornar un error si es un dato obligatorio
+                # return jsonify({"error": "Para tipos de selección, 'opciones_respuesta_json' debe ser una lista."}), 400
         elif pregunta.tipo_respuesta.nombre_tipo == 'seleccion_recursos':
-            if opciones_respuesta_json is not None:
-                if not isinstance(opciones_respuesta_json, dict) or \
-                   'espacios' not in opciones_respuesta_json or \
-                   'subespacios' not in opciones_respuesta_json or \
-                   'objetos' not in opciones_respuesta_json or \
-                   not isinstance(opciones_respuesta_json['espacios'], list) or \
-                   not isinstance(opciones_respuesta_json['subespacios'], list) or \
-                   not isinstance(opciones_respuesta_json['objetos'], list):
-                    return jsonify({"error": "Para 'seleccion_recursos', 'opciones_respuesta_json' debe ser un diccionario con listas de 'espacios', 'subespacios' y 'objetos'."}), 400
-                pregunta.opciones_respuesta_json = opciones_respuesta_json
-            # Si opciones_respuesta_json es None, no se modifica el valor existente
-        elif opciones_respuesta_json is not None: # Si se envía opciones para un tipo que NO las usa
-            return jsonify({"error": f"El tipo de respuesta '{pregunta.tipo_respuesta.nombre_tipo}' no soporta 'opciones_respuesta_json'."}), 400
-        # Si el tipo de respuesta NO requiere opciones y no se envió opciones_respuesta_json,
-        # y el valor actual no es None, se establece a None.
+            if pregunta.recurso_asociado not in ['espacio', 'subespacio', 'objeto']:
+                return jsonify({"error": "El campo 'recurso_asociado' debe ser 'espacio', 'subespacio' u 'objeto'."}), 400
+            # Las plantillas de recursos no tienen opciones, pero los formularios normales sí
+            if formulario.es_plantilla:
+                pregunta.opciones_respuesta_json = None
+            elif not isinstance(pregunta.opciones_respuesta_json, dict):
+                 return jsonify({"error": "Para 'seleccion_recursos', 'opciones_respuesta_json' debe ser un diccionario de listas."}), 400
         elif pregunta.opciones_respuesta_json is not None:
-            pregunta.opciones_respuesta_json = None
+             pregunta.opciones_respuesta_json = None # Aseguramos que no tenga opciones si el tipo no lo permite
 
 
         db.session.commit()
 
         pregunta_data = pregunta.serialize()
-        pregunta_data['tipo_respuesta_nombre'] = pregunta.tipo_respuesta.nombre_tipo if pregunta.tipo_respuesta else None
-
-        return jsonify({"message": "Pregunta actualizada exitosamente.", "pregunta": pregunta_data}), 200
+        pregunta_data['tipo_respuesta_nombre'] = pregunta.tipo_respuesta.nombre_tipo
+        return jsonify({"message": "Pregunta actualizada exitosamente por el owner.", "pregunta": pregunta_data}), 200
 
     except Exception as e:
         db.session.rollback()
-        print(f"Error al actualizar pregunta: {e}")
-        return jsonify({"error": f"Error interno del servidor al actualizar pregunta: {str(e)}"}), 500
+        print(f"Error al actualizar pregunta por owner: {e}")
+        return jsonify({"error": f"Error interno del servidor: {str(e)}"}), 500
 
+
+# --- RUTA PARA 'admin_empresa' (GESTIÓN DE FORMULARIOS NORMALES) ---
+@api.route('/admin_empresa/preguntas/<int:pregunta_id>', methods=['PUT'])
+@role_required(['admin_empresa'])
+def update_pregunta_admin(pregunta_id):
+    """Permite al admin_empresa actualizar preguntas en formularios de su empresa que no sean plantillas."""
+    try:
+        current_user_id = get_jwt_identity()
+        usuario = Usuario.query.get(int(current_user_id))
+        data = request.get_json()
+        if not data:
+            return jsonify({"error": "No se recibieron datos"}), 400
+
+        pregunta = Pregunta.query.get(pregunta_id)
+        if not pregunta:
+            return jsonify({"error": "Pregunta no encontrada."}), 404
+
+        formulario = Formulario.query.get(pregunta.id_formulario)
+        if not formulario:
+            return jsonify({"error": "Formulario asociado no encontrado."}), 404
+
+        # Validaciones de permisos:
+        # 1. El formulario debe pertenecer a la empresa del administrador.
+        # 2. El formulario no debe ser una plantilla.
+        if formulario.id_empresa != usuario.id_empresa or formulario.es_plantilla:
+            return jsonify({"error": "No tienes permisos para actualizar esta pregunta o el formulario es una plantilla."}), 403
+
+        # Actualización de campos
+        pregunta.texto_pregunta = data.get('texto_pregunta', pregunta.texto_pregunta).strip()
+        pregunta.orden = data.get('orden', pregunta.orden)
+        
+        # El admin solo puede editar el recurso asociado en formularios no-plantillas
+        pregunta.recurso_asociado = data.get('recurso_asociado', pregunta.recurso_asociado)
+        pregunta.opciones_respuesta_json = data.get('opciones_respuesta_json', pregunta.opciones_respuesta_json)
+        
+        # Si se cambia el tipo de respuesta
+        tipo_respuesta_id = data.get('tipo_respuesta_id', pregunta.tipo_respuesta_id)
+        if tipo_respuesta_id != pregunta.tipo_respuesta_id:
+            tipo_respuesta_nueva = TipoRespuesta.query.get(tipo_respuesta_id)
+            if not tipo_respuesta_nueva:
+                return jsonify({"error": "Tipo de respuesta no válido."}), 400
+            pregunta.tipo_respuesta_id = tipo_respuesta_id
+
+        # Validaciones de datos según el tipo de respuesta
+        if pregunta.tipo_respuesta.nombre_tipo in ['seleccion_multiple', 'seleccion_unica']:
+            if not isinstance(pregunta.opciones_respuesta_json, list):
+                 pregunta.opciones_respuesta_json = None
+        elif pregunta.tipo_respuesta.nombre_tipo == 'seleccion_recursos':
+            if pregunta.recurso_asociado not in ['espacio', 'subespacio', 'objeto']:
+                return jsonify({"error": "El campo 'recurso_asociado' debe ser 'espacio', 'subespacio' u 'objeto'."}), 400
+            if not isinstance(pregunta.opciones_respuesta_json, dict):
+                 return jsonify({"error": "Para 'seleccion_recursos', 'opciones_respuesta_json' debe ser un diccionario de listas."}), 400
+        elif pregunta.opciones_respuesta_json is not None:
+             pregunta.opciones_respuesta_json = None
+
+        db.session.commit()
+
+        pregunta_data = pregunta.serialize()
+        pregunta_data['tipo_respuesta_nombre'] = pregunta.tipo_respuesta.nombre_tipo
+        return jsonify({"message": "Pregunta actualizada exitosamente por el administrador de empresa.", "pregunta": pregunta_data}), 200
+
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error al actualizar pregunta por admin_empresa: {e}")
+        return jsonify({"error": f"Error interno del servidor: {str(e)}"}), 500
+    
+# --- RUTA DELETE /preguntas/<pregunta_id> (SIN CAMBIOS) ---
 @api.route('/preguntas/<int:pregunta_id>', methods=['DELETE'])
 @role_required(['owner', 'admin_empresa'])
 def delete_pregunta(pregunta_id):
@@ -2731,7 +3040,6 @@ def delete_pregunta(pregunta_id):
         if not formulario:
             return jsonify({"error": "Formulario asociado a la pregunta no encontrado."}), 404
         
-        # Control de acceso por empresa (MODIFICADO para incluir plantillas)
         if usuario.rol != 'owner':
             is_allowed_template_management = False
             if formulario.es_plantilla:
@@ -2741,17 +3049,12 @@ def delete_pregunta(pregunta_id):
             if not is_allowed_template_management and formulario.id_empresa != usuario.id_empresa:
                 return jsonify({"error": "No tienes permisos para eliminar esta pregunta."}), 403
 
-        # --- INICIO DE ELIMINACIÓN EN CASCADA MANUAL PARA PREGUNTA ---
-
-        # 1. Eliminar Respuestas asociadas a esta Pregunta
-        respuestas_pregunta = list(pregunta.respuestas) # Copia para iterar
+        respuestas_pregunta = list(pregunta.respuestas)
         for respuesta in respuestas_pregunta:
             db.session.delete(respuesta)
 
-        # 2. Finalmente, eliminar la Pregunta
         db.session.delete(pregunta)
         db.session.commit()
-        # --- FIN DE ELIMINACIÓN EN CASCADA MANUAL PARA PREGUNTA ---
 
         return jsonify({"message": "Pregunta y sus respuestas asociadas eliminadas exitosamente."}), 200
 
@@ -2759,6 +3062,7 @@ def delete_pregunta(pregunta_id):
         db.session.rollback()
         print(f"Error al eliminar pregunta: {e}")
         return jsonify({"error": f"Error interno del servidor al eliminar pregunta: {str(e)}"}), 500
+
 
 # --- INICIO DE RUTAS PARA ENVÍOS DE FORMULARIO (RESPUESTAS) ---
 # NUEVO ENDPOINT: Obtener el conteo de envíos de un usuario para un formulario hoy
@@ -2928,22 +3232,20 @@ def submit_formulario():
             print(f"DEBUG BACKEND: Usuario no encontrado para ID: {current_user_id}")
             return jsonify({"error": "Usuario no encontrado o sesión inválida."}), 404
         
-        data = request.get_json() # Esperamos un JSON con los datos del envío y las respuestas
+        data = request.get_json()
         if not data:
             print("DEBUG BACKEND: No se recibieron datos en la solicitud.")
             return jsonify({"error": "No se recibieron datos"}), 400
 
         id_formulario = data.get('id_formulario')
-        respuestas_data = data.get('respuestas', []) # Lista de objetos de respuesta
+        respuestas_data = data.get('respuestas', [])
         espacios_cubiertos_ids = data.get('espacios_cubiertos_ids', [])
         subespacios_cubiertos_ids = data.get('subespacios_cubiertos_ids', [])
         objetos_cubiertos_ids = data.get('objetos_cubiertos_ids', [])
 
         print(f"DEBUG BACKEND: Payload recibido: id_formulario={id_formulario}, id_usuario={usuario.id_usuario}, respuestas_count={len(respuestas_data)}")
-        print(f"DEBUG BACKEND: Contenido de 'respuestas' en el payload:")
         for idx, resp_item in enumerate(respuestas_data):
             print(f"  Respuesta {idx}: pregunta_id={resp_item.get('pregunta_id')}, valor_texto={resp_item.get('valor_texto')}, valor_booleano={resp_item.get('valor_booleano')}, valor_numerico={resp_item.get('valor_numerico')}, valores_multiples_json={resp_item.get('valores_multiples_json')}")
-
 
         if not id_formulario:
             print("DEBUG BACKEND: id_formulario es requerido en el payload.")
@@ -2954,8 +3256,6 @@ def submit_formulario():
             print(f"DEBUG BACKEND: Formulario {id_formulario} no encontrado.")
             return jsonify({"error": "Formulario no encontrado."}), 404
 
-        # Control de acceso: el usuario debe pertenecer a la empresa del formulario
-        # MODIFICADO: También permite enviar si es una plantilla compartida.
         if usuario.rol != 'owner':
             is_allowed_template = False
             if formulario.es_plantilla:
@@ -2968,10 +3268,7 @@ def submit_formulario():
                 print(f"DEBUG BACKEND: Permisos insuficientes para usuario {usuario.id_usuario} en formulario {id_formulario}.")
                 return jsonify({"error": "No tienes permisos para enviar respuestas a este formulario."}), 403
 
-        # MODIFICADO: Control de límite de diligencias por período
-        # Calcular el inicio del período dinámicamente
         period_start = datetime.utcnow() - timedelta(days=formulario.submission_period_days)
-
         current_submissions_in_period = EnvioFormulario.query.filter(
             EnvioFormulario.id_formulario == id_formulario,
             EnvioFormulario.id_usuario == usuario.id_usuario,
@@ -2981,8 +3278,6 @@ def submit_formulario():
         if current_submissions_in_period >= formulario.max_submissions_per_period:
             return jsonify({"error": f"Ya has alcanzado el límite de {formulario.max_submissions_per_period} diligencia(s) para este formulario en los últimos {formulario.submission_period_days} día(s)."}), 400
 
-
-        # Crear el registro de Envío de Formulario
         nuevo_envio = EnvioFormulario(
             id_formulario=id_formulario,
             id_usuario=int(current_user_id),
@@ -2992,28 +3287,36 @@ def submit_formulario():
             objetos_cubiertos_ids=objetos_cubiertos_ids
         )
         db.session.add(nuevo_envio)
-        db.session.flush() # Para obtener el id_envio
+        db.session.flush()
 
         print(f"DEBUG BACKEND: Nuevo envío creado con ID: {nuevo_envio.id_envio}")
 
-        # Procesar cada respuesta
         for respuesta_item in respuestas_data:
             pregunta_id = respuesta_item.get('pregunta_id')
             
-            # --- VERIFICACIÓN CLAVE AQUÍ ---
             if pregunta_id is None:
                 db.session.rollback()
                 print("ERROR BACKEND: pregunta_id es None para una respuesta. Abortando envío.")
                 return jsonify({"error": "Pregunta con ID None no encontrada o no pertenece a este formulario."}), 400
 
             valor_texto = respuesta_item.get('valor_texto')
-            valor_booleano = respuesta_item.get('valor_booleano')
+            
+            # --- CAMBIO CLAVE AQUÍ: Lógica de conversión booleana ---
+            raw_valor_booleano = respuesta_item.get('valor_booleano')
+            valor_booleano = None
+            if isinstance(raw_valor_booleano, str):
+                if raw_valor_booleano.lower() == 'true':
+                    valor_booleano = True
+                elif raw_valor_booleano.lower() == 'false':
+                    valor_booleano = False
+            elif isinstance(raw_valor_booleano, bool):
+                valor_booleano = raw_valor_booleano
+            
             valor_numerico = respuesta_item.get('valor_numerico')
             valores_multiples_json = respuesta_item.get('valores_multiples_json')
             
-            # MODIFICADO: Ahora puede ser una lista de base64 para el tipo 'dibujo'
-            firma_base64_list = respuesta_item.get('firma_base64_list') # Espera una lista de strings base64
-            firma_base64_single = respuesta_item.get('firma_base64') # Para compatibilidad si se envía una sola
+            firma_base64_list = respuesta_item.get('firma_base64_list')
+            firma_base64_single = respuesta_item.get('firma_base64')
 
             pregunta = Pregunta.query.get(pregunta_id)
             if not pregunta or pregunta.id_formulario != id_formulario:
@@ -3022,15 +3325,14 @@ def submit_formulario():
                 return jsonify({"error": f"Pregunta con ID {pregunta_id} no encontrada o no pertenece a este formulario."}), 400
 
             tipo_respuesta_obj = TipoRespuesta.query.get(pregunta.tipo_respuesta_id)
-            valor_firma_url_list = [] # Será una lista de URLs
+            valor_firma_url_list = []
 
             if tipo_respuesta_obj:
                 if tipo_respuesta_obj.nombre_tipo == 'firma':
-                    # Si la pregunta es de tipo 'firma' y el usuario tiene una firma digital guardada
                     if usuario.firma_digital_url:
                         valor_firma_url_list.append(usuario.firma_digital_url)
                         print(f"DEBUG BACKEND: Usando firma digital de perfil para pregunta {pregunta_id}: {usuario.firma_digital_url}")
-                    elif firma_base64_single: # Si no tiene firma de perfil, pero envía una en el momento
+                    elif firma_base64_single:
                         try:
                             upload_result = cloudinary.uploader.upload(firma_base64_single)
                             valor_firma_url_list.append(upload_result['secure_url'])
@@ -3039,7 +3341,6 @@ def submit_formulario():
                             print(f"ERROR BACKEND: Error al subir firma individual a Cloudinary para pregunta {pregunta_id}: {str(e)}")
                 
                 elif tipo_respuesta_obj.nombre_tipo == 'dibujo':
-                    # Para tipo 'dibujo', se esperan múltiples firmas o una sola
                     if firma_base64_list and isinstance(firma_base64_list, list):
                         for b64_signature in firma_base64_list:
                             try:
@@ -3048,23 +3349,22 @@ def submit_formulario():
                                 print(f"DEBUG BACKEND: Dibujo/firma múltiple subida para pregunta {pregunta_id}: {upload_result['secure_url']}")
                             except Exception as e:
                                 print(f"ERROR BACKEND: Error al subir dibujo/firma múltiple a Cloudinary para pregunta {pregunta_id}: {str(e)}")
-                    elif firma_base64_single: # Si solo se envía una base64 para dibujo
+                    elif firma_base64_single:
                          try:
                             upload_result = cloudinary.uploader.upload(firma_base64_single)
                             valor_firma_url_list.append(upload_result['secure_url'])
-                            print(f"DEBUG BACKEND: Dibujo/firma única subida para pregunta {pregunta_id}: {str(e)}")
+                            print(f"DEBUG BACKEND: Dibujo/firma única subida para pregunta {pregunta_id}: {upload_result['secure_url']}")
                          except Exception as e:
                             print(f"ERROR BACKEND: Error al subir dibujo/firma única a Cloudinary para pregunta {pregunta_id}: {str(e)}")
-
 
             nueva_respuesta = Respuesta(
                 id_envio=nuevo_envio.id_envio,
                 id_pregunta=pregunta_id,
                 valor_texto=valor_texto,
-                valor_booleano=valor_booleano,
+                valor_booleano=valor_booleano,  # <--- SE ASIGNA EL VALOR YA CONVERTIDO
                 valor_numerico=valor_numerico,
                 valores_multiples_json=valores_multiples_json,
-                valor_firma_url=valor_firma_url_list if valor_firma_url_list else None # Guardar como lista JSON o None
+                valor_firma_url=valor_firma_url_list if valor_firma_url_list else None
             )
             db.session.add(nueva_respuesta)
             print(f"DEBUG BACKEND: Respuesta para pregunta {pregunta_id} añadida.")
@@ -3077,50 +3377,55 @@ def submit_formulario():
         db.session.rollback()
         print(f"ERROR BACKEND: Error inesperado al enviar formulario: {e}")
         return jsonify({"error": f"Error interno del servidor al enviar formulario: {str(e)}"}), 500
-
+    
 @api.route('/envios-formulario/<int:envio_id>', methods=['GET'])
 @jwt_required()
-# @role_required(['owner', 'admin_empresa', 'usuario_formulario']) # Ya manejado dentro
 def get_envio_formulario(envio_id):
     try:
         current_user_id = get_jwt_identity()
-        usuario = Usuario.query.get(int(current_user_id))
-        if not usuario:
-            return jsonify({"error": "Usuario no encontrado."}), 404
+        usuario_acceso = Usuario.query.get(int(current_user_id))
+        if not usuario_acceso:
+            return jsonify({"error": "Usuario de acceso no encontrado."}), 404
 
         envio = EnvioFormulario.query.get(envio_id)
         if not envio:
             return jsonify({"error": "Envío de formulario no encontrado."}), 404
+        
+        usuario_envio = Usuario.query.get(envio.id_usuario)
+        if not usuario_envio:
+            return jsonify({"error": "Usuario que envió el formulario no encontrado."}), 404
 
         formulario_asociado = Formulario.query.get(envio.id_formulario)
         if not formulario_asociado:
             return jsonify({"error": "Formulario asociado al envío no encontrado."}), 404
 
-        # Control de acceso
-        if usuario.rol != 'owner':
+        # Control de acceso para el usuario que intenta ver el envío
+        if usuario_acceso.rol != 'owner':
             is_allowed_template = False
             if formulario_asociado.es_plantilla:
                 if formulario_asociado.es_plantilla_global:
                     is_allowed_template = True
-                elif usuario.id_empresa in formulario_asociado.compartir_con_empresas_ids:
+                elif usuario_acceso.id_empresa in formulario_asociado.compartir_con_empresas_ids:
                     is_allowed_template = True
             
-            if not is_allowed_template and formulario_asociado.id_empresa != usuario.id_empresa:
+            if not is_allowed_template and formulario_asociado.id_empresa != usuario_acceso.id_empresa:
                 return jsonify({"error": "No tienes permisos para acceder a este envío de formulario."}), 403
 
             # Si es usuario_formulario, solo puede ver sus propios envíos, incluso si es plantilla.
-            if usuario.rol == 'usuario_formulario' and envio.id_usuario != usuario.id_usuario:
+            if usuario_acceso.rol == 'usuario_formulario' and envio.id_usuario != usuario_acceso.id_usuario:
                 return jsonify({"error": "No tienes permisos para acceder a este envío de formulario."}), 403
 
         envio_data = envio.serialize()
         envio_data['respuestas'] = []
 
-        # Pre-fetch all resources for the FORM'S company to avoid N+1 queries
-        # Esto es importante para el rendimiento si muchas respuestas usan seleccion_recursos
-        form_company_id = formulario_asociado.id_empresa # Obtener la ID de la empresa del formulario asociado
-        all_espacios = {e.id_espacio: e.nombre_espacio for e in Espacio.query.filter_by(id_empresa=form_company_id).all()}
-        all_subespacios = {s.id_subespacio: s.nombre_subespacio for s in SubEspacio.query.join(Espacio).filter(Espacio.id_empresa == form_company_id).all()}
-        all_objetos = {o.id_objeto: o.nombre_objeto for o in Objeto.query.join(SubEspacio).join(Espacio).filter(Espacio.id_empresa == form_company_id).all()}
+        # --- LÓGICA CORREGIDA PARA PRE-FETCH DE RECURSOS ---
+        # Usar el ID de la empresa del usuario que envió el formulario
+        # Esto es crucial para plantillas que son llenadas por usuarios de diferentes empresas
+        envio_company_id = usuario_envio.id_empresa 
+        
+        all_espacios = {e.id_espacio: e.nombre_espacio for e in Espacio.query.filter_by(id_empresa=envio_company_id).all()}
+        all_subespacios = {s.id_subespacio: s.nombre_subespacio for s in SubEspacio.query.join(Espacio).filter(Espacio.id_empresa == envio_company_id).all()}
+        all_objetos = {o.id_objeto: o.nombre_objeto for o in Objeto.query.join(SubEspacio).join(Espacio).filter(Espacio.id_empresa == envio_company_id).all()}
         resource_names_map = {**all_espacios, **all_subespacios, **all_objetos}
 
         for respuesta in envio.respuestas:
@@ -3135,13 +3440,12 @@ def get_envio_formulario(envio_id):
                     try:
                         selected_resource_ids = json.loads(res_data['valores_multiples_json'])
                         if isinstance(selected_resource_ids, list):
-                            # Map IDs to names
                             selected_resource_names = [
                                 resource_names_map.get(res_id, f"ID Desconocido: {res_id}")
                                 for res_id in selected_resource_ids
                             ]
                             res_data['valor_recursos_nombres'] = selected_resource_names
-                        elif isinstance(selected_resource_ids, (int, str)): # Handle single resource ID stored directly
+                        elif isinstance(selected_resource_ids, (int, str)):
                             name = resource_names_map.get(int(selected_resource_ids), f"ID Desconocido: {selected_resource_ids}")
                             res_data['valor_recursos_nombres'] = [name]
                     except (json.JSONDecodeError, TypeError) as e:
@@ -3151,15 +3455,13 @@ def get_envio_formulario(envio_id):
 
         # Opcional: añadir detalles del formulario y usuario que lo envió
         envio_data['formulario_info'] = formulario_asociado.serialize()
-        envio_data['usuario_info'] = Usuario.query.get(envio.id_usuario).serialize() if Usuario.query.get(envio.id_usuario) else None
-
+        envio_data['usuario_info'] = usuario_envio.serialize()
 
         return jsonify({"envio_formulario": envio_data}), 200
 
     except Exception as e:
         print(f"Error al obtener envío de formulario: {e}")
         return jsonify({"error": f"Error interno del servidor al obtener envío de formulario: {str(e)}"}), 500
-
 
 
 
@@ -3692,20 +3994,35 @@ def get_forms_for_analytics():
         if not usuario:
             return jsonify({"error": "Usuario no encontrado."}), 404
 
-        # Filtrar formularios accesibles por el usuario
-        if usuario.rol == 'owner':
-            formularios = Formulario.query.all()
-        elif usuario.rol == 'admin_empresa':
-            formularios = Formulario.query.filter_by(id_empresa=usuario.id_empresa).all()
-        else: # usuario_formulario
-            # Solo formularios de su empresa y plantillas globales/compartidas
-            formularios = Formulario.query.filter(
-                (Formulario.id_empresa == usuario.id_empresa) |
-                (Formulario.es_plantilla_global == True) |
-                (Formulario.compartir_con_empresas_ids.contains(usuario.id_empresa))
-            ).all()
+        formularios_accesibles = []
 
-        return jsonify({"formularios": [{"id_formulario": f.id_formulario, "nombre_formulario": f.nombre_formulario} for f in formularios]}), 200
+        # Lógica centralizada para obtener todos los formularios accesibles
+        # para un usuario, incluyendo formularios de su empresa y plantillas.
+        
+        # 1. Obtener formularios de la empresa del usuario
+        formularios_empresa = Formulario.query.filter_by(id_empresa=usuario.id_empresa).all()
+        formularios_accesibles.extend(formularios_empresa)
+        
+        # 2. Obtener plantillas globales
+        plantillas_globales = Formulario.query.filter_by(es_plantilla_global=True).all()
+        formularios_accesibles.extend(plantillas_globales)
+        
+        # 3. Obtener plantillas compartidas con la empresa del usuario
+        plantillas_compartidas = Formulario.query.filter(
+            Formulario.compartir_con_empresas_ids.cast(db.String).ilike(f'%"{usuario.id_empresa}"%')
+        ).all()
+        formularios_accesibles.extend(plantillas_compartidas)
+
+        # Usar un conjunto para eliminar duplicados si un formulario cae en varias categorías
+        formularios_finales = list({f.id_formulario: f for f in formularios_accesibles}.values())
+
+        # El rol 'owner' ve todo. Los demás, solo los que apliquen de la lógica anterior.
+        if usuario.rol == 'owner':
+            # Si el owner debe ver todo, simplificamos y no usamos la lógica de arriba
+            all_forms = Formulario.query.all()
+            return jsonify({"formularios": [{"id_formulario": f.id_formulario, "nombre_formulario": f.nombre_formulario} for f in all_forms]}), 200
+        else:
+            return jsonify({"formularios": [{"id_formulario": f.id_formulario, "nombre_formulario": f.nombre_formulario} for f in formularios_finales]}), 200
 
     except Exception as e:
         print(f"Error al obtener formularios para análisis: {e}")
@@ -3801,7 +4118,6 @@ def get_responses_for_analytics(form_id):
         
         if end_date_str:
             end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
-            # Para incluir el día completo, sumamos un día y filtramos por menor que
             query = query.filter(EnvioFormulario.fecha_hora_envio < (end_date + timedelta(days=1)))
 
         results = query.all()
@@ -3809,13 +4125,9 @@ def get_responses_for_analytics(form_id):
         if not results:
             return jsonify({"data": [], "chart_type": "none", "message": "No hay datos para mostrar el gráfico."}), 200
 
-        # Si no se especificó una pregunta, o si es la primera vez, tomamos la primera pregunta para el tipo de gráfico
-        # En un escenario real, podrías querer un resumen o forzar la selección de una pregunta.
-        # Para este caso, si no hay question_id, retornamos "none" para el chart_type.
         if not question_id:
              return jsonify({"data": [], "chart_type": "none", "message": "Selecciona una pregunta para ver el gráfico."}), 200
 
-        # Obtener el tipo de respuesta de la pregunta seleccionada
         selected_question_type = None
         for _, pregunta, tipo_respuesta in results:
             if pregunta.id_pregunta == question_id:
@@ -3835,7 +4147,7 @@ def get_responses_for_analytics(form_id):
                 {"name": "Sí", "value": true_count},
                 {"name": "No", "value": false_count}
             ]
-            chart_type = "pie" # O "bar"
+            chart_type = "pie"
         elif selected_question_type == 'numerico':
             numeric_values = [r.valor_numerico for r, _, _ in results if r.valor_numerico is not None]
             if numeric_values:
@@ -3882,13 +4194,17 @@ def get_responses_for_analytics(form_id):
         elif selected_question_type == 'seleccion_multiple' or selected_question_type == 'seleccion_recursos':
             counts = Counter()
             
-            # MODIFICADO: Obtener la ID de la empresa del formulario
-            form_company_id = formulario.id_empresa
+            # --- CORRECCIÓN: Obtener IDs de empresa de los usuarios que han respondido ---
+            envio_ids = [r.id_envio for r, _, _ in results]
+            
+            # Usar una consulta para obtener los IDs de empresas únicos
+            empresas_ids = db.session.query(Usuario.id_empresa).join(EnvioFormulario).filter(EnvioFormulario.id_envio.in_(envio_ids)).distinct().all()
+            empresas_ids = [e[0] for e in empresas_ids]
 
-            # Pre-fetch all resources for the FORM'S company to map IDs to names
-            all_espacios = {e.id_espacio: e.nombre_espacio for e in Espacio.query.filter_by(id_empresa=form_company_id).all()}
-            all_subespacios = {s.id_subespacio: s.nombre_subespacio for s in SubEspacio.query.join(Espacio).filter(Espacio.id_empresa == form_company_id).all()}
-            all_objetos = {o.id_objeto: o.nombre_objeto for o in Objeto.query.join(SubEspacio).join(Espacio).filter(Espacio.id_empresa == form_company_id).all()}
+            # Pre-fetch todos los recursos de todas las empresas que respondieron
+            all_espacios = {e.id_espacio: e.nombre_espacio for e in Espacio.query.filter(Espacio.id_empresa.in_(empresas_ids)).all()}
+            all_subespacios = {s.id_subespacio: s.nombre_subespacio for s in SubEspacio.query.join(Espacio).filter(Espacio.id_empresa.in_(empresas_ids)).all()}
+            all_objetos = {o.id_objeto: o.nombre_objeto for o in Objeto.query.join(SubEspacio).join(Espacio).filter(Espacio.id_empresa.in_(empresas_ids)).all()}
             resource_names_map = {**all_espacios, **all_subespacios, **all_objetos}
 
             for r, _, _ in results:
@@ -3897,25 +4213,29 @@ def get_responses_for_analytics(form_id):
                         selected_options = json.loads(r.valores_multiples_json)
                         if isinstance(selected_options, list):
                             for option_id in selected_options:
-                                # Asegúrate de que option_id sea tratado como un entero para la búsqueda
                                 name = resource_names_map.get(int(option_id), f"ID Desconocido: {option_id}")
                                 counts[name] += 1
-                        elif isinstance(selected_options, (int, str)): # Manejar un solo ID de recurso almacenado directamente
+                        elif isinstance(selected_options, (int, str)):
                             name = resource_names_map.get(int(selected_options), f"ID Desconocido: {selected_options}")
                             counts[name] += 1
                     except (json.JSONDecodeError, TypeError) as e:
                         print(f"Error parsing valores_multiples_json for multi/resource selection: {r.valores_multiples_json} - {e}")
-                        pass # Ignorar entradas problemáticas
+                        pass
             
             chart_data = [{"name": item, "value": count} for item, count in counts.items()]
             chart_type = "bar"
-        elif selected_question_type == 'texto':
+        elif selected_question_type == 'texto_corto' or selected_question_type == 'texto_largo':
+            counts = Counter()
+            for r, _, _ in results:
+                if r.valor_texto:
+                    counts[r.valor_texto] += 1
+            chart_data = [{"name": item, "value": count} for item, count in counts.items()]
+            chart_type = "bar" # Usar gráfico de barras para mostrar las respuestas más comunes
+        elif selected_question_type in ['firma', 'dibujo', 'fecha', 'hora']:
+            # No se puede generar un gráfico significativo para estos tipos
             chart_data = []
             chart_type = "none"
-        elif selected_question_type in ['firma', 'dibujo']:
-            chart_data = []
-            chart_type = "none"
-
+            
         return jsonify({"data": chart_data, "chart_type": chart_type, "message": "Datos de gráfico generados exitosamente."}), 200
 
     except Exception as e:

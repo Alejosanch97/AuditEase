@@ -272,6 +272,8 @@ class Pregunta(db.Model):
     tipo_respuesta_id: Mapped[int] = mapped_column(Integer, ForeignKey('tipos_respuesta.id_tipo_respuesta'), nullable=False)
     orden: Mapped[int] = mapped_column(Integer, nullable=False)
     opciones_respuesta_json: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+    recurso_asociado: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+
 
     formulario: Mapped["Formulario"] = relationship("Formulario", back_populates="preguntas")
     tipo_respuesta: Mapped["TipoRespuesta"] = relationship("TipoRespuesta", back_populates="preguntas")
@@ -284,7 +286,8 @@ class Pregunta(db.Model):
             "texto_pregunta": self.texto_pregunta,
             "tipo_respuesta_id": self.tipo_respuesta_id,
             "orden": self.orden,
-            "opciones_respuesta_json": self.opciones_respuesta_json
+            "opciones_respuesta_json": self.opciones_respuesta_json,
+            "recurso_asociado": self.recurso_asociado
         }
 
 class EnvioFormulario(db.Model):

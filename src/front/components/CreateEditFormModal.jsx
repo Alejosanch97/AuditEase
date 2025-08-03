@@ -8,46 +8,38 @@ export const CreateEditFormModal = ({ mode, form, onClose, onSuccess, espacios, 
   const [nombreFormulario, setNombreFormulario] = useState(form ? form.nombre_formulario : '');
   const [descripcion, setDescripcion] = useState(form ? form.descripcion : '');
   
-  // NUEVOS ESTADOS para la frecuencia de llenado
   const [maxSubmissionsPerPeriod, setMaxSubmissionsPerPeriod] = useState(form ? form.max_submissions_per_period : 1);
   const [submissionPeriodDays, setSubmissionPeriodDays] = useState(form ? form.submission_period_days : 1);
   
-  // Acceso defensivo a las propiedades del formulario para inicializar estados
   const [selectedEspacios, setSelectedEspacios] = useState(form?.espacios?.map(e => e.id_espacio) || []);
   const [selectedSubEspacios, setSelectedSubEspacios] = useState(form?.sub_espacios?.map(s => s.id_subespacio) || []);
   const [selectedObjetos, setSelectedObjetos] = useState(form?.objetos?.map(o => o.id_objeto) || []);
   
-  // Estado para los tipos de respuesta seleccionados para este formulario
   const [selectedTiposRespuesta, setSelectedTiposRespuesta] = useState(form?.tipos_respuesta_disponibles?.map(t => t.id_tipo_respuesta) || []);
   
-  // Estado para el nuevo tipo de respuesta a crear
   const [newTipoRespuestaNombre, setNewTipoRespuestaNombre] = useState('');
   const [newTipoRespuestaDescripcion, setNewTipoRespuestaDescripcion] = useState('');
   const [isCreatingNewTipo, setIsCreatingNewTipo] = useState(false); 
 
-  // Estado para la empresa seleccionada en el modal
   const [selectedCompanyId, setSelectedCompanyId] = useState(
     form ? form.id_empresa : (currentUser.rol === 'owner' && allCompanies.length > 0 ? allCompanies[0].id_empresa : currentUser.id_empresa)
   );
 
-  // ESTADOS PARA PROPIEDADES DE PLANTILLA Y AUTOMATIZACIÓN
   const [esPlantilla, setEsPlantilla] = useState(form ? form.es_plantilla : false);
   const [esPlantillaGlobal, setEsPlantillaGlobal] = useState(form ? form.es_plantilla_global : false);
   const [compartirConEmpresasIds, setCompartirConEmpresasIds] = useState(form ? form.compartir_con_empresas_ids : []);
   const [notificacionesActivas, setNotificacionesActivas] = useState(form ? form.notificaciones_activas : true);
   const [automatizacionActiva, setAutomatizacionActiva] = useState(form ? form.automatizacion_activa : false);
 
-
   const [loading, setLoading] = useState(false);
 
   const isEditMode = mode === 'edit';
 
-  // Efecto para inicializar selectedCompanyId y los nuevos campos en modo edición
   useEffect(() => {
     if (isEditMode && form) {
       setSelectedCompanyId(form.id_empresa);
-      setMaxSubmissionsPerPeriod(form.max_submissions_per_period); // Inicializar nuevo campo
-      setSubmissionPeriodDays(form.submission_period_days);       // Inicializar nuevo campo
+      setMaxSubmissionsPerPeriod(form.max_submissions_per_period);
+      setSubmissionPeriodDays(form.submission_period_days);
       setEsPlantilla(form.es_plantilla);
       setEsPlantillaGlobal(form.es_plantilla_global);
       setCompartirConEmpresasIds(form.compartir_con_empresas_ids || []);
@@ -58,16 +50,13 @@ export const CreateEditFormModal = ({ mode, form, onClose, onSuccess, espacios, 
       setSelectedObjetos(form.objetos?.map(o => o.id_objeto) || []);
       setSelectedTiposRespuesta(form.tipos_respuesta_disponibles?.map(t => t.id_tipo_respuesta) || []);
     } else if (!isEditMode && currentUser.rol === 'owner' && allCompanies.length > 0 && !selectedCompanyId) {
-        // En modo creación para owner, si no hay empresa seleccionada, selecciona la primera
         setSelectedCompanyId(allCompanies[0].id_empresa);
     } else if (!isEditMode && currentUser.rol !== 'owner' && !selectedCompanyId) {
-        // En modo creación para no-owner, selecciona la empresa del usuario
         setSelectedCompanyId(currentUser.id_empresa);
     }
   }, [isEditMode, form, currentUser, allCompanies, selectedCompanyId]);
 
 
-  // --- Lógica de filtrado dinámico ---
   const spacesForSelectedCompany = (espacios || []).filter(esp => esp.id_empresa === selectedCompanyId);
 
   const subEspaciosForSelectedSpaces = (subEspacios || []).filter(sub =>
@@ -80,7 +69,6 @@ export const CreateEditFormModal = ({ mode, form, onClose, onSuccess, espacios, 
     subEspaciosForSelectedSpaces.some(sub => sub.id_subespacio === obj.id_subespacio)
   );
 
-  // --- Handlers para checkboxes (Espacios, Sub-espacios, Objetos) ---
   const handleEspacioChange = (e) => {
     const id = parseInt(e.target.value);
     const isChecked = e.target.checked;
@@ -90,7 +78,6 @@ export const CreateEditFormModal = ({ mode, form, onClose, onSuccess, espacios, 
       newSelectedEspacios = [...selectedEspacios, id];
     } else {
       newSelectedEspacios = selectedEspacios.filter(espId => espId !== id);
-      // Deseleccionar sub-espacios y objetos que dependen del espacio deseleccionado
       const subEspaciosToDeselect = (subEspacios || []).filter(sub => sub.id_espacio === id).map(s => s.id_subespacio);
       setSelectedSubEspacios(prev => prev.filter(subId => !subEspaciosToDeselect.includes(subId)));
 
@@ -109,7 +96,6 @@ export const CreateEditFormModal = ({ mode, form, onClose, onSuccess, espacios, 
       newSelectedSubEspacios = [...selectedSubEspacios, id];
     } else {
       newSelectedSubEspacios = selectedSubEspacios.filter(subId => subId !== id);
-      // Deseleccionar objetos que dependen del sub-espacio deseleccionado
       const objetosToDeselect = (objetos || []).filter(obj => obj.id_subespacio === id).map(o => o.id_objeto);
       setSelectedObjetos(prev => prev.filter(objId => !objetosToDeselect.includes(objId)));
     }
@@ -129,16 +115,13 @@ export const CreateEditFormModal = ({ mode, form, onClose, onSuccess, espacios, 
     setSelectedObjetos(newSelectedObjetos);
   };
 
-  // Handler para el cambio de empresa (solo para owner)
   const handleCompanySelectChange = (e) => {
     const newCompanyId = parseInt(e.target.value);
     setSelectedCompanyId(newCompanyId);
-    // Limpiar todas las selecciones de espacios, sub-espacios y objetos al cambiar de empresa
     setSelectedEspacios([]);
     setSelectedSubEspacios([]);
     setSelectedObjetos([]);
-    setSelectedTiposRespuesta([]); // También limpiar tipos de respuesta al cambiar de empresa
-    // Resetear estados de plantilla si se cambia la empresa en modo creación
+    setSelectedTiposRespuesta([]);
     if (!isEditMode) {
       setEsPlantilla(false);
       setEsPlantillaGlobal(false);
@@ -146,7 +129,6 @@ export const CreateEditFormModal = ({ mode, form, onClose, onSuccess, espacios, 
     }
   };
 
-  // --- Handlers para Tipos de Respuesta ---
   const handleTipoRespuestaChange = (e) => {
     const id = parseInt(e.target.value);
     const isChecked = e.target.checked;
@@ -182,11 +164,9 @@ export const CreateEditFormModal = ({ mode, form, onClose, onSuccess, espacios, 
       const data = await response.json();
       if (response.ok) {
         dispatch({ type: 'SET_MESSAGE', payload: { type: 'success', text: data.message } });
-        // Añadir el nuevo tipo al store global y seleccionarlo automáticamente
         dispatch({ type: 'SET_TIPOS_RESPUESTA', payload: [...(allTiposRespuestaGlobal || []), data.tipo_respuesta] });
         setSelectedTiposRespuesta(prev => [...prev, data.tipo_respuesta.id_tipo_respuesta]);
         
-        // Limpiar campos del nuevo tipo
         setNewTipoRespuestaNombre('');
         setNewTipoRespuestaDescripcion('');
       } else {
@@ -200,7 +180,6 @@ export const CreateEditFormModal = ({ mode, form, onClose, onSuccess, espacios, 
     }
   };
 
-  // Handler para el multi-select de compartir con empresas
   const handleCompartirConEmpresasChange = (e) => {
     const options = Array.from(e.target.options);
     const selectedValues = options.filter(option => option.selected).map(option => parseInt(option.value));
@@ -216,7 +195,6 @@ export const CreateEditFormModal = ({ mode, form, onClose, onSuccess, espacios, 
       : `${import.meta.env.VITE_BACKEND_URL}/api/formularios`;
     const method = isEditMode ? 'PUT' : 'POST';
 
-    // Determinar id_empresa a enviar al backend
     let finalIdEmpresa = selectedCompanyId;
     if (!finalIdEmpresa && currentUser.rol !== 'owner') {
         finalIdEmpresa = currentUser.id_empresa;
@@ -227,9 +205,7 @@ export const CreateEditFormModal = ({ mode, form, onClose, onSuccess, espacios, 
         return;
     }
 
-    // Validaciones frontend para plantillas
     if (esPlantilla) {
-        // La condición para crear plantillas es que sea owner y la empresa seleccionada sea SU empresa registrada.
         if (currentUser.rol === 'owner' && selectedCompanyId !== currentUser.id_empresa) {
             dispatch({ type: 'SET_MESSAGE', payload: { type: 'error', text: 'Las plantillas de formularios solo pueden ser creadas por el owner para su propia empresa registrada.' } });
             setLoading(false);
@@ -247,7 +223,6 @@ export const CreateEditFormModal = ({ mode, form, onClose, onSuccess, espacios, 
         }
     }
 
-    // Validaciones para los nuevos campos de frecuencia
     if (isNaN(parseInt(maxSubmissionsPerPeriod)) || parseInt(maxSubmissionsPerPeriod) <= 0) {
       dispatch({ type: 'SET_MESSAGE', payload: { type: 'error', text: 'El número máximo de diligencias debe ser un entero positivo.' } });
       setLoading(false);
@@ -270,7 +245,6 @@ export const CreateEditFormModal = ({ mode, form, onClose, onSuccess, espacios, 
         body: JSON.stringify({
           nombre_formulario: nombreFormulario,
           descripcion: descripcion,
-          // ACTUALIZADO: Nuevos campos para la frecuencia de llenado
           max_submissions_per_period: parseInt(maxSubmissionsPerPeriod),
           submission_period_days: parseInt(submissionPeriodDays),
           espacios_ids: selectedEspacios,
@@ -301,8 +275,6 @@ export const CreateEditFormModal = ({ mode, form, onClose, onSuccess, espacios, 
     }
   };
 
-  // Determinar si la sección de plantillas debe ser visible
-  // Condición: el usuario es 'owner' Y la empresa seleccionada es la empresa del propio usuario.
   const isTemplateSectionVisible = currentUser.rol === 'owner' && selectedCompanyId === currentUser.id_empresa;
 
   return (
@@ -352,7 +324,6 @@ export const CreateEditFormModal = ({ mode, form, onClose, onSuccess, espacios, 
             ></textarea>
           </div>
           
-          {/* NUEVOS CAMPOS DE FRECUENCIA DE LLENADO */}
           <div className="form-modal-group">
             <label htmlFor="maxSubmissionsPerPeriod">Máximo de Diligencias por Período:</label>
             <input
@@ -378,7 +349,6 @@ export const CreateEditFormModal = ({ mode, form, onClose, onSuccess, espacios, 
             <small>Número de días en los que se aplica el límite de diligencias (ej. 1 para diario, 7 para semanal).</small>
           </div>
 
-          {/* CAMPOS DE PLANTILLA: Solo visibles para owner y si la empresa seleccionada es la del owner */}
           {isTemplateSectionVisible && (
             <div className="form-modal-group">
               <label className="checkbox-item">
@@ -438,7 +408,6 @@ export const CreateEditFormModal = ({ mode, form, onClose, onSuccess, espacios, 
             </>
           )}
 
-          {/* CAMPOS DE NOTIFICACIONES Y AUTOMATIZACIÓN (siempre visibles para admin/owner) */}
           {(currentUser.rol === 'owner' || currentUser.rol === 'admin_empresa') && (
             <>
               <div className="form-modal-group">
@@ -467,7 +436,6 @@ export const CreateEditFormModal = ({ mode, form, onClose, onSuccess, espacios, 
             </>
           )}
 
-          {/* Selección de Espacios (ahora con checkboxes) */}
           <div className="form-modal-group">
             <label>Seleccionar Espacios:</label>
             <div className="checkbox-list-container">
@@ -489,7 +457,6 @@ export const CreateEditFormModal = ({ mode, form, onClose, onSuccess, espacios, 
             </div>
           </div>
 
-          {/* Selección de Sub-Espacios (ahora con checkboxes, filtrados por espacios seleccionados) */}
           <div className="form-modal-group">
             <label>Seleccionar Sub-Espacios:</label>
             <div className="checkbox-list-container">
@@ -511,7 +478,6 @@ export const CreateEditFormModal = ({ mode, form, onClose, onSuccess, espacios, 
             </div>
           </div>
 
-          {/* Selección de Objetos (ahora con checkboxes, filtrados por SUBESPACIOS SELECCIONADOS) */}
           <div className="form-modal-group">
             <label>Seleccionar Objetos:</label>
             <div className="checkbox-list-container">
@@ -533,7 +499,6 @@ export const CreateEditFormModal = ({ mode, form, onClose, onSuccess, espacios, 
             </div>
           </div>
 
-          {/* Sección para seleccionar y crear Tipos de Respuesta */}
           <div className="form-modal-group">
             <label>Tipos de Respuesta Disponibles para este Formulario:</label>
             <div className="checkbox-list-container">
@@ -556,8 +521,8 @@ export const CreateEditFormModal = ({ mode, form, onClose, onSuccess, espacios, 
             <small>Selecciona los tipos de respuesta que estarán disponibles para las preguntas de este formulario.</small>
           </div>
 
-          {/* Sección para crear un nuevo Tipo de Respuesta */}
-          {(currentUser.rol === 'owner' || currentUser.rol === 'admin_general') && ( 
+          {/* Sección para crear un nuevo Tipo de Respuesta: CORREGIDA */}
+          {currentUser.rol === 'owner' && ( 
             <div className="form-modal-group new-tipo-respuesta-section">
               <label>Crear Nuevo Tipo de Respuesta Global:</label>
               <input

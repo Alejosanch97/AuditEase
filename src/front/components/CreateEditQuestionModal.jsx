@@ -1,56 +1,49 @@
-// src/components/CreateEditQuestionModal.jsx
-import React, { useState, useEffect, useMemo } from 'react'; // Importa useMemo
+import React, { useState, useEffect, useMemo } from 'react';
 import useGlobalReducer from '../hooks/useGlobalReducer';
-import '../styles/modalquestioncreate.css'; // Importa el nuevo CSS
+import '../styles/modalquestioncreate.css'; 
 
 // --- Función auxiliar para deduplicar recursos por su ID específico ---
 const deduplicateResources = (resources, type) => {
     if (!resources) return [];
-    const unique = [];
-    const seenIds = new Set();
+    const unique = new Map();
     resources.forEach(res => {
         let id;
         if (type === 'espacios') id = res.id_espacio;
         else if (type === 'subespacios') id = res.id_subespacio;
         else if (type === 'objetos') id = res.id_objeto;
 
-        // Solo añadir si el ID está definido y no ha sido visto antes
-        if (id !== undefined && id !== null && !seenIds.has(id)) {
-            seenIds.add(id);
-            unique.push(res);
+        if (id !== undefined && id !== null && !unique.has(id)) {
+            unique.set(id, res);
         } else if (id === undefined || id === null) {
-            // Esto es una advertencia útil si algún recurso no tiene el ID esperado
             console.warn(`Recurso sin ID definido para tipo ${type}:`, res);
         }
     });
-    return unique;
+    return Array.from(unique.values());
 };
-
 
 export const CreateEditQuestionModal = ({
   mode,
-  form, // Ahora recibimos el objeto form completo
+  form,
   question,
   onClose,
   onSuccess,
-  tiposRespuesta, // ESTOS AHORA SON SOLO LOS TIPOS DISPONIBLES PARA ESTE FORMULARIO
-  allEspacios, // Todos los espacios sin filtrar
-  allSubEspacios, // Todos los sub-espacios sin filtrar
-  allObjetos, // Todos los objetos sin filtrar
-  currentUser, // Necesitamos el currentUser para verificar el rol
-  allCompanies // Necesitamos allCompanies para mostrar el nombre de la empresa en los recursos
+  tiposRespuesta,
+  allEspacios,
+  allSubEspacios,
+  allObjetos,
+  currentUser,
+  allCompanies
 }) => {
   const { dispatch } = useGlobalReducer();
-  const [textoPregunta, setTextoPregunta] = useState(question ? question.texto_pregunta : '');
-  const [tipoRespuestaId, setTipoRespuestaId] = useState(question ? question.tipo_respuesta_id : '');
-  const [orden, setOrden] = useState(question ? question.orden : 1); // Default to 1 for new questions
+  
+  // --- INICIALIZACIÓN SEGURA DE ESTADOS ---
+  const [textoPregunta, setTextoPregunta] = useState(question?.texto_pregunta || '');
+  const [tipoRespuestaId, setTipoRespuestaId] = useState(question?.tipo_respuesta_id || '');
+  const [orden, setOrden] = useState(question?.orden || 1);
 
-  // Para tipos de respuesta con opciones de texto (seleccion_unica, seleccion_multiple)
-  const [opcionesRespuestaArray, setOpcionesRespuestaArray] = useState(['']); // Inicializa con un campo vacío
+  const [opcionesRespuestaArray, setOpcionesRespuestaArray] = useState(['']);
 
-  // Para el nuevo tipo de respuesta de selección de recursos
-  const [resourceCategory, setResourceCategory] = useState(''); // 'espacios', 'subespacios', 'objetos'
-  // Estados separados para los IDs de recursos seleccionados
+  const [resourceCategory, setResourceCategory] = useState(''); 
   const [selectedEspacios, setSelectedEspacios] = useState([]);
   const [selectedSubEspacios, setSelectedSubEspacios] = useState([]);
   const [selectedObjetos, setSelectedObjetos] = useState([]);
@@ -58,87 +51,66 @@ export const CreateEditQuestionModal = ({
   const [loading, setLoading] = useState(false);
   
   const isEditMode = mode === 'edit';
-  const formId = form?.id_formulario; // Obtener formId del objeto form
-  const formCompanyId = form?.id_empresa; // Obtener id_empresa del formulario padre
+  const formId = form?.id_formulario;
+  const formCompanyId = form?.id_empresa;
 
-  // Mover la declaración de tiposRespuestaDisponibles aquí, antes del useEffect
   const tiposRespuestaDisponibles = tiposRespuesta || [];
 
-  // Encuentra el tipo de respuesta seleccionado por su ID
   const selectedTipoRespuesta = tiposRespuestaDisponibles.find(t => t.id_tipo_respuesta === parseInt(tipoRespuestaId));
   const tipoRespuestaNombre = selectedTipoRespuesta?.nombre_tipo;
 
-  // Determina si el tipo de respuesta requiere opciones de texto o es de selección de recursos
   const requiresTextOptions = ['seleccion_multiple', 'seleccion_unica'].includes(tipoRespuestaNombre);
   const isResourceSelection = tipoRespuestaNombre === 'seleccion_recursos';
   const isSignatureOrDrawing = ['firma', 'dibujo'].includes(tipoRespuestaNombre);
 
-  // Determinar si el formulario actual es una plantilla y el usuario es owner
-  const isTemplateFormAndOwner = form?.es_plantilla && currentUser.rol === 'owner';
+  const isTemplateForm = form?.es_plantilla;
 
-  // --- Deduplicar las listas de recursos globales al inicio del componente ---
-  // Esto asegura que los datos base con los que trabajamos son únicos por ID.
   const uniqueAllEspacios = useMemo(() => deduplicateResources(allEspacios, 'espacios'), [allEspacios]);
   const uniqueAllSubEspacios = useMemo(() => deduplicateResources(allSubEspacios, 'subespacios'), [allSubEspacios]);
   const uniqueAllObjetos = useMemo(() => deduplicateResources(allObjetos, 'objetos'), [allObjetos]);
 
-  // Efecto para inicializar estados en modo edición
   useEffect(() => {
     if (isEditMode && question) {
       setTextoPregunta(question.texto_pregunta);
       setTipoRespuestaId(question.tipo_respuesta_id);
       setOrden(question.orden);
 
-      // Si hay opciones de respuesta en la pregunta existente
-      if (question.opciones_respuesta_json) {
+      if (question.opciones_respuesta_json || question.recurso_asociado) {
         if (question.tipo_respuesta_nombre === 'seleccion_recursos') {
-          // Para seleccion_recursos, las opciones son un objeto con arrays de IDs o solo la categoría
-          if (typeof question.opciones_respuesta_json === 'object' && question.opciones_respuesta_json !== null) {
-            // Si es una pregunta de plantilla de recursos y el usuario es owner, limpiamos las selecciones
-            if (isTemplateFormAndOwner) {
-              setSelectedEspacios([]);
-              setSelectedSubEspacios([]);
-              setSelectedObjetos([]);
-              // Pero sí cargamos la categoría si está definida en la plantilla
-              setResourceCategory(question.opciones_respuesta_json.category || '');
-            } else {
-              // Si NO es una plantilla o NO es el owner, cargamos las selecciones específicas
-              setSelectedEspacios(question.opciones_respuesta_json.espacios || []);
-              setSelectedSubEspacios(question.opciones_respuesta_json.subespacios || []);
-              setSelectedObjetos(question.opciones_respuesta_json.objetos || []);
-              
-              // Intentar preseleccionar la categoría si hay IDs o si la categoría está guardada
-              if (question.opciones_respuesta_json.category) {
-                setResourceCategory(question.opciones_respuesta_json.category);
-              } else if (question.opciones_respuesta_json.espacios?.length > 0) {
-                setResourceCategory('espacios');
-              } else if (question.opciones_respuesta_json.subespacios?.length > 0) {
-                setResourceCategory('subespacios');
-              } else if (question.opciones_respuesta_json.objetos?.length > 0) {
-                setResourceCategory('objetos');
-              } else {
-                setResourceCategory('');
-              }
-            }
-          } else {
-            // Manejar caso donde opciones_respuesta_json no es un objeto esperado
-            console.warn("opciones_respuesta_json para seleccion_recursos no es un objeto:", question.opciones_respuesta_json);
+          if (isTemplateForm) {
+            setResourceCategory(question.recurso_asociado || '');
             setSelectedEspacios([]);
             setSelectedSubEspacios([]);
             setSelectedObjetos([]);
-            setResourceCategory('');
+          } else {
+            const opciones = question.opciones_respuesta_json || {};
+            setSelectedEspacios(opciones.espacios || []);
+            setSelectedSubEspacios(opciones.subespacios || []);
+            setSelectedObjetos(opciones.objetos || []);
+            
+            // Si el backend envía 'recurso_asociado', úsalo directamente.
+            // De lo contrario, se deduce de las opciones
+            if (question.recurso_asociado) {
+              setResourceCategory(question.recurso_asociado);
+            } else if (opciones.espacios?.length > 0) {
+              setResourceCategory('espacio');
+            } else if (opciones.subespacios?.length > 0) {
+              setResourceCategory('subespacio');
+            } else if (opciones.objetos?.length > 0) {
+              setResourceCategory('objeto');
+            } else {
+              setResourceCategory('');
+            }
           }
-          setOpcionesRespuestaArray(['']); // Asegurarse de que las opciones de texto estén limpias
+          setOpcionesRespuestaArray(['']);
 
         } else if (['seleccion_multiple', 'seleccion_unica'].includes(question.tipo_respuesta_nombre)) {
-          // Para seleccion_multiple/unica, las opciones son strings
           setOpcionesRespuestaArray(Array.isArray(question.opciones_respuesta_json) ? question.opciones_respuesta_json : ['']);
-          setResourceCategory(''); // Asegurarse de que la categoría de recurso esté limpia
-          setSelectedEspacios([]); // Asegurarse de que los IDs de recurso estén limpios
+          setResourceCategory('');
+          setSelectedEspacios([]);
           setSelectedSubEspacios([]);
           setSelectedObjetos([]);
         } else {
-          // Para otros tipos, no hay opciones de texto ni de recurso
           setOpcionesRespuestaArray(['']);
           setResourceCategory('');
           setSelectedEspacios([]);
@@ -146,7 +118,6 @@ export const CreateEditQuestionModal = ({
           setSelectedObjetos([]);
         }
       } else {
-        // Si no hay opciones_respuesta_json en la pregunta, inicializar todo vacío
         setOpcionesRespuestaArray(['']);
         setResourceCategory('');
         setSelectedEspacios([]);
@@ -154,49 +125,45 @@ export const CreateEditQuestionModal = ({
         setSelectedObjetos([]);
       }
     } else {
-      // En modo creación, inicializar con un campo de opción vacío y sin selección de recursos
       setOpcionesRespuestaArray(['']);
       setResourceCategory('');
       setSelectedEspacios([]);
       setSelectedSubEspacios([]);
       setSelectedObjetos([]);
     }
-  }, [isEditMode, question, tiposRespuestaDisponibles, uniqueAllEspacios, uniqueAllSubEspacios, uniqueAllObjetos, isTemplateFormAndOwner]); // Dependencias actualizadas
+  }, [isEditMode, question, tiposRespuestaDisponibles, uniqueAllEspacios, uniqueAllSubEspacios, uniqueAllObjetos, isTemplateForm]);
 
 
-  // Función para obtener los recursos a mostrar en los checkboxes
   const getDisplayResources = (type) => {
     let resourcesToDisplay = [];
 
-    if (isTemplateFormAndOwner) {
-      // Usar las listas ya deduplicadas para las plantillas
+    if (isTemplateForm) {
       switch (type) {
-        case 'espacios':
-          resourcesToDisplay = uniqueAllEspacios; 
+        case 'espacio':
+          resourcesToDisplay = uniqueAllEspacios;
           break;
-        case 'subespacios':
+        case 'subespacio':
           resourcesToDisplay = uniqueAllSubEspacios;
           break;
-        case 'objetos':
+        case 'objeto':
           resourcesToDisplay = uniqueAllObjetos;
           break;
         default:
           resourcesToDisplay = [];
       }
     } else {
-      // Filtrar de las listas ya deduplicadas por la empresa del formulario
-      if (!formCompanyId) return []; 
+      if (!formCompanyId) return [];
 
       switch (type) {
-        case 'espacios':
+        case 'espacio':
           resourcesToDisplay = uniqueAllEspacios.filter(r => r.id_empresa === formCompanyId);
           break;
-        case 'subespacios':
+        case 'subespacio':
           const companyEspaciosIds = uniqueAllEspacios.filter(e => e.id_empresa === formCompanyId).map(e => e.id_espacio);
           resourcesToDisplay = uniqueAllSubEspacios.filter(r => companyEspaciosIds.includes(r.id_espacio));
           break;
-        case 'objetos':
-          const companySubEspaciosIds = uniqueAllSubEspacios.filter(s => 
+        case 'objeto':
+          const companySubEspaciosIds = uniqueAllSubEspacios.filter(s =>
             uniqueAllEspacios.filter(e => e.id_empresa === formCompanyId).map(e => e.id_espacio).includes(s.id_espacio)
           ).map(s => s.id_subespacio);
           resourcesToDisplay = uniqueAllObjetos.filter(r => companySubEspaciosIds.includes(r.id_subespacio));
@@ -205,14 +172,9 @@ export const CreateEditQuestionModal = ({
           resourcesToDisplay = [];
       }
     }
-
-    // El console.log aquí mostrará los recursos que se van a renderizar DESPUÉS de la deduplicación inicial y el filtrado.
-    console.log(`DEBUG: getDisplayResources(${type}) - Recursos finales para mostrar:`, resourcesToDisplay);
     return resourcesToDisplay;
   };
 
-
-  // Handlers para opciones de respuesta de texto (múltiples inputs)
   const handleOptionChange = (index, value) => {
     const newOptions = [...opcionesRespuestaArray];
     newOptions[index] = value;
@@ -225,151 +187,157 @@ export const CreateEditQuestionModal = ({
 
   const handleRemoveOption = (index) => {
     const newOptions = opcionesRespuestaArray.filter((_, i) => i !== index);
-    setOpcionesRespuestaArray(newOptions.length > 0 ? newOptions : ['']); // Asegura que siempre haya al menos un campo
+    setOpcionesRespuestaArray(newOptions.length > 0 ? newOptions : ['']);
   };
 
-  // Handler para la selección de recursos (checkboxes)
   const handleResourceCheckboxChange = (e, resourceType) => {
-    // Si es una pregunta de plantilla y el usuario es el owner, no permitimos la selección
-    if (isTemplateFormAndOwner) {
+    if (isTemplateForm) {
       return;
     }
 
     const id = parseInt(e.target.value);
     const isChecked = e.target.checked;
 
-    // --- Lógica de TOGGLE corregida ---
-    if (resourceType === 'espacios') {
+    if (resourceType === 'espacio') {
       setSelectedEspacios(prev => {
         if (isChecked) {
-          return [...new Set([...prev, id])]; // Añadir si no existe, mantener único
+          return [...new Set([...prev, id])];
         } else {
-          // Si se deselecciona, también deseleccionar sub-recursos y objetos dependientes
           const subEspaciosToDeselect = uniqueAllSubEspacios.filter(sub => sub.id_espacio === id).map(s => s.id_subespacio);
           setSelectedSubEspacios(currentSub => currentSub.filter(subId => !subEspaciosToDeselect.includes(subId)));
           const objetosToDeselect = uniqueAllObjetos.filter(obj => subEspaciosToDeselect.includes(obj.id_subespacio)).map(o => o.id_objeto);
           setSelectedObjetos(currentObj => currentObj.filter(objId => !objetosToDeselect.includes(objId)));
-          return prev.filter(resId => resId !== id); // Eliminar
+          return prev.filter(resId => resId !== id);
         }
       });
-    } else if (resourceType === 'subespacios') {
+    } else if (resourceType === 'subespacio') {
       setSelectedSubEspacios(prev => {
         if (isChecked) {
-          return [...new Set([...prev, id])]; // Añadir si no existe, mantener único
+          return [...new Set([...prev, id])];
         } else {
-          // Si se deselecciona, también deseleccionar objetos dependientes
           const objetosToDeselect = uniqueAllObjetos.filter(obj => obj.id_subespacio === id).map(o => o.id_objeto);
           setSelectedObjetos(currentObj => currentObj.filter(objId => !objetosToDeselect.includes(objId)));
-          return prev.filter(resId => resId !== id); // Eliminar
+          return prev.filter(resId => resId !== id);
         }
       });
-    } else if (resourceType === 'objetos') {
+    } else if (resourceType === 'objeto') {
       setSelectedObjetos(prev => {
         if (isChecked) {
-          return [...new Set([...prev, id])]; // Añadir si no existe, mantener único
+          return [...new Set([...prev, id])];
         } else {
-          return prev.filter(resId => resId !== id); // Eliminar
+          return prev.filter(resId => resId !== id);
         }
       });
     }
   };
-
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     const token = localStorage.getItem('access_token');
+    if (!token) {
+      setLoading(false);
+      dispatch({ type: 'SET_MESSAGE', payload: { type: 'error', text: 'No estás autenticado.' } });
+      return;
+    }
 
-    let payload = {
-      texto_pregunta: textoPregunta,
-      tipo_respuesta_id: parseInt(tipoRespuestaId),
-      orden: parseInt(orden),
-    };
+    let payload;
 
     if (requiresTextOptions) {
-      // Filtrar opciones vacías antes de enviar
-      payload.opciones_respuesta_json = opcionesRespuestaArray.map(opt => opt.trim()).filter(opt => opt !== '');
-      if (payload.opciones_respuesta_json.length === 0) {
+      const opciones = opcionesRespuestaArray.map(opt => opt.trim()).filter(opt => opt !== '');
+      if (opciones.length === 0) {
         dispatch({ type: 'SET_MESSAGE', payload: { type: 'error', text: 'Las opciones de respuesta no pueden estar vacías para este tipo de pregunta.' } });
         setLoading(false);
         return;
       }
+      payload = {
+        texto_pregunta: textoPregunta,
+        tipo_respuesta_id: parseInt(tipoRespuestaId),
+        orden: parseInt(orden),
+        opciones_respuesta_json: opciones,
+      };
     } else if (isResourceSelection) {
-      // Si es una plantilla Y el usuario es el owner, enviamos solo la categoría
-      if (isTemplateFormAndOwner) {
-        if (!resourceCategory) {
-          dispatch({ type: 'SET_MESSAGE', payload: { type: 'error', text: 'Debe seleccionar una categoría de recurso para la pregunta de plantilla.' } });
+      if (!resourceCategory) {
+          dispatch({ type: 'SET_MESSAGE', payload: { type: 'error', text: 'Debe seleccionar una categoría de recurso para este tipo de pregunta.' } });
           setLoading(false);
           return;
-        }
-        payload.opciones_respuesta_json = {
-          category: resourceCategory, // Solo enviamos la categoría para la plantilla
-          espacios: [], // Las listas de IDs deben estar vacías para la plantilla
-          subespacios: [],
-          objetos: []
+      }
+      if (isTemplateForm) {
+        payload = {
+          texto_pregunta: textoPregunta,
+          tipo_respuesta_id: parseInt(tipoRespuestaId),
+          orden: parseInt(orden),
+          recurso_asociado: resourceCategory,
         };
       } else {
-        // Si NO es una plantilla o NO es el owner, enviamos los IDs seleccionados
-        payload.opciones_respuesta_json = {
-          category: resourceCategory, // También enviar la categoría para formularios no plantilla
+        const opciones = {
           espacios: selectedEspacios,
           subespacios: selectedSubEspacios,
           objetos: selectedObjetos
         };
-        // Validación: Si NO es una plantilla, debe seleccionar al menos un recurso.
-        if (selectedEspacios.length === 0 && selectedSubEspacios.length === 0 && selectedObjetos.length === 0) {
-          dispatch({ type: 'SET_MESSAGE', payload: { type: 'error', text: 'Debe seleccionar al menos un recurso para este tipo de pregunta.' } });
-          setLoading(false);
-          return;
+        if (opciones[resourceCategory]?.length === 0) {
+             dispatch({ type: 'SET_MESSAGE', payload: { type: 'error', text: `Debe seleccionar al menos un ${resourceCategory} para este tipo de pregunta.` } });
+             setLoading(false);
+             return;
         }
+        payload = {
+          texto_pregunta: textoPregunta,
+          tipo_respuesta_id: parseInt(tipoRespuestaId),
+          orden: parseInt(orden),
+          recurso_asociado: resourceCategory, // <--- CAMBIO CLAVE
+          opciones_respuesta_json: opciones,
+        };
       }
-    } else if (isSignatureOrDrawing) {
-        // Para firma o dibujo, no se envían opciones_respuesta_json
-        payload.opciones_respuesta_json = null;
     } else {
-      payload.opciones_respuesta_json = null; // Asegurarse de que no se envíen opciones si no son necesarias
+      payload = {
+        texto_pregunta: textoPregunta,
+        tipo_respuesta_id: parseInt(tipoRespuestaId),
+        orden: parseInt(orden),
+      };
     }
+        
+    const baseUrl = import.meta.env.VITE_BACKEND_URL;
+    let url;
+    let method;
 
-    const url = isEditMode
-      ? `${import.meta.env.VITE_BACKEND_URL}/api/preguntas/${question.id_pregunta}`
-      : `${import.meta.env.VITE_BACKEND_URL}/api/formularios/${formId}/preguntas`;
-    const method = isEditMode ? 'PUT' : 'POST';
+    if (isEditMode) {
+      const rolePrefix = currentUser.rol === 'owner' ? 'owner' : 'admin_empresa';
+      url = `${baseUrl}/api/${rolePrefix}/preguntas/${question.id_pregunta}`;
+      method = 'PUT';
+    } else {
+      if (isTemplateForm) {
+        url = `${baseUrl}/api/formularios/plantillas/${formId}/preguntas`;
+      } else {
+        url = `${baseUrl}/api/formularios/${formId}/preguntas`;
+      }
+      method = 'POST';
+    }
 
     try {
-      const response = await fetch(url, {
-        method: method,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(payload)
-      });
+        const response = await fetch(url, {
+            method: method,
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(payload)
+        });
 
-      const data = await response.json();
-      if (response.ok) {
-        onSuccess(data.pregunta);
-      } else {
-        dispatch({ type: 'SET_MESSAGE', payload: { type: 'error', text: `Error al ${isEditMode ? 'actualizar' : 'crear'} pregunta: ${data.error}` } });
-      }
+        const data = await response.json();
+        if (response.ok) {
+            onSuccess(data.pregunta);
+            dispatch({ type: 'SET_MESSAGE', payload: { type: 'success', text: data.message || `Pregunta ${isEditMode ? 'actualizada' : 'creada'} exitosamente.` } });
+            onClose();
+        } else {
+            dispatch({ type: 'SET_MESSAGE', payload: { type: 'error', text: `Error al ${isEditMode ? 'actualizar' : 'crear'} pregunta: ${data.error}` } });
+        }
     } catch (error) {
-      console.error(`Error de conexión al ${isEditMode ? 'actualizar' : 'crear'} pregunta:`, error);
-      dispatch({ type: 'SET_MESSAGE', payload: { type: 'error', text: 'Error de conexión.' } });
+        console.error(`Error de conexión al ${isEditMode ? 'actualizar' : 'crear'} pregunta:`, error);
+        dispatch({ type: 'SET_MESSAGE', payload: { type: 'error', text: 'Error de conexión.' } });
     } finally {
-      setLoading(false);
+        setLoading(false);
     }
   };
-
-  // --- DEBUGGING CONSOLE LOGS (Puedes eliminarlos una vez que funcione) ---
-  console.log("DEBUG: Formulario es plantilla:", form?.es_plantilla);
-  console.log("DEBUG: Usuario rol:", currentUser.rol);
-  console.log("DEBUG: isTemplateFormAndOwner calculado:", isTemplateFormAndOwner);
-  console.log("DEBUG: Tipo de respuesta seleccionado:", tipoRespuestaNombre);
-  console.log("DEBUG: Categoría de recurso seleccionada:", resourceCategory);
-  console.log("DEBUG: Espacios seleccionados:", selectedEspacios);
-  console.log("DEBUG: SubEspacios seleccionados:", selectedSubEspacios);
-  console.log("DEBUG: Objetos seleccionados:", selectedObjetos);
-  // --- FIN DEBUGGING CONSOLE LOGS ---
-
 
   return (
     <div className="question-modal-overlay active">
@@ -396,10 +364,9 @@ export const CreateEditQuestionModal = ({
               value={tipoRespuestaId}
               onChange={(e) => {
                 setTipoRespuestaId(e.target.value);
-                // Resetear opciones al cambiar el tipo de respuesta
-                setOpcionesRespuestaArray(['']); // Siempre un campo vacío por defecto
+                setOpcionesRespuestaArray(['']);
                 setResourceCategory('');
-                setSelectedEspacios([]); // Limpiar selecciones de recursos
+                setSelectedEspacios([]);
                 setSelectedSubEspacios([]);
                 setSelectedObjetos([]);
               }}
@@ -418,7 +385,6 @@ export const CreateEditQuestionModal = ({
             </select>
           </div>
 
-          {/* Campos de respuesta dinámicos según tipo */}
           {tipoRespuestaNombre === 'texto' && (
             <div className="question-modal-group">
               <small>La respuesta será un campo de texto libre.</small>
@@ -437,7 +403,6 @@ export const CreateEditQuestionModal = ({
             </div>
           )}
 
-          {/* Para seleccion_multiple y seleccion_unica */}
           {requiresTextOptions && (
             <div className="question-modal-group">
               <label>Opciones de Respuesta:</label>
@@ -448,7 +413,7 @@ export const CreateEditQuestionModal = ({
                       type="text"
                       value={option}
                       onChange={(e) => handleOptionChange(index, e.target.value)}
-                      placeholder={`Opción ${String.fromCharCode(65 + index)}`} 
+                      placeholder={`Opción ${String.fromCharCode(65 + index)}`}
                       required
                     />
                     {opcionesRespuestaArray.length > 1 && (
@@ -466,14 +431,12 @@ export const CreateEditQuestionModal = ({
             </div>
           )}
 
-          {/* Para firma y dibujo */}
           {isSignatureOrDrawing && (
             <div className="question-modal-group">
               <small>Este tipo de pregunta requiere una firma digital o un dibujo.</small>
             </div>
           )}
 
-          {/* Para seleccion_recursos */}
           {isResourceSelection && (
             <>
               <div className="question-modal-group">
@@ -483,7 +446,6 @@ export const CreateEditQuestionModal = ({
                   value={resourceCategory}
                   onChange={(e) => {
                     setResourceCategory(e.target.value);
-                    // Limpiar selecciones de recursos al cambiar de categoría
                     setSelectedEspacios([]);
                     setSelectedSubEspacios([]);
                     setSelectedObjetos([]);
@@ -491,58 +453,53 @@ export const CreateEditQuestionModal = ({
                   required
                 >
                   <option value="">Selecciona una categoría</option>
-                  <option value="espacios">Espacios</option>
-                  <option value="subespacios">Sub-Espacios</option>
-                  <option value="objetos">Objetos</option>
+                  <option value="espacio">Espacios</option>
+                  <option value="subespacio">Sub-Espacios</option>
+                  <option value="objeto">Objetos</option>
                 </select>
                 <small>Selecciona la categoría de recursos para las opciones de esta pregunta.</small>
               </div>
 
-              {resourceCategory && ( // Solo mostrar la lista si se ha seleccionado una categoría
+              {resourceCategory && (
                 <div className="question-modal-group">
-                  <label>Seleccionar {resourceCategory === 'espacios' ? 'Espacios' : resourceCategory === 'subespacios' ? 'Sub-Espacios' : 'Objetos'}:</label>
+                  <label>Seleccionar {resourceCategory === 'espacio' ? 'Espacios' : resourceCategory === 'subespacio' ? 'Sub-Espacios' : 'Objetos'}:</label>
                   <div className="checkbox-list-container">
-                    {isTemplateFormAndOwner ? (
+                    {isTemplateForm ? (
                       <p className="template-resource-info">
                         Para preguntas de plantilla de recursos, las opciones se llenarán automáticamente con los recursos de la empresa que utilice este formulario.
-                        <br/>
-                        **No es necesario seleccionar recursos específicos aquí.**
                       </p>
                     ) : (
                       getDisplayResources(resourceCategory).length > 0 ? (
                         getDisplayResources(resourceCategory).map(res => (
-                          <label 
-                            // Clave única para cada elemento, combinando categoría y ID del recurso
+                          <label
                             key={`${resourceCategory}-${
-                                resourceCategory === 'espacios' ? res.id_espacio :
-                                resourceCategory === 'subespacios' ? res.id_subespacio :
-                                res.id_objeto // Asume 'objetos'
-                            }`} 
+                                resourceCategory === 'espacio' ? res.id_espacio :
+                                resourceCategory === 'subespacio' ? res.id_subespacio :
+                                res.id_objeto
+                            }`}
                             className="checkbox-item"
                           >
                             <input
                               type="checkbox"
                               value={
-                                resourceCategory === 'espacios' ? res.id_espacio :
-                                resourceCategory === 'subespacios' ? res.id_subespacio :
-                                res.id_objeto // Asume 'objetos'
+                                resourceCategory === 'espacio' ? res.id_espacio :
+                                resourceCategory === 'subespacio' ? res.id_subespacio :
+                                res.id_objeto
                               }
                               checked={
-                                (resourceCategory === 'espacios' && selectedEspacios.includes(res.id_espacio)) ||
-                                (resourceCategory === 'subespacios' && selectedSubEspacios.includes(res.id_subespacio)) ||
-                                (resourceCategory === 'objetos' && selectedObjetos.includes(res.id_objeto))
+                                (resourceCategory === 'espacio' && selectedEspacios.includes(res.id_espacio)) ||
+                                (resourceCategory === 'subespacio' && selectedSubEspacios.includes(res.id_subespacio)) ||
+                                (resourceCategory === 'objeto' && selectedObjetos.includes(res.id_objeto))
                               }
                               onChange={(e) => handleResourceCheckboxChange(e, resourceCategory)}
-                              // El atributo disabled solo se aplica si es una plantilla Y el owner
-                              disabled={isTemplateFormAndOwner} 
+                              disabled={isTemplateForm}
                             />
-                            {res.nombre_espacio || res.nombre_subespacio || res.nombre_objeto} 
-                            {/* Mostrar el nombre de la empresa/espacio/subespacio si es relevante y no es plantilla */}
-                            {!isTemplateFormAndOwner && resourceCategory === 'espacios' && allCompanies.find(c => c.id_empresa === res.id_empresa) && 
+                            {res.nombre_espacio || res.nombre_subespacio || res.nombre_objeto}
+                            {!isTemplateForm && resourceCategory === 'espacio' && allCompanies.find(c => c.id_empresa === res.id_empresa) &&
                               ` (${allCompanies.find(c => c.id_empresa === res.id_empresa).nombre_empresa})`}
-                            {!isTemplateFormAndOwner && resourceCategory === 'subespacios' && uniqueAllEspacios.find(e => e.id_espacio === res.id_espacio) && 
+                            {!isTemplateForm && resourceCategory === 'subespacio' && uniqueAllEspacios.find(e => e.id_espacio === res.id_espacio) &&
                               ` (Espacio: ${uniqueAllEspacios.find(e => e.id_espacio === res.id_espacio).nombre_espacio})`}
-                            {!isTemplateFormAndOwner && resourceCategory === 'objetos' && uniqueAllSubEspacios.find(s => s.id_subespacio === res.id_subespacio) && 
+                            {!isTemplateForm && resourceCategory === 'objeto' && uniqueAllSubEspacios.find(s => s.id_subespacio === res.id_subespacio) &&
                               ` (Sub-Espacio: ${uniqueAllSubEspacios.find(s => s.id_subespacio === res.id_subespacio).nombre_subespacio})`}
                           </label>
                         ))
@@ -551,7 +508,7 @@ export const CreateEditQuestionModal = ({
                       )
                     )}
                   </div>
-                  {!isTemplateFormAndOwner && <small>Selecciona uno o más recursos como opciones de respuesta.</small>}
+                  {!isTemplateForm && <small>Selecciona uno o más recursos como opciones de respuesta.</small>}
                 </div>
               )}
             </>

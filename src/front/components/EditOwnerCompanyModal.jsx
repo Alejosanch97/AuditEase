@@ -1,8 +1,7 @@
-// src/components/EditOwnerCompanyModal.jsx
 import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
-import useGlobalReducer from '../hooks/useGlobalReducer'; // Asumiendo que usas tu reducer global para mensajes
-import "../styles/createcompany.css"; 
+import useGlobalReducer from '../hooks/useGlobalReducer';
+import "../styles/createcompany.css";
 
 export const EditOwnerCompanyModal = ({ currentCompany, onClose, onUpdateSuccess }) => {
   const { dispatch } = useGlobalReducer();
@@ -11,8 +10,7 @@ export const EditOwnerCompanyModal = ({ currentCompany, onClose, onUpdateSuccess
     nombre_empresa: '',
     direccion: '',
     telefono: '',
-    email_contacto: '',
-    activo: true // Este campo es específico para la ruta de owner
+    email_contacto: ''
   });
   const [companyLogoFile, setCompanyLogoFile] = useState(null);
   const [previewLogo, setPreviewLogo] = useState("");
@@ -25,10 +23,9 @@ export const EditOwnerCompanyModal = ({ currentCompany, onClose, onUpdateSuccess
         nombre_empresa: currentCompany.nombre_empresa || '',
         direccion: currentCompany.direccion || '',
         telefono: currentCompany.telefono || '',
-        email_contacto: currentCompany.email_contacto || '',
-        activo: currentCompany.activo !== undefined ? currentCompany.activo : true // Asegúrate de cargar el estado 'activo'
+        email_contacto: currentCompany.email_contacto || ''
       });
-      setPreviewLogo(currentCompany.logo_url || "https://via.placeholder.com/100x50/cccccc/000000?text=Logo");
+      setPreviewLogo(currentCompany.logo_url || "[https://via.placeholder.com/100x50/cccccc/000000?text=Logo](https://via.placeholder.com/100x50/cccccc/000000?text=Logo)");
     }
     setError(null);
   }, [currentCompany]);
@@ -41,15 +38,15 @@ export const EditOwnerCompanyModal = ({ currentCompany, onClose, onUpdateSuccess
       };
       reader.readAsDataURL(companyLogoFile);
     } else {
-      setPreviewLogo(currentCompany.logo_url || "https://via.placeholder.com/100x50/cccccc/000000?text=Logo");
+      setPreviewLogo(currentCompany.logo_url || "[https://via.placeholder.com/100x50/cccccc/000000?text=Logo](https://via.placeholder.com/100x50/cccccc/000000?text=Logo)");
     }
   }, [companyLogoFile, currentCompany.logo_url]);
 
   const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
+    const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : value
+      [name]: value
     }));
   };
 
@@ -76,14 +73,12 @@ export const EditOwnerCompanyModal = ({ currentCompany, onClose, onUpdateSuccess
     data.append('direccion', formData.direccion);
     data.append('telefono', formData.telefono);
     data.append('email_contacto', formData.email_contacto);
-    data.append('activo', formData.activo); // Siempre envía 'activo' para esta ruta
 
     if (companyLogoFile) {
       data.append('logo_empresa', companyLogoFile);
     }
 
     try {
-      // Ruta específica para la edición de empresas por owner
       const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/owner/empresas/${currentCompany.id_empresa}`, {
         method: 'PUT',
         headers: {
@@ -169,17 +164,6 @@ export const EditOwnerCompanyModal = ({ currentCompany, onClose, onUpdateSuccess
             {previewLogo && (
               <img src={previewLogo} alt="Vista previa del logo" className="company-logo-preview" style={{ maxWidth: '100px', maxHeight: '50px', marginTop: '10px', objectFit: 'contain' }} />
             )}
-            {/* Si tienes lógica de backend para eliminar el logo, la integrarías aquí */}
-          </div>
-          <div className="form-group checkbox-group">
-            <input
-              type="checkbox"
-              id="activo"
-              name="activo"
-              checked={formData.activo}
-              onChange={handleChange}
-            />
-            <label htmlFor="activo">Empresa Activa</label>
           </div>
           {error && <p className="error-message">{error}</p>}
           <div className="modal-actions">

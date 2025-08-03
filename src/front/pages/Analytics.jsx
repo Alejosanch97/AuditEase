@@ -4,16 +4,15 @@ import { useNavigate } from 'react-router-dom';
 import useGlobalReducer from '../hooks/useGlobalReducer';
 import {
   PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
-} from 'recharts'; // Importa componentes de recharts
+} from 'recharts';
 
-import "../styles/analytics.css"; // Nuevo archivo CSS para esta página
+import "../styles/analytics.css";
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d', '#ffc658', '#d0ed57'];
 
 export const Analytics = () => {
   const { store, dispatch } = useGlobalReducer();
   const navigate = useNavigate();
-  const currentUser = store.user;
   const isLoggedIn = store.isLoggedIn;
 
   const [forms, setForms] = useState([]);
@@ -26,7 +25,6 @@ export const Analytics = () => {
   const [error, setError] = useState(null);
   const [message, setMessage] = useState('');
 
-  // Estados para el filtro de fechas
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
 
@@ -43,12 +41,20 @@ export const Analytics = () => {
     }
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/formularios/analytics`, {
+      // Usa la nueva ruta de la API que devuelve todos los formularios accesibles.
+      const url = `${import.meta.env.VITE_BACKEND_URL}/api/formularios/analytics`;
+      
+      const response = await fetch(url, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await response.json();
       if (response.ok) {
-        setForms(data.formularios);
+        // Añade un prefijo a las plantillas para distinguirlas si lo deseas.
+        const formattedForms = data.formularios.map(form => ({
+          ...form,
+          nombre_formulario: form.es_plantilla ? `(Plantilla) ${form.nombre_formulario}` : form.nombre_formulario
+        }));
+        setForms(formattedForms);
       } else {
         setError(data.error || "Error al cargar formularios.");
       }
@@ -81,7 +87,6 @@ export const Analytics = () => {
       const data = await response.json();
       if (response.ok) {
         setQuestions(data.preguntas);
-        // Reset selected question and chart data when form changes
         setSelectedQuestionId('');
         setChartData([]);
         setChartType('none');
@@ -156,7 +161,7 @@ export const Analytics = () => {
 
   useEffect(() => {
     fetchChartData();
-  }, [selectedQuestionId, startDate, endDate, fetchChartData]); // Re-fetch when filters change
+  }, [selectedQuestionId, startDate, endDate, fetchChartData]);
 
   // --- Render Chart based on Type ---
   const renderChart = () => {
@@ -195,7 +200,6 @@ export const Analytics = () => {
           </ResponsiveContainer>
         );
       case 'bar':
-        // Determinar la clave del eje X dinámicamente (puede ser 'name' o 'range')
         const xAxisKey = chartData[0] && chartData[0].range ? 'range' : 'name';
         const yAxisKey = chartData[0] && chartData[0].count ? 'count' : 'value';
 
