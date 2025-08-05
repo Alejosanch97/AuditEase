@@ -1,8 +1,7 @@
-// src/components/Login.jsx
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import useGlobalReducer from '../hooks/useGlobalReducer';
-import "../styles/login.css"; // Asegúrate de que esta ruta sea correcta
+import "../styles/login.css";
 
 export const Login = () => {
   const { store, dispatch } = useGlobalReducer();
@@ -22,21 +21,19 @@ export const Login = () => {
     if (user.cambio_password_requerido) {
       navigate('/cambiar-contrasena-inicial');
     } else if (user.rol === 'owner') {
-      navigate('/profile'); // La página actual para el owner
+      navigate('/profile');
     } else if (user.rol === 'admin_empresa' || user.rol === 'usuario_formulario') {
-      navigate('/usersprofile'); // La nueva página para admins/usuarios de empresa
+      navigate('/usersprofile');
     }
   };
 
   // Verificar si ya está autenticado y determinar a dónde redirigir
   useEffect(() => {
-    // Si ya estamos logeados y tenemos los datos del usuario en el store, redirigimos
     if (store.isLoggedIn && store.user) {
       handleRedirect(store.user);
-      return; // Salir para evitar doble ejecución
+      return;
     }
 
-    // Si no estamos logeados pero hay un token en localStorage, intentamos verificarlo
     const token = localStorage.getItem('access_token');
     if (token && !store.user) {
       const fetchUserProfile = async () => {
@@ -55,13 +52,10 @@ export const Login = () => {
               type: 'SET_USER',
               payload: data.usuario
             });
-            // Una vez el usuario se ha establecido en el store, redirigimos
             handleRedirect(data.usuario);
           } else {
-            // Token inválido o usuario inactivo
             localStorage.removeItem('access_token');
             dispatch({ type: 'LOGOUT' });
-            // Opcional: mostrar un mensaje de error si el usuario estaba inactivo
             if (data.error) {
               dispatch({ type: 'SET_MESSAGE', payload: { type: 'error', text: data.error } });
             }
@@ -75,7 +69,7 @@ export const Login = () => {
       };
       fetchUserProfile();
     }
-  }, [store.isLoggedIn, store.user, navigate, dispatch]); // Dependencias del useEffect
+  }, [store.isLoggedIn, store.user, navigate, dispatch]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -117,7 +111,7 @@ export const Login = () => {
     }
 
     setLoading(true);
-    setErrors({}); // Limpiar errores previos
+    setErrors({});
 
     try {
       const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/login`, {
@@ -135,14 +129,11 @@ export const Login = () => {
 
         dispatch({
           type: 'SET_USER',
-          payload: data.usuario // data.usuario contendrá el flag 'cambio_password_requerido'
+          payload: data.usuario
         });
 
-        // Redirigir basado en el nuevo estado del usuario
         handleRedirect(data.usuario);
-
       } else {
-        // En caso de error de login, data.error contendrá el mensaje del backend
         setErrors({ general: data.error || 'Error en el login' });
       }
     } catch (error) {
@@ -219,7 +210,8 @@ export const Login = () => {
                 </div>
 
                 <div className="sgsst-login-forgot-password-link-container">
-                    <Link to="/recuperar-password" className="sgsst-login-forgot-password-link">
+                    {/* --- ESTA ES LA LÍNEA QUE SE CORRIGIÓ --- */}
+                    <Link to="/forgot-password" className="sgsst-login-forgot-password-link">
                         ¿Olvidaste tu contraseña?
                     </Link>
                 </div>

@@ -1,7 +1,7 @@
 # src/api/routes.py
 
 # ... (tus otras importaciones existentes)
-from flask import Flask, request, jsonify, url_for, Blueprint, redirect
+from flask import Flask, request, jsonify, url_for, Blueprint, redirect, current_app
 from api.models import db, Usuario, Empresa, Espacio, SubEspacio, Objeto, Formulario, Pregunta, TipoRespuesta, EnvioFormulario, Respuesta, Observacion, Notificacion, formulario_espacio, formulario_subespacio, formulario_objeto, formulario_tipo_respuesta
 from api.utils import generate_sitemap, APIException
 from flask_cors import CORS
@@ -21,7 +21,13 @@ import cloudinary
 import cloudinary.uploader
 import base64 # Para decodificar base64 de firmas
 
+from flask_mail import Message
+from itsdangerous import URLSafeTimedSerializer
+import os
+
+
 api = Blueprint('api', __name__)
+
 
 
 # Función para validar email
@@ -407,6 +413,94 @@ def upload_user_signature():
         print(f"Error al subir la firma digital del usuario: {str(e)}")
         return jsonify({"error": f"Error interno del servidor al subir la firma digital: {str(e)}"}), 500
 
+
+@api.route('/solicitar-recuperacion-password', methods=['POST'])
+def solicitar_recuperacion_password():
+    """
+    Ruta que recibe un email y envía un enlace de recuperación de contraseña.
+    """
+    try:
+        data = request.get_json()
+        email = data.get('email')
+
+        if not email:
+            return jsonify({"error": "El email es requerido"}), 400
+
+        usuario = Usuario.query.filter_by(email=email).first()
+        if not usuario:
+            # Por seguridad, no reveles si el email no existe
+            return jsonify({"message": "Si tu correo está en nuestro sistema, recibirás un enlace para restablecer tu contraseña."}), 200
+
+        # Crear el serializador usando la clave de la app.
+        # Ya no usamos la variable 's' porque no existe en este archivo.
+        s = URLSafeTimedSerializer(current_app.config['SECRET_KEY'])
+        token = s.dumps(str(usuario.id_usuario), salt='recuperar-password-salt')
+
+        # Construir el enlace de recuperación con una URL dinámica
+        frontend_url = os.environ.get("FRONTEND_URL", "http://localhost:5173")
+        link_recuperacion = f"{frontend_url}/restablecer-password/{token}"
+        
+        # Acceder a la instancia de mail inicializada en app.py
+        mail_sender = current_app.extensions.get('mail')
+        if not mail_sender:
+            return jsonify({"error": "El servicio de correo no está configurado correctamente."}), 500
+        
+        msg = Message("Recuperación de Contraseña",
+                      sender=current_app.config['MAIL_USERNAME'],
+                      recipients=[usuario.email])
+        msg.body = f"Hola {usuario.nombre_completo},\n\nHaz clic en el siguiente enlace para restablecer tu contraseña:\n\n{link_recuperacion}\n\nEste enlace expirará en una hora."
+        mail_sender.send(msg)
+
+        return jsonify({"message": "Si tu correo está en nuestro sistema, recibirás un enlace para restablecer tu contraseña."}), 200
+
+    except Exception as e:
+        return jsonify({"error": f"Error interno del servidor: {str(e)}"}), 500
+
+
+@api.route('/restablecer-password', methods=['POST'])
+def restablecer_password():
+    """
+    Ruta que recibe el token y la nueva contraseña para actualizarla.
+    """
+    try:
+        data = request.get_json()
+        token = data.get('token')
+        nueva_password = data.get('nueva_password')
+        confirmar_password = data.get('confirmar_password')
+
+        if not token:
+            return jsonify({"error": "Token de recuperación no proporcionado."}), 400
+        if not nueva_password or not confirmar_password:
+            return jsonify({"error": "Se requieren la nueva contraseña y su confirmación."}), 400
+        if nueva_password != confirmar_password:
+            return jsonify({"error": "Las contraseñas no coinciden."}), 400
+
+        is_valid, message = validate_password(nueva_password)
+        if not is_valid:
+            return jsonify({"error": message}), 400
+
+        # Crear el serializador usando la clave de la app
+        s = URLSafeTimedSerializer(current_app.config['SECRET_KEY'])
+        try:
+            # max_age debe ser el mismo que el tiempo de vida del token
+            user_id = s.loads(token, salt='recuperar-password-salt', max_age=3600)
+        except Exception:
+            return jsonify({"error": "El token de recuperación es inválido o ha expirado."}), 400
+
+        usuario = Usuario.query.get(int(user_id))
+        if not usuario:
+            return jsonify({"error": "Usuario no encontrado."}), 404
+
+        # Actualizar la contraseña
+        usuario.contrasena_hash = generate_password_hash(nueva_password)
+        usuario.cambio_password_requerido = False # Aseguramos que este flag esté en False
+        db.session.commit()
+
+        return jsonify({"message": "Contraseña restablecida exitosamente. Ahora puedes iniciar sesión."}), 200
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": f"Error interno del servidor: {str(e)}"}), 500
 
 @api.route('/cambiar-password', methods=['PUT'])
 @jwt_required()
@@ -4103,11 +4197,15 @@ def get_responses_for_analytics(form_id):
         start_date_str = request.args.get('start_date')
         end_date_str = request.args.get('end_date')
 
-        query = db.session.query(Respuesta, Pregunta, TipoRespuesta).\
+        query = db.session.query(Respuesta, Pregunta, TipoRespuesta, EnvioFormulario).\
             join(Pregunta, Respuesta.id_pregunta == Pregunta.id_pregunta).\
             join(TipoRespuesta, Pregunta.tipo_respuesta_id == TipoRespuesta.id_tipo_respuesta).\
             join(EnvioFormulario, Respuesta.id_envio == EnvioFormulario.id_envio).\
+            join(Usuario, EnvioFormulario.id_usuario == Usuario.id_usuario).\
             filter(EnvioFormulario.id_formulario == form_id)
+
+        # --- AÑADIDO: FILTRAR RESPUESTAS POR EMPRESA DEL USUARIO ACTUAL ---
+        query = query.filter(Usuario.id_empresa == usuario.id_empresa)
 
         if question_id:
             query = query.filter(Respuesta.id_pregunta == question_id)
@@ -4129,27 +4227,29 @@ def get_responses_for_analytics(form_id):
              return jsonify({"data": [], "chart_type": "none", "message": "Selecciona una pregunta para ver el gráfico."}), 200
 
         selected_question_type = None
-        for _, pregunta, tipo_respuesta in results:
+        for _, pregunta, tipo_respuesta, _ in results:
             if pregunta.id_pregunta == question_id:
                 selected_question_type = tipo_respuesta.nombre_tipo
                 break
         
         if not selected_question_type:
-            return jsonify({"data": [], "chart_type": "none", "message": "Tipo de respuesta de la pregunta no encontrado."}), 404
+            # Si no se encuentra el tipo, puede que la pregunta no tenga respuestas en el rango de fechas
+            # o para la empresa del usuario.
+            return jsonify({"data": [], "chart_type": "none", "message": "No se encontraron respuestas para esta pregunta y filtros."}), 200
 
         chart_data = []
         chart_type = "none"
 
         if selected_question_type == 'booleano':
-            true_count = sum(1 for r, _, _ in results if r.valor_booleano is True)
-            false_count = sum(1 for r, _, _ in results if r.valor_booleano is False)
+            true_count = sum(1 for r, _, _, _ in results if r.valor_booleano is True)
+            false_count = sum(1 for r, _, _, _ in results if r.valor_booleano is False)
             chart_data = [
                 {"name": "Sí", "value": true_count},
                 {"name": "No", "value": false_count}
             ]
             chart_type = "pie"
         elif selected_question_type == 'numerico':
-            numeric_values = [r.valor_numerico for r, _, _ in results if r.valor_numerico is not None]
+            numeric_values = [r.valor_numerico for r, _, _, _ in results if r.valor_numerico is not None]
             if numeric_values:
                 min_val = min(numeric_values)
                 max_val = max(numeric_values)
@@ -4177,7 +4277,7 @@ def get_responses_for_analytics(form_id):
                 chart_data = []
         elif selected_question_type == 'seleccion_unica':
             counts = Counter()
-            for r, _, _ in results:
+            for r, _, _, _ in results:
                 if r.valor_texto: 
                     counts[r.valor_texto] += 1
                 elif r.valores_multiples_json: 
@@ -4194,30 +4294,27 @@ def get_responses_for_analytics(form_id):
         elif selected_question_type == 'seleccion_multiple' or selected_question_type == 'seleccion_recursos':
             counts = Counter()
             
-            # --- CORRECCIÓN: Obtener IDs de empresa de los usuarios que han respondido ---
-            envio_ids = [r.id_envio for r, _, _ in results]
+            # --- CORRECCIÓN: Filtrar recursos SOLO por la empresa del usuario actual ---
+            empresa_id_actual = usuario.id_empresa
             
-            # Usar una consulta para obtener los IDs de empresas únicos
-            empresas_ids = db.session.query(Usuario.id_empresa).join(EnvioFormulario).filter(EnvioFormulario.id_envio.in_(envio_ids)).distinct().all()
-            empresas_ids = [e[0] for e in empresas_ids]
-
-            # Pre-fetch todos los recursos de todas las empresas que respondieron
-            all_espacios = {e.id_espacio: e.nombre_espacio for e in Espacio.query.filter(Espacio.id_empresa.in_(empresas_ids)).all()}
-            all_subespacios = {s.id_subespacio: s.nombre_subespacio for s in SubEspacio.query.join(Espacio).filter(Espacio.id_empresa.in_(empresas_ids)).all()}
-            all_objetos = {o.id_objeto: o.nombre_objeto for o in Objeto.query.join(SubEspacio).join(Espacio).filter(Espacio.id_empresa.in_(empresas_ids)).all()}
+            all_espacios = {e.id_espacio: e.nombre_espacio for e in Espacio.query.filter_by(id_empresa=empresa_id_actual).all()}
+            all_subespacios = {s.id_subespacio: s.nombre_subespacio for s in SubEspacio.query.join(Espacio).filter(Espacio.id_empresa == empresa_id_actual).all()}
+            all_objetos = {o.id_objeto: o.nombre_objeto for o in Objeto.query.join(SubEspacio).join(Espacio).filter(Espacio.id_empresa == empresa_id_actual).all()}
             resource_names_map = {**all_espacios, **all_subespacios, **all_objetos}
 
-            for r, _, _ in results:
+            for r, _, _, _ in results:
                 if r.valores_multiples_json:
                     try:
                         selected_options = json.loads(r.valores_multiples_json)
                         if isinstance(selected_options, list):
                             for option_id in selected_options:
-                                name = resource_names_map.get(int(option_id), f"ID Desconocido: {option_id}")
-                                counts[name] += 1
+                                name = resource_names_map.get(int(option_id), None)
+                                if name: # Solo cuenta si el recurso pertenece a la empresa
+                                    counts[name] += 1
                         elif isinstance(selected_options, (int, str)):
-                            name = resource_names_map.get(int(selected_options), f"ID Desconocido: {selected_options}")
-                            counts[name] += 1
+                            name = resource_names_map.get(int(selected_options), None)
+                            if name:
+                                counts[name] += 1
                     except (json.JSONDecodeError, TypeError) as e:
                         print(f"Error parsing valores_multiples_json for multi/resource selection: {r.valores_multiples_json} - {e}")
                         pass
@@ -4226,13 +4323,12 @@ def get_responses_for_analytics(form_id):
             chart_type = "bar"
         elif selected_question_type == 'texto_corto' or selected_question_type == 'texto_largo':
             counts = Counter()
-            for r, _, _ in results:
+            for r, _, _, _ in results:
                 if r.valor_texto:
                     counts[r.valor_texto] += 1
             chart_data = [{"name": item, "value": count} for item, count in counts.items()]
-            chart_type = "bar" # Usar gráfico de barras para mostrar las respuestas más comunes
+            chart_type = "bar"
         elif selected_question_type in ['firma', 'dibujo', 'fecha', 'hora']:
-            # No se puede generar un gráfico significativo para estos tipos
             chart_data = []
             chart_type = "none"
             

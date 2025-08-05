@@ -1,66 +1,74 @@
+/* ======================================================================== */
+/* --- CONTENEDOR PRINCIPAL Y WRAPPER --- */
+/* ======================================================================== */
+
+/* Nuevo contenedor para centrar de forma segura, evitando que se superponga al navbar */
+.sgsst-register-wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    width: 100%;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+/* Contenedor principal del registro */
 .sgsst-register-container {
-    font-family: 'Inter', sans-serif; /* Asegura la fuente para este componente */
+    font-family: 'Inter', sans-serif;
     background-color: #ffffff;
     border-radius: 20px;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
     display: flex;
-    flex-direction: column; /* Default to column for mobile */
-    /* Ajustes de tamaño para que la card ocupe un buen espacio */
-    max-width: 1000px; /* Reducido para que sea más compacto, similar al login */
-    width: 90%; /* Ocupa un porcentaje del ancho disponible */
+    flex-direction: column;
+    max-width: 1200px;
+    width: 95%;
     overflow: hidden;
-    height: auto; /* Allow height to adjust based on content */
-    /* Centrar el contenedor en la pantalla */
-    position: absolute; 
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    /* Asegurar que la altura se ajuste y permitir scroll interno si es necesario */
-    max-height: 90vh; /* Limitar la altura máxima a un porcentaje del viewport */
-    overflow-y: auto; /* Permitir scroll vertical si el contenido excede la altura */
-    min-height: 550px; /* Asegura una altura mínima para el contenedor de registro */
+    height: auto;
+    min-height: 600px;
 }
 
-/* Left Panel - Welcome section */
+/* ======================================================================== */
+/* --- PANELES IZQUIERDO Y DERECHO --- */
+/* ======================================================================== */
+
+/* Panel Izquierdo - Sección de bienvenida */
 .sgsst-register-left-panel {
-    background-color: #00473e; /* Headline color from second palette */
-    color: #fffffe; /* Sub headline color from second palette */
-    padding: 30px; /* Reducir padding para más espacio */
+    background-color: #00473e;
+    color: #fffffe;
+    padding: 30px;
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
     text-align: center;
-    /* Permitir que el panel izquierdo sea más flexible, eliminando el min-width fijo de 950px */
-    flex: 1; /* Permite que el panel izquierdo y derecho compartan el espacio equitativamente */
-    min-width: unset; /* Elimina el min-width fijo, permitiendo que se encoja */
-    max-width: 50%; /* Asegura que no ocupe más de la mitad del contenedor principal */
-    min-height: 280px; /* Ensure minimum height for mobile */
-    position: relative; /* Para posicionar el indicador de pasos */
+    flex: 1; /* Esto hace que ocupe una parte equitativa del espacio disponible */
+    min-height: 280px;
+    position: relative;
+    max-width: none; /* Elimino el max-width para que flex: 1 funcione */
 }
 
 .sgsst-register-logo-image {
-    /* El logo se adaptará al tamaño del panel izquierdo, no será 900px en portátiles */
-    max-width: 800px; /* Limitar el tamaño del logo para que quepa en el panel más pequeño */
-    width: 100%; /* Ocupa el 100% del ancho de su contenedor (hasta 300px) */
-    height: auto; /* Mantiene la proporción */
-    margin-bottom: 25px; /* Ligeramente reducido */
-    filter: drop-shadow(0 8px 15px rgba(0,0,0,0.4)); 
+    max-width: 180px;
+    width: 100%;
+    height: auto;
+    margin-bottom: 25px;
+    filter: drop-shadow(0 8px 15px rgba(0,0,0,0.4));
 }
 
 .sgsst-register-welcome-headline {
-    font-size: 2.2rem; /* Ligeramente más pequeño */
+    font-size: 2.2rem;
     font-weight: 700;
-    margin-bottom: 0.8rem; 
+    margin-bottom: 0.8rem;
     line-height: 1.2;
 }
 
 .sgsst-register-welcome-text {
-    font-size: 1rem; /* Ligeramente más pequeño */
+    font-size: 1rem;
     text-align: center;
     line-height: 1.5;
-    max-width: 350px; /* Ajuste del ancho */
-    margin-bottom: 25px; /* Espacio antes del indicador de pasos */
+    max-width: 350px;
+    margin-bottom: 25px;
 }
 
 /* Indicador de Pasos */
@@ -69,95 +77,99 @@
     align-items: center;
     justify-content: center;
     width: 100%;
-    max-width: 300px; /* Limitar el ancho del indicador */
-    margin-top: auto; /* Empuja el indicador hacia abajo en el panel izquierdo */
-    padding-top: 15px; /* Reducir padding */
-    gap: 10px; /* Espacio entre los pasos y la línea */
+    max-width: 300px;
+    margin-top: auto;
+    padding-top: 15px;
+    gap: 10px;
 }
 
 .sgsst-register-step {
     display: flex;
     flex-direction: column;
     align-items: center;
-    color: rgba(255, 255, 255, 0.5); /* Color inactivo */
+    color: rgba(255, 255, 255, 0.5);
     transition: color 0.3s ease;
     position: relative;
-    z-index: 2; /* Para que el círculo esté sobre la línea */
+    z-index: 2;
 }
 
 .sgsst-register-step span {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 30px; /* Círculos más pequeños */
+    width: 30px;
     height: 30px;
     border-radius: 50%;
-    border: 2px solid rgba(255, 255, 255, 0.5); /* Borde inactivo */
+    border: 2px solid rgba(255, 255, 255, 0.5);
     font-weight: 600;
-    font-size: 1rem; /* Fuente más pequeña */
-    background-color: #00473e; /* Fondo del círculo */
+    font-size: 1rem;
+    background-color: #00473e;
     transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
 }
 
 .sgsst-register-step small {
-    margin-top: 4px; /* Ligeramente reducido */
-    font-size: 0.8rem; /* Texto más pequeño */
+    margin-top: 4px;
+    font-size: 0.8rem;
     text-align: center;
 }
 
 .sgsst-register-step.active {
-    color: #fffffe; /* Color activo */
+    color: #fffffe;
 }
 
 .sgsst-register-step.active span {
-    background-color: #faae2b; /* Color de realce para el círculo activo */
+    background-color: #faae2b;
     border-color: #faae2b;
-    color: #00473e; /* Texto oscuro en el círculo activo */
+    color: #00473e;
 }
 
 .sgsst-register-step-line {
     flex-grow: 1;
     height: 2px;
-    background-color: rgba(255, 255, 255, 0.3); /* Línea inactiva */
+    background-color: rgba(255, 255, 255, 0.3);
     position: absolute;
-    width: calc(100% - 60px); /* Ancho de la línea entre los círculos (ajustado por el tamaño de los círculos) */
+    width: calc(100% - 60px);
     left: 50%;
     transform: translateX(-50%);
     z-index: 1;
 }
 
-/* Right Panel - Registration Form section */
+/* Panel Derecho - Formulario de registro */
 .sgsst-register-right-panel {
-    padding: 30px; /* Reducido de 40px a 30px */
-    flex: 1; 
+    padding: 30px;
+    flex: 1; /* Esto hace que ocupe una parte equitativa del espacio disponible */
     display: flex;
     flex-direction: column;
     justify-content: center;
+    max-width: none; /* Elimino el max-width para que flex: 1 funcione */
 }
 
 .sgsst-register-heading {
-    font-size: 2.2rem; /* Ligeramente más pequeño */
+    font-size: 2.2rem;
     font-weight: 700;
     text-align: center;
-    margin-bottom: 1.2rem; /* Ligeramente reducido */
-    color: #00473e; /* Headline color */
+    margin-bottom: 1.2rem;
+    color: #00473e;
 }
 
-/* Input field styling */
+/* ======================================================================== */
+/* --- ELEMENTOS DEL FORMULARIO --- */
+/* ======================================================================== */
+
 .sgsst-register-input-group-wrapper {
-    margin-bottom: 12px; /* Reducido de 15px a 12px */
-    position: relative; 
+    margin-bottom: 12px;
+    position: relative;
 }
 
 .sgsst-register-form-label {
-    color: #475d5b; 
+    color: #475d5b;
     font-weight: 600;
-    margin-bottom: 6px; /* Reducido de 8px a 6px */
-    display: block; 
+    margin-bottom: 6px;
+    display: block;
 }
 
 .sgsst-register-required-star {
-    color: #fa5246; 
+    color: #fa5246;
     font-weight: bold;
     margin-left: 4px;
 }
@@ -165,32 +177,32 @@
 .sgsst-register-input-field {
     border: 1px solid #e2e8f0;
     border-radius: 8px;
-    padding: 10px 14px; /* Reducido de 12px 16px */
+    padding: 10px 14px;
     width: 100%;
     box-sizing: border-box;
-    font-size: 15px; /* Ligeramente más pequeño */
-    color: #475d5b; 
+    font-size: 15px;
+    color: #475d5b;
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .sgsst-register-input-field:focus {
     outline: none;
-    border-color: #faae2b; 
+    border-color: #faae2b;
     box-shadow: 0 0 0 3px rgba(250, 174, 43, 0.3);
 }
 
 .sgsst-register-input-field.is-invalid {
-    border-color: #dc3545; 
+    border-color: #dc3545;
 }
 
 .sgsst-register-invalid-feedback {
     color: #dc3545;
-    font-size: 0.8rem; /* Ligeramente más pequeño */
-    margin-top: 0.2rem; /* Ligeramente reducido */
-    display: block; 
+    font-size: 0.8rem;
+    margin-top: 0.2rem;
+    display: block;
 }
 
-/* Password toggle button */
+/* Botón de visibilidad de contraseña */
 .sgsst-register-password-input-wrapper {
     position: relative;
 }
@@ -198,16 +210,14 @@
 .sgsst-register-toggle-password-visibility {
     position: absolute;
     right: 10px;
-    /* Ajuste top para el toggle si hay label encima: 
-       (altura de la etiqueta + margen) + mitad del padding del input + mitad de la altura del input */
-    top: calc(50% + 12px); /* Ajuste basado en los nuevos márgenes/paddings */
-    transform: translateY(-50%);
+    top: 52%; /* Ajusta este valor para mover el ícono un poco más abajo */
+    transform: translateY(-50%); /* Mantiene el centrado vertical basado en la altura del ícono */
     background: none;
     border: none;
     cursor: pointer;
-    font-size: 1.1rem; /* Ligeramente más pequeño */
+    font-size: 1.1rem;
     color: #475d5b;
-    padding: 4px; /* Ligeramente reducido */
+    padding: 4px;
     border-radius: 50%;
     transition: background-color 0.2s ease;
 }
@@ -216,17 +226,17 @@
     background-color: #f0f0f0;
 }
 
-/* Password Strength Meter */
+/* Medidor de fortaleza de contraseña */
 .sgsst-register-password-strength-container {
-    margin-top: 0.4rem; /* Ligeramente reducido */
+    margin-top: 0.4rem;
 }
 
 .sgsst-register-progress {
-    height: 5px; /* Ligeramente más delgado */
-    background-color: #e9ecef; 
+    height: 5px;
+    background-color: #e9ecef;
     border-radius: 3px;
     overflow: hidden;
-    margin-bottom: 0.2rem; /* Ligeramente reducido */
+    margin-bottom: 0.2rem;
 }
 
 .sgsst-register-progress-bar {
@@ -235,35 +245,58 @@
     border-radius: 3px;
 }
 
-/* Colores de la barra de fortaleza */
-.sgsst-register-progress-bar-danger { background-color: #dc3545; } 
-.sgsst-register-progress-bar-warning { background-color: #ffc107; } 
-.sgsst-register-progress-bar-info { background-color: #17a2b8; } 
-.sgsst-register-progress-bar-success { background-color: #28a745; } 
+.sgsst-register-progress-bar-danger { background-color: #dc3545; }
+.sgsst-register-progress-bar-warning { background-color: #ffc107; }
+.sgsst-register-progress-bar-info { background-color: #17a2b8; }
+.sgsst-register-progress-bar-success { background-color: #28a745; }
 
 .sgsst-register-text-muted {
-    color: #6c757d; 
-    font-size: 0.8rem; /* Ligeramente más pequeño */
+    color: #6c757d;
+    font-size: 0.8rem;
 }
 
-/* Register button and Navigation buttons */
+/* Botones de navegación */
 .sgsst-register-button {
-    background-color: #faae2b; 
-    color: #00473e; 
-    padding: 12px 18px; /* Reducido de 14px 20px */
+    background-color: #faae2b;
+    color: #00473e;
+    padding: 12px 18px;
     border-radius: 8px;
     font-weight: 600;
-    font-size: 1rem; /* Reducido de 1.125rem */
+    font-size: 1rem;
     width: 100%;
     border: none;
     cursor: pointer;
     transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
-    box-shadow: 0 5px 15px rgba(250, 174, 43, 0.3); 
-    margin-top: 1rem; /* Reducido de 1.5rem */
+    box-shadow: 0 5px 15px rgba(250, 174, 43, 0.3);
+    margin-top: 1rem;
+}
+
+.sgsst-register-navigation-buttons {
+    display: flex;
+    justify-content: space-between;
+    gap: 15px;
+    margin-top: 1rem;
+}
+
+.sgsst-register-navigation-buttons .sgsst-register-button {
+    width: auto;
+    flex: 1;
+}
+
+.sgsst-register-button-secondary {
+    background-color: #e2e8f0;
+    color: #475d5b;
+    box-shadow: none;
+}
+
+.sgsst-register-button-secondary:hover {
+    background-color: #cbd5e1;
+    transform: translateY(-2px);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
 }
 
 .sgsst-register-button:hover {
-    background-color: #e09a24; 
+    background-color: #e09a24;
     transform: translateY(-2px);
     box-shadow: 0 8px 20px rgba(250, 174, 43, 0.4);
 }
@@ -280,32 +313,6 @@
     transform: none;
 }
 
-.sgsst-register-button-secondary {
-    background-color: #e2e8f0; 
-    color: #475d5b; 
-    box-shadow: none;
-}
-
-.sgsst-register-button-secondary:hover {
-    background-color: #cbd5e1; 
-    transform: translateY(-2px);
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-}
-
-.sgsst-register-navigation-buttons {
-    display: flex;
-    justify-content: space-between;
-    gap: 15px; /* Reducido de 20px */
-    margin-top: 1rem; /* Reducido de 1.5rem */
-}
-
-.sgsst-register-navigation-buttons .sgsst-register-button {
-    width: auto; 
-    flex: 1; 
-}
-
-
-/* Spinner for loading state */
 .sgsst-register-spinner {
     border: 3px solid rgba(255, 255, 255, 0.3);
     border-top: 3px solid #fff;
@@ -323,50 +330,48 @@
     100% { transform: rotate(360deg); }
 }
 
-/* "Ya tienes cuenta?" text and link */
 .sgsst-register-signup-text {
     text-align: center;
-    font-size: 0.875rem; 
-    margin-top: 1.5rem; /* Reducido de 2rem */
-    color: #475d5b; 
+    font-size: 0.875rem;
+    margin-top: 1.5rem;
+    color: #475d5b;
 }
 
 .sgsst-register-signup-link {
-    color: #00473e; 
+    color: #00473e;
     font-weight: 500;
     text-decoration: none;
     transition: color 0.3s ease;
 }
 
 .sgsst-register-signup-link:hover {
-    color: #faae2b; 
+    color: #faae2b;
     text-decoration: underline;
 }
 
-/* Custom alert styling for errors */
 .sgsst-register-alert-danger {
-    background-color: #f8d7da; 
-    color: #721c24; 
+    background-color: #f8d7da;
+    color: #721c24;
     border: 1px solid #f5c6cb;
     border-radius: 8px;
-    padding: 0.8rem 1rem; /* Reducido */
-    margin-bottom: 1.2rem; /* Reducido */
+    padding: 0.8rem 1rem;
+    margin-bottom: 1.2rem;
     position: relative;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    font-size: 0.9rem; /* Reducido */
+    font-size: 0.9rem;
 }
 
 .sgsst-register-close-alert-btn {
     background: none;
     border: none;
-    font-size: 1.3rem; /* Reducido */
+    font-size: 1.3rem;
     line-height: 1;
     color: #721c24;
     cursor: pointer;
     padding: 0;
-    margin-left: 8px; /* Reducido */
+    margin-left: 8px;
     opacity: 0.7;
     transition: opacity 0.2s ease;
 }
@@ -375,118 +380,567 @@
     opacity: 1;
 }
 
-/* Media Queries for Responsiveness */
-@media (min-width: 768px) {
+
+/* ======================================================================== */
+/* --- RESPONSIVE AJUSTES --- */
+/* ======================================================================== */
+
+/* Móviles muy pequeños (ancho <= 480px) */
+@media (max-width: 480px) {
+    .sgsst-register-wrapper {
+        padding: 10px;
+    }
     .sgsst-register-container {
-        flex-direction: row; 
-        width: 85%; /* Mantiene un buen porcentaje */
-        max-width: 1200px; /* Ajustado para ser un poco más grande que 1000px, pero no tan masivo como 1600px */
+        min-height: auto;
+        max-height: 98vh;
+        overflow-y: auto;
+        border-radius: 10px;
     }
     .sgsst-register-left-panel {
-        padding: 40px; /* Ajustado */
-        flex: 1; 
-        min-width: unset; 
-        max-width: 50%; /* Mantiene el 50% del ancho del contenedor principal */
-    }
-    .sgsst-register-right-panel {
-        padding: 40px; /* Ajustado */
-    }
-    /* Ajuste para el indicador de pasos en desktop */
-    .sgsst-register-steps-indicator {
-        flex-direction: column; 
-        align-items: flex-start; 
-        gap: 20px; /* Reducido de 25px */
-        max-width: none; 
-        width: auto;
-        margin-top: auto; 
-        padding-left: 0;
-        margin-left: 0;
-    }
-    .sgsst-register-step {
-        flex-direction: row; 
-        gap: 8px; /* Reducido de 10px */
-    }
-    .sgsst-register-step-line {
-        display: none; 
+        padding: 20px 10px;
+        min-height: 150px;
     }
     .sgsst-register-logo-image {
-        max-width: 250px; /* Ajustado para que sea un tamaño razonable en desktop */
+        max-width: 120px;
+        margin-bottom: 10px;
+    }
+    .sgsst-register-welcome-headline {
+        font-size: 1.5rem;
+    }
+    .sgsst-register-welcome-text {
+        font-size: 0.8rem;
+    }
+    .sgsst-register-right-panel {
+        padding: 20px 10px;
+    }
+    .sgsst-register-heading {
+        font-size: 1.6rem;
+    }
+    .sgsst-register-input-field {
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 10px 14px;
+    width: 100%;
+    box-sizing: border-box;
+    font-size: 15px;
+    color: #475d5b;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    /* Nuevo: Añade un padding a la derecha para dejar espacio para el ícono */
+    padding-right: 40px; 
+}
+
+    .sgsst-register-button {
+        padding: 10px;
+        font-size: 0.9rem;
     }
 }
 
-@media (max-width: 767.98px) { /* Mobile devices */
-    .sgsst-register-left-panel {
-        padding: 20px 15px; /* Más reducido */
-        min-height: 200px; /* Más pequeño */
-        flex: 1 1 auto; 
-        min-width: unset; 
-    }
-
-    .sgsst-register-logo-image {
-        max-width: 150px; /* Más pequeño en móviles */
-        margin-bottom: 15px;
-    }
-
-    .sgsst-register-welcome-headline {
-        font-size: 1.8rem; /* Más pequeño */
-    }
-
-    .sgsst-register-welcome-text {
-        font-size: 0.85rem; /* Más pequeño */
-        margin-bottom: 15px;
-    }
-
-    .sgsst-register-right-panel {
-        padding: 25px 15px; /* Más reducido */
-    }
-
-    .sgsst-register-heading {
-        font-size: 1.8rem; /* Más pequeño */
-        margin-bottom: 0.8rem;
-    }
-
-    .sgsst-register-button {
-        padding: 10px 12px; /* Más reducido */
-        font-size: 0.9rem; /* Más pequeño */
-    }
-    
-    /* Centrar el contenedor principal en móviles, ocupando el 95% del ancho */
+/* Tablets (ancho entre 481px y 767px) */
+@media (min-width: 481px) and (max-width: 767px) {
     .sgsst-register-container {
-        width: 95%; /* Ocupa más ancho en móviles */
+        max-height: 95vh;
+        overflow-y: auto;
+    }
+    .sgsst-register-left-panel, .sgsst-register-right-panel {
+        padding: 25px 20px;
+    }
+    .sgsst-register-heading {
+        font-size: 2rem;
+    }
+}
+
+/* Escritorio y tablets grandes (ancho > 767px) */
+@media (min-width: 768px) {
+    .sgsst-register-container {
+        flex-direction: row;
+        max-width: 1200px;
+        min-height: 600px;
+        height: auto;
+        overflow-y: visible;
+        width: 90%;
+    }
+    .sgsst-register-left-panel {
+        padding: 40px;
+        flex: 1; /* Esto hace que ocupe una parte equitativa del espacio */
+        max-width: none;
+    }
+    .sgsst-register-right-panel {
+        padding: 50px;
+        flex: 1; /* Esto hace que ocupe una parte equitativa del espacio */
+        max-width: none;
+    }
+    .sgsst-register-logo-image {
+        max-width: 250px;
+        margin-bottom: 30px;
+    }
+    .sgsst-register-welcome-headline {
+        font-size: 2.8rem;
+    }
+    .sgsst-register-welcome-text {
+        font-size: 1.1rem;
+        max-width: 400px;
+    }
+    .sgsst-register-heading {
+        font-size: 2.8rem;
+    }
+}
+
+/* ======================================================================== */
+/* --- ESTILOS PARA EL LOGIN (INCLUIDOS PARA COMPLETITUD) --- */
+/* ======================================================================== */
+
+/* Contenedor principal del login */
+.sgsst-login-container {
+    font-family: 'Inter', sans-serif;
+    background-color: #ffffff;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+    max-width: 1000px;
+    width: 90%;
+    overflow: hidden;
+    height: auto;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    min-height: 500px;
+}
+
+.sgsst-login-left-panel {
+    background-color: #00473e;
+    color: #fffffe;
+    padding: 40px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    flex: 1;
+    min-height: 300px;
+}
+
+.sgsst-login-logo-image {
+    max-width: 500px;
+    height: auto;
+    margin-bottom: 30px;
+    filter: drop-shadow(0 8px 15px rgba(0,0,0,0.4));
+}
+
+.sgsst-login-welcome-headline {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    line-height: 1.2;
+}
+
+.sgsst-login-welcome-text {
+    font-size: 1.125rem;
+    text-align: center;
+    line-height: 1.5;
+    max-width: 400px;
+}
+
+.sgsst-login-right-panel {
+    padding: 40px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.sgsst-login-heading {
+    font-size: 2.5rem;
+    font-weight: 700;
+    text-align: center;
+    margin-bottom: 1.5rem;
+    color: #00473e;
+}
+
+.sgsst-login-input-group-wrapper {
+    margin-bottom: 15px;
+    position: relative;
+}
+
+.sgsst-login-input-field {
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 12px 16px;
+    width: 100%;
+    box-sizing: border-box;
+    font-size: 16px;
+    color: #475d5b;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.sgsst-login-input-field:focus {
+    outline: none;
+    border-color: #faae2b;
+    box-shadow: 0 0 0 3px rgba(250, 174, 43, 0.3);
+}
+
+.sgsst-login-input-field.is-invalid {
+    border-color: #dc3545;
+}
+
+.sgsst-login-invalid-feedback {
+    color: #dc3545;
+    font-size: 0.875rem;
+    margin-top: 0.25rem;
+    display: block;
+}
+
+.sgsst-login-password-input-wrapper {
+    position: relative;
+}
+
+.sgsst-login-toggle-password-visibility {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1.2rem;
+    color: #475d5b;
+    padding: 5px;
+    border-radius: 50%;
+    transition: background-color 0.2s ease;
+}
+
+.sgsst-login-toggle-password-visibility:hover {
+    background-color: #f0f0f0;
+}
+
+.sgsst-login-forgot-password-link-container {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 1.5rem;
+}
+
+.sgsst-login-forgot-password-link {
+    font-size: 0.875rem;
+    color: #00473e;
+    font-weight: 500;
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+.sgsst-login-forgot-password-link:hover {
+    color: #faae2b;
+    text-decoration: underline;
+}
+
+.sgsst-login-button {
+    background-color: #faae2b;
+    color: #00473e;
+    padding: 14px 20px;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 1.125rem;
+    width: 100%;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
+    box-shadow: 0 5px 15px rgba(250, 174, 43, 0.3);
+}
+
+.sgsst-login-button:hover {
+    background-color: #e09a24;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(250, 174, 43, 0.4);
+}
+
+.sgsst-login-button:active {
+    transform: translateY(0);
+    box-shadow: 0 5px 15px rgba(250, 174, 43, 0.3);
+}
+
+.sgsst-login-button:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+    box-shadow: none;
+    transform: none;
+}
+
+.sgsst-login-spinner {
+    border: 3px solid rgba(255, 255, 255, 0.3);
+    border-top: 3px solid #fff;
+    border-radius: 50%;
+    width: 1em;
+    height: 1em;
+    animation: sgsst-login-spin 1s linear infinite;
+    display: inline-block;
+    vertical-align: middle;
+    margin-right: 0.5em;
+}
+
+@keyframes sgsst-login-spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.sgsst-login-divider-text {
+    display: flex;
+    align-items: center;
+    text-align: center;
+    margin: 20px 0;
+    font-size: 0.875rem;
+    color: #9ca3af;
+}
+
+.sgsst-login-divider-text::before,
+.sgsst-login-divider-text::after {
+    content: '';
+    flex: 1;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.sgsst-login-divider-text:not(:empty)::before {
+    margin-right: 0.5em;
+}
+
+.sgsst-login-divider-text:not(:empty)::after {
+    margin-left: 0.5em;
+}
+
+.sgsst-login-social-buttons-container {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin-top: 20px;
+    margin-bottom: 30px;
+}
+
+.sgsst-login-social-button {
+    background-color: #f2f7f5;
+    border: 1px solid #00332c;
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    transition: background-color 0.3s ease, border-color 0.3s ease, transform 0.2s ease;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.sgsst-login-social-button:hover {
+    background-color: #e0e6e4;
+    border-color: #00473e;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+.sgsst-login-social-button img,
+.sgsst-login-social-button svg {
+    width: 24px;
+    height: 24px;
+    color: #00473e;
+}
+
+.sgsst-login-signup-text {
+    text-align: center;
+    font-size: 0.875rem;
+    margin-top: 2rem;
+    color: #475d5b;
+}
+
+.sgsst-login-signup-link {
+    color: #00473e;
+    font-weight: 500;
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+.sgsst-login-signup-link:hover {
+    color: #faae2b;
+    text-decoration: underline;
+}
+
+.sgsst-login-alert-danger {
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+    border-radius: 8px;
+    padding: 1rem 1.25rem;
+    margin-bottom: 1.5rem;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 0.95rem;
+}
+
+.sgsst-login-close-alert-btn {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    line-height: 1;
+    color: #721c24;
+    cursor: pointer;
+    padding: 0;
+    margin-left: 10px;
+    opacity: 0.7;
+    transition: opacity 0.2s ease;
+}
+
+.sgsst-login-close-alert-btn:hover {
+    opacity: 1;
+}
+
+/* Responsive para Login */
+@media (min-width: 992px) {
+    .sgsst-login-container {
+        flex-direction: row;
+        width: 80%;
+        max-width: 1200px;
+        min-height: 600px;
+    }
+    .sgsst-login-left-panel {
+        padding: 60px;
+    }
+    .sgsst-login-right-panel {
+        padding: 60px;
+    }
+    .sgsst-login-welcome-headline {
+        font-size: 3rem;
+    }
+    .sgsst-login-heading {
+        font-size: 3rem;
+    }
+}
+
+@media (min-width: 768px) and (max-width: 991px) {
+    .sgsst-login-container {
+        flex-direction: row;
+        width: 90%;
+        max-width: 900px;
+        min-height: 550px;
+    }
+    .sgsst-login-left-panel, .sgsst-login-right-panel {
+        padding: 40px;
+    }
+    .sgsst-login-welcome-headline, .sgsst-login-heading {
+        font-size: 2.2rem;
+    }
+    .sgsst-login-logo-image {
+        max-width: 400px;
+    }
+}
+
+@media (max-width: 767px) {
+    .sgsst-login-container {
+        flex-direction: column;
+        width: 95%;
+        max-width: 500px;
+        min-height: auto;
+        position: fixed;
+        top: 50%;
         left: 50%;
         transform: translate(-50%, -50%);
-        position: fixed; 
-        top: 50%;
         height: auto;
-        max-height: 98vh; /* Permitir casi toda la altura del viewport */
-        overflow-y: auto; 
+        max-height: 98vh;
+        overflow-y: auto;
     }
-    /* Ajuste top para el toggle si hay label encima en móviles */
-    .sgsst-register-input-group-wrapper.sgsst-register-password-input-wrapper .sgsst-register-toggle-password-visibility {
-        top: calc(50% + 12px); /* Ajuste basado en los nuevos márgenes/paddings */
+    .sgsst-login-left-panel {
+        padding: 30px 20px;
+        min-height: 200px;
     }
-
-    /* Ajuste del indicador de pasos para móviles */
-    .sgsst-register-steps-indicator {
-        flex-direction: row; 
-        justify-content: space-around;
-        gap: 8px; /* Más reducido */
-        max-width: 100%;
-        margin-top: 15px;
-        padding-top: 0;
+    .sgsst-login-logo-image {
+        max-width: 180px;
+        margin-bottom: 20px;
     }
-    .sgsst-register-step-line {
-        display: block; 
-        width: calc(100% - 80px); /* Ajustar el ancho de la línea */
-        left: 50%;
-        transform: translateX(-50%);
+    .sgsst-login-welcome-headline {
+        font-size: 1.8rem;
     }
-    .sgsst-register-step small {
-        font-size: 0.7rem; /* Texto más pequeño en móviles */
-    }
-    .sgsst-register-step span {
-        width: 28px; /* Círculos más pequeños */
-        height: 28px;
+    .sgsst-login-welcome-text {
         font-size: 0.9rem;
     }
+    .sgsst-login-right-panel {
+        padding: 30px 20px;
+    }
+    .sgsst-login-heading {
+        font-size: 1.8rem;
+        margin-bottom: 1rem;
+    }
+    .sgsst-login-button {
+        padding: 12px 15px;
+        font-size: 1rem;
+    }
+    .sgsst-login-social-buttons-container {
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 10px;
+        margin-bottom: 20px;
+    }
+    .sgsst-login-social-button {
+        width: 45px;
+        height: 45px;
+    }
+    .sgsst-login-social-button img,
+    .sgsst-login-social-button svg {
+        width: 20px;
+        height: 20px;
+    }
+}
+
+@media (max-width: 480px) {
+    .sgsst-login-left-panel {
+        padding: 20px 15px;
+        min-height: 180px;
+    }
+    .sgsst-login-welcome-headline {
+        font-size: 1.6rem;
+    }
+    .sgsst-login-right-panel {
+        padding: 25px 15px;
+    }
+    .sgsst-login-heading {
+        font-size: 1.6rem;
+    }
+    .sgsst-login-button {
+        font-size: 0.9rem;
+        padding: 10px 12px;
+    }
+    .sgsst-login-social-buttons-container {
+        gap: 8px;
+    }
+    .sgsst-login-social-button {
+        width: 40px;
+        height: 40px;
+    }
+}
+
+
+/* ======================================================================== */
+/* --- ESTILOS PARA LA PÁGINA DE PERFIL (INCLUIDOS PARA COMPLETITUD) --- */
+/* ======================================================================== */
+
+/* Opción 1: Centrado con Flexbox (Recomendada)
+   Aplica esta clase al contenedor que engloba a las tarjetas de perfil y calendario. */
+.sgsst-main-content-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+}
+
+/* Si las tarjetas están una al lado de la otra y quieres centrarlas como un bloque, usa esto: */
+.sgsst-dashboard-cards-container {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    width: 100%;
+}
+
+/* Opción 2: Centrado con margin: auto
+   Aplica esta clase al contenedor principal de tu contenido del perfil. */
+.sgsst-profile-content {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 20px;
 }

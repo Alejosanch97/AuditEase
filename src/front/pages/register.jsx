@@ -225,291 +225,293 @@ export const Register = () => {
   const passwordStrength = getPasswordStrength(formData.password);
 
   return (
-    <div className="sgsst-register-container">
-        <div className="sgsst-register-left-panel">
-            {/* Logo de SGSST FLOW */}
-            <img src="/logo.svg" alt="SGSST FLOW Logo" className="sgsst-register-logo-image" />
-            <h1 className="sgsst-register-welcome-headline">Únete a SGSST FLOW</h1>
-            <p className="sgsst-register-welcome-text">
-                Crea tu cuenta y la empresa principal para empezar a optimizar la gestión de seguridad y salud en el trabajo.
-            </p>
-            
-            {/* Indicador de pasos */}
-            <div className="sgsst-register-steps-indicator">
-                <div className={`sgsst-register-step ${currentStep >= 1 ? 'active' : ''}`}>
-                    <span>1</span>
-                    <small>Datos Personales</small>
-                </div>
-                <div className="sgsst-register-step-line"></div> {/* Línea conectora */}
-                <div className={`sgsst-register-step ${currentStep >= 2 ? 'active' : ''}`}>
-                    <span>2</span>
-                    <small>Datos Empresa</small>
-                </div>
-            </div>
-        </div>
-        
-        <div className="sgsst-register-right-panel">
-            <h2 className="sgsst-register-heading">
-                {currentStep === 1 ? 'Crear Cuenta Principal' : 'Información de la Empresa Principal'}
-            </h2>
-            
-            {errors.general && (
-              <div className="sgsst-register-alert-danger" role="alert">
-                {errors.general}
-                <button 
-                  type="button" 
-                  className="sgsst-register-close-alert-btn" 
-                  onClick={() => setErrors(prev => ({ ...prev, general: '' }))}
-                >
-                  &times;
-                </button>
+    <div className="sgsst-register-wrapper">
+      <div className="sgsst-register-container">
+          <div className="sgsst-register-left-panel">
+              {/* Logo de SGSST FLOW */}
+              <img src="/logo.svg" alt="SGSST FLOW Logo" className="sgsst-register-logo-image" />
+              <h1 className="sgsst-register-welcome-headline">Únete a SGSST FLOW</h1>
+              <p className="sgsst-register-welcome-text">
+                  Crea tu cuenta y la empresa principal para empezar a optimizar la gestión de seguridad y salud en el trabajo.
+              </p>
+              
+              {/* Indicador de pasos */}
+              <div className="sgsst-register-steps-indicator">
+                  <div className={`sgsst-register-step ${currentStep >= 1 ? 'active' : ''}`}>
+                      <span>1</span>
+                      <small>Datos Personales</small>
+                  </div>
+                  <div className="sgsst-register-step-line"></div> {/* Línea conectora */}
+                  <div className={`sgsst-register-step ${currentStep >= 2 ? 'active' : ''}`}>
+                      <span>2</span>
+                      <small>Datos Empresa</small>
+                  </div>
               </div>
-            )}
+          </div>
+          
+          <div className="sgsst-register-right-panel">
+              <h2 className="sgsst-register-heading">
+                  {currentStep === 1 ? 'Crear Cuenta Principal' : 'Información de la Empresa Principal'}
+              </h2>
+              
+              {errors.general && (
+                <div className="sgsst-register-alert-danger" role="alert">
+                  {errors.general}
+                  <button 
+                    type="button" 
+                    className="sgsst-register-close-alert-btn" 
+                    onClick={() => setErrors(prev => ({ ...prev, general: '' }))}
+                  >
+                    &times;
+                  </button>
+                </div>
+              )}
 
-            <form onSubmit={handleSubmit}>
-                {/* PASO 1: Datos del Usuario */}
-                {currentStep === 1 && (
-                    <>
-                        <div className="sgsst-register-input-group-wrapper">
-                            <label htmlFor="nombre_completo" className="sgsst-register-form-label">
-                                Nombre Completo <span className="sgsst-register-required-star">*</span>
-                            </label>
-                            <input
-                                type="text"
-                                className={`sgsst-register-input-field ${errors.nombre_completo ? 'is-invalid' : ''}`}
-                                id="nombre_completo"
-                                name="nombre_completo"
-                                value={formData.nombre_completo}
-                                onChange={handleChange}
-                                placeholder="Tu nombre completo"
-                                autoComplete="name"
-                                required
-                            />
-                            {errors.nombre_completo && (
-                                <div className="sgsst-register-invalid-feedback">{errors.nombre_completo}</div>
-                            )}
-                        </div>
-                                        
-                        <div className="sgsst-register-input-group-wrapper">
-                            <label htmlFor="email" className="sgsst-register-form-label">
-                                Correo Electrónico <span className="sgsst-register-required-star">*</span>
-                            </label>
-                            <input
-                                type="email"
-                                className={`sgsst-register-input-field ${errors.email ? 'is-invalid' : ''}`}
-                                id="email"
-                                name="email"
-                                value={formData.email}
-                                onChange={handleChange}
-                                placeholder="tu@email.com"
-                                autoComplete="email"
-                                required
-                            />
-                            {errors.email && (
-                                <div className="sgsst-register-invalid-feedback">{errors.email}</div>
-                            )}
-                        </div>
+              <form onSubmit={handleSubmit}>
+                  {/* PASO 1: Datos del Usuario */}
+                  {currentStep === 1 && (
+                      <>
+                          <div className="sgsst-register-input-group-wrapper">
+                              <label htmlFor="nombre_completo" className="sgsst-register-form-label">
+                                  Nombre Completo <span className="sgsst-register-required-star">*</span>
+                              </label>
+                              <input
+                                  type="text"
+                                  className={`sgsst-register-input-field ${errors.nombre_completo ? 'is-invalid' : ''}`}
+                                  id="nombre_completo"
+                                  name="nombre_completo"
+                                  value={formData.nombre_completo}
+                                  onChange={handleChange}
+                                  placeholder="Tu nombre completo"
+                                  autoComplete="name"
+                                  required
+                              />
+                              {errors.nombre_completo && (
+                                  <div className="sgsst-register-invalid-feedback">{errors.nombre_completo}</div>
+                              )}
+                          </div>
+                                          
+                          <div className="sgsst-register-input-group-wrapper">
+                              <label htmlFor="email" className="sgsst-register-form-label">
+                                  Correo Electrónico <span className="sgsst-register-required-star">*</span>
+                              </label>
+                              <input
+                                  type="email"
+                                  className={`sgsst-register-input-field ${errors.email ? 'is-invalid' : ''}`}
+                                  id="email"
+                                  name="email"
+                                  value={formData.email}
+                                  onChange={handleChange}
+                                  placeholder="tu@email.com"
+                                  autoComplete="email"
+                                  required
+                              />
+                              {errors.email && (
+                                  <div className="sgsst-register-invalid-feedback">{errors.email}</div>
+                              )}
+                          </div>
 
-                        {/* NUEVO CAMPO: Teléfono Personal */}
-                        <div className="sgsst-register-input-group-wrapper">
-                            <label htmlFor="telefono_personal" className="sgsst-register-form-label">
-                                Teléfono Personal
-                            </label>
-                            <input
-                                type="text"
-                                className="sgsst-register-input-field"
-                                id="telefono_personal"
-                                name="telefono_personal"
-                                value={formData.telefono_personal}
-                                onChange={handleChange}
-                                placeholder="Tu número de teléfono (opcional)"
-                            />
-                        </div>
+                          {/* NUEVO CAMPO: Teléfono Personal */}
+                          <div className="sgsst-register-input-group-wrapper">
+                              <label htmlFor="telefono_personal" className="sgsst-register-form-label">
+                                  Teléfono Personal
+                              </label>
+                              <input
+                                  type="text"
+                                  className="sgsst-register-input-field"
+                                  id="telefono_personal"
+                                  name="telefono_personal"
+                                  value={formData.telefono_personal}
+                                  onChange={handleChange}
+                                  placeholder="Tu número de teléfono (opcional)"
+                              />
+                          </div>
 
-                        {/* NUEVO CAMPO: Cargo */}
-                        <div className="sgsst-register-input-group-wrapper">
-                            <label htmlFor="cargo" className="sgsst-register-form-label">
-                                Cargo
-                            </label>
-                            <input
-                                type="text"
-                                className="sgsst-register-input-field"
-                                id="cargo"
-                                name="cargo"
-                                value={formData.cargo}
-                                onChange={handleChange}
-                                placeholder="Tu cargo en la empresa (opcional)"
-                            />
-                        </div>
-                                        
-                        <div className="sgsst-register-input-group-wrapper sgsst-register-password-input-wrapper">
-                            <label htmlFor="password" className="sgsst-register-form-label">
-                                Contraseña <span className="sgsst-register-required-star">*</span>
-                            </label>
-                            <input
-                                type={showPassword ? 'text' : 'password'}
-                                className={`sgsst-register-input-field ${errors.password ? 'is-invalid' : ''}`}
-                                id="password"
-                                name="password"
-                                value={formData.password}
-                                onChange={handleChange}
-                                placeholder="Tu contraseña"
-                                autoComplete="new-password"
-                                required
-                            />
-                            <button
-                                type="button"
-                                className="sgsst-register-toggle-password-visibility"
-                                onClick={() => setShowPassword(!showPassword)}
-                            >
-                                {showPassword ? '🙈' : '👁️'}
-                            </button>
-                                            
-                            {formData.password && (
-                                <div className="sgsst-register-password-strength-container">
-                                    <div className="sgsst-register-progress">
-                                        <div
-                                            className={`sgsst-register-progress-bar ${passwordStrength.color}`}
-                                            style={{ width: `${passwordStrength.strength}%` }}
-                                        ></div>
-                                    </div>
-                                    <small className="sgsst-register-text-muted">
-                                        Fortaleza: {passwordStrength.text}
-                                    </small>
-                                </div>
-                            )}
-                                            
-                            {errors.password && (
-                                <div className="sgsst-register-invalid-feedback">{errors.password}</div>
-                            )}
-                        </div>
-                                        
-                        <div className="sgsst-register-input-group-wrapper sgsst-register-password-input-wrapper">
-                            <label htmlFor="confirmar_password" className="sgsst-register-form-label">
-                                Confirmar Contraseña <span className="sgsst-register-required-star">*</span>
-                            </label>
-                            <input
-                                type={showConfirmPassword ? 'text' : 'password'}
-                                className={`sgsst-register-input-field ${errors.confirmar_password ? 'is-invalid' : ''}`}
-                                id="confirmar_password"
-                                name="confirmar_password"
-                                value={formData.confirmar_password}
-                                onChange={handleChange}
-                                placeholder="Confirma tu contraseña"
-                                autoComplete="new-password"
-                                required
-                            />
-                            <button
-                                type="button"
-                                className="sgsst-register-toggle-password-visibility"
-                                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                            >
-                                {showConfirmPassword ? '🙈' : '👁️'}
-                            </button>
-                            {errors.confirmar_password && (
-                                <div className="sgsst-register-invalid-feedback">{errors.confirmar_password}</div>
-                            )}
-                        </div>
-                        
-                        <button type="button" className="sgsst-register-button" onClick={handleNextStep}>
-                            Siguiente
-                        </button>
-                    </>
-                )}
+                          {/* NUEVO CAMPO: Cargo */}
+                          <div className="sgsst-register-input-group-wrapper">
+                              <label htmlFor="cargo" className="sgsst-register-form-label">
+                                  Cargo
+                              </label>
+                              <input
+                                  type="text"
+                                  className="sgsst-register-input-field"
+                                  id="cargo"
+                                  name="cargo"
+                                  value={formData.cargo}
+                                  onChange={handleChange}
+                                  placeholder="Tu cargo en la empresa (opcional)"
+                              />
+                          </div>
+                                          
+                          <div className="sgsst-register-input-group-wrapper sgsst-register-password-input-wrapper">
+                              <label htmlFor="password" className="sgsst-register-form-label">
+                                  Contraseña <span className="sgsst-register-required-star">*</span>
+                              </label>
+                              <input
+                                  type={showPassword ? 'text' : 'password'}
+                                  className={`sgsst-register-input-field ${errors.password ? 'is-invalid' : ''}`}
+                                  id="password"
+                                  name="password"
+                                  value={formData.password}
+                                  onChange={handleChange}
+                                  placeholder="Tu contraseña"
+                                  autoComplete="new-password"
+                                  required
+                              />
+                              <button
+                                  type="button"
+                                  className="sgsst-register-toggle-password-visibility"
+                                  onClick={() => setShowPassword(!showPassword)}
+                              >
+                                  {showPassword ? '🙈' : '👁️'}
+                              </button>
+                                              
+                              {formData.password && (
+                                  <div className="sgsst-register-password-strength-container">
+                                      <div className="sgsst-register-progress">
+                                          <div
+                                              className={`sgsst-register-progress-bar ${passwordStrength.color}`}
+                                              style={{ width: `${passwordStrength.strength}%` }}
+                                          ></div>
+                                      </div>
+                                      <small className="sgsst-register-text-muted">
+                                          Fortaleza: {passwordStrength.text}
+                                      </small>
+                                  </div>
+                              )}
+                                              
+                              {errors.password && (
+                                  <div className="sgsst-register-invalid-feedback">{errors.password}</div>
+                              )}
+                          </div>
+                                          
+                          <div className="sgsst-register-input-group-wrapper sgsst-register-password-input-wrapper">
+                              <label htmlFor="confirmar_password" className="sgsst-register-form-label">
+                                  Confirmar Contraseña <span className="sgsst-register-required-star">*</span>
+                              </label>
+                              <input
+                                  type={showConfirmPassword ? 'text' : 'password'}
+                                  className={`sgsst-register-input-field ${errors.confirmar_password ? 'is-invalid' : ''}`}
+                                  id="confirmar_password"
+                                  name="confirmar_password"
+                                  value={formData.confirmar_password}
+                                  onChange={handleChange}
+                                  placeholder="Confirma tu contraseña"
+                                  autoComplete="new-password"
+                                  required
+                              />
+                              <button
+                                  type="button"
+                                  className="sgsst-register-toggle-password-visibility"
+                                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                              >
+                                  {showConfirmPassword ? '🙈' : '👁️'}
+                              </button>
+                              {errors.confirmar_password && (
+                                  <div className="sgsst-register-invalid-feedback">{errors.confirmar_password}</div>
+                              )}
+                          </div>
+                          
+                          <button type="button" className="sgsst-register-button" onClick={handleNextStep}>
+                              Siguiente
+                          </button>
+                      </>
+                  )}
 
-                {/* PASO 2: Datos de la Empresa */}
-                {currentStep === 2 && (
-                    <>
-                        <div className="sgsst-register-input-group-wrapper">
-                            <label htmlFor="nombre_empresa" className="sgsst-register-form-label">
-                                Nombre de la Empresa Principal <span className="sgsst-register-required-star">*</span>
-                            </label>
-                            <input
-                                type="text"
-                                className={`sgsst-register-input-field ${errors.nombre_empresa ? 'is-invalid' : ''}`}
-                                id="nombre_empresa"
-                                name="nombre_empresa"
-                                value={formData.nombre_empresa}
-                                onChange={handleChange}
-                                placeholder="Nombre de tu empresa (ej. SGSST FLOW)"
-                                required
-                            />
-                            {errors.nombre_empresa && (
-                                <div className="sgsst-register-invalid-feedback">{errors.nombre_empresa}</div>
-                            )}
-                        </div>
+                  {/* PASO 2: Datos de la Empresa */}
+                  {currentStep === 2 && (
+                      <>
+                          <div className="sgsst-register-input-group-wrapper">
+                              <label htmlFor="nombre_empresa" className="sgsst-register-form-label">
+                                  Nombre de la Empresa Principal <span className="sgsst-register-required-star">*</span>
+                              </label>
+                              <input
+                                  type="text"
+                                  className={`sgsst-register-input-field ${errors.nombre_empresa ? 'is-invalid' : ''}`}
+                                  id="nombre_empresa"
+                                  name="nombre_empresa"
+                                  value={formData.nombre_empresa}
+                                  onChange={handleChange}
+                                  placeholder="Nombre de tu empresa (ej. SGSST FLOW)"
+                                  required
+                              />
+                              {errors.nombre_empresa && (
+                                  <div className="sgsst-register-invalid-feedback">{errors.nombre_empresa}</div>
+                              )}
+                          </div>
 
-                        <div className="sgsst-register-input-group-wrapper">
-                            <label htmlFor="direccion" className="sgsst-register-form-label">
-                                Dirección de la Empresa
-                            </label>
-                            <input
-                                type="text"
-                                className="sgsst-register-input-field"
-                                id="direccion"
-                                name="direccion"
-                                value={formData.direccion}
-                                onChange={handleChange}
-                                placeholder="Dirección de tu empresa (opcional)"
-                            />
-                        </div>
+                          <div className="sgsst-register-input-group-wrapper">
+                              <label htmlFor="direccion" className="sgsst-register-form-label">
+                                  Dirección de la Empresa
+                              </label>
+                              <input
+                                  type="text"
+                                  className="sgsst-register-input-field"
+                                  id="direccion"
+                                  name="direccion"
+                                  value={formData.direccion}
+                                  onChange={handleChange}
+                                  placeholder="Dirección de tu empresa (opcional)"
+                              />
+                          </div>
 
-                        <div className="sgsst-register-input-group-wrapper">
-                            <label htmlFor="telefono" className="sgsst-register-form-label">
-                                Teléfono de la Empresa
-                            </label>
-                            <input
-                                type="text"
-                                className="sgsst-register-input-field"
-                                id="telefono"
-                                name="telefono"
-                                value={formData.telefono}
-                                onChange={handleChange}
-                                placeholder="Teléfono de contacto (opcional)"
-                            />
-                        </div>
+                          <div className="sgsst-register-input-group-wrapper">
+                              <label htmlFor="telefono" className="sgsst-register-form-label">
+                                  Teléfono de la Empresa
+                              </label>
+                              <input
+                                  type="text"
+                                  className="sgsst-register-input-field"
+                                  id="telefono"
+                                  name="telefono"
+                                  value={formData.telefono}
+                                  onChange={handleChange}
+                                  placeholder="Teléfono de contacto (opcional)"
+                              />
+                          </div>
 
-                        <div className="sgsst-register-input-group-wrapper">
-                            <label htmlFor="email_contacto" className="sgsst-register-form-label">
-                                Email de Contacto de la Empresa
-                            </label>
-                            <input
-                                type="email"
-                                className={`sgsst-register-input-field ${errors.email_contacto ? 'is-invalid' : ''}`}
-                                id="email_contacto"
-                                name="email_contacto"
-                                value={formData.email_contacto}
-                                onChange={handleChange}
-                                placeholder="Email de contacto de la empresa (opcional)"
-                            />
-                            {errors.email_contacto && (
-                                <div className="sgsst-register-invalid-feedback">{errors.email_contacto}</div>
-                            )}
-                        </div>
+                          <div className="sgsst-register-input-group-wrapper">
+                              <label htmlFor="email_contacto" className="sgsst-register-form-label">
+                                  Email de Contacto de la Empresa
+                              </label>
+                              <input
+                                  type="email"
+                                  className={`sgsst-register-input-field ${errors.email_contacto ? 'is-invalid' : ''}`}
+                                  id="email_contacto"
+                                  name="email_contacto"
+                                  value={formData.email_contacto}
+                                  onChange={handleChange}
+                                  placeholder="Email de contacto de la empresa (opcional)"
+                              />
+                              {errors.email_contacto && (
+                                  <div className="sgsst-register-invalid-feedback">{errors.email_contacto}</div>
+                              )}
+                          </div>
 
-                        <div className="sgsst-register-navigation-buttons">
-                            <button type="button" className="sgsst-register-button sgsst-register-button-secondary" onClick={handlePreviousStep}>
-                                Atrás
-                            </button>
-                            <button type="submit" className="sgsst-register-button" disabled={loading}>
-                                {loading ? (
-                                    <>
-                                        <span className="sgsst-register-spinner"></span>
-                                        Registrando...
-                                    </>
-                                ) : (
-                                    'Crear Cuenta'
-                                )}
-                            </button>
-                        </div>
-                    </>
-                )}
-            </form>
-                            
-            <p className="sgsst-register-signup-text">
-                ¿Ya tienes una cuenta? <Link to="/login" className="sgsst-register-signup-link">Iniciar Sesión</Link>
-            </p>
-        </div>
+                          <div className="sgsst-register-navigation-buttons">
+                              <button type="button" className="sgsst-register-button sgsst-register-button-secondary" onClick={handlePreviousStep}>
+                                  Atrás
+                              </button>
+                              <button type="submit" className="sgsst-register-button" disabled={loading}>
+                                  {loading ? (
+                                      <>
+                                          <span className="sgsst-register-spinner"></span>
+                                          Registrando...
+                                      </>
+                                  ) : (
+                                      'Crear Cuenta'
+                                  )}
+                              </button>
+                          </div>
+                      </>
+                  )}
+              </form>
+                              
+              <p className="sgsst-register-signup-text">
+                  ¿Ya tienes una cuenta? <Link to="/login" className="sgsst-register-signup-link">Iniciar Sesión</Link>
+              </p>
+          </div>
+      </div>
     </div>
   );
 };

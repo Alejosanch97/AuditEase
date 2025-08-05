@@ -25,6 +25,10 @@ import { AnswerFormPage} from "./pages/AnswerFormPage"; // La página para respo
 import { Analytics } from './pages/Analytics';
 import { UserManagement } from "./components/UserManagement"; 
 
+import { ForgotPassword } from "./components/ForgotPassword";
+import { RestablecerPassword } from "./components/RestablecerPassword";
+
+
 
 export const router = createBrowserRouter(
     createRoutesFromElements(
@@ -38,6 +42,12 @@ export const router = createBrowserRouter(
             <Route path="/register" element={<Register />} />
             <Route path="/cambiar-contrasena-inicial" element={<InitialPasswordChange />} />
             {/* Si tienes otras rutas públicas, añádelas aquí */}
+            {/* --- ¡Nuevas rutas para la recuperación de contraseña! --- */}
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/restablecer-password/:token" element={<RestablecerPassword />} />
+            {/* -------------------------------------------------------- */}
+
+
         </Route>
 
         {/* Rutas Protegidas - Envueltas por DashboardLayout (con Sidebar, sin Navbar) */}

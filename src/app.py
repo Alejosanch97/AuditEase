@@ -24,6 +24,10 @@ from dotenv import load_dotenv # <--- Para cargar variables de entorno desde .en
 # *** IMPORTACIÓN NECESARIA PARA CORS ***
 from flask_cors import CORS # <--- AÑADE ESTA LÍNEA
 
+# *** NUEVAS IMPORTACIONES PARA CORREO Y TOKEN ***
+from flask_mail import Mail
+from itsdangerous import URLSafeTimedSerializer
+
 # Cargar variables de entorno desde el archivo .env
 load_dotenv()
 
@@ -34,27 +38,34 @@ app = Flask(__name__)
 app.url_map.strict_slashes = False
 
 # --- CORRECCIÓN CLAVE AQUÍ: Habilitar CORS para TODA la aplicación ---
-# Esto permite que tu frontend (en un puerto diferente) acceda a tu backend.
-# Para desarrollo, "*" es seguro. En producción, especifica el dominio de tu frontend.
-CORS(app) # <--- AÑADE ESTA LÍNEA AQUÍ
+CORS(app)
 
 # *** CONFIGURACIÓN DE JWT ***
-# Esta clave secreta es CRUCIAL para firmar tus tokens JWT.
-# Asegúrate de que FLASK_APP_KEY esté definido en tu archivo .env del BACKEND.
 app.config["JWT_SECRET_KEY"] = os.getenv("FLASK_APP_KEY")
-# OPCIONAL: Configura el tiempo de vida de tus tokens de acceso (ej: 24 horas)
 app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(hours=24)
 
-# *** INICIALIZACIÓN DE JWTManager ***
+# *** CONFIGURACIÓN DE CORREO Y SERIALIZADOR ***
+# ⚠️ ADVERTENCIA DE SEGURIDAD: Usas una clave secreta débil. Para producción,
+# usa una clave larga y aleatoria.
+app.config['SECRET_KEY'] = 'CREAR1997'
+app.config['MAIL_SERVER'] = 'smtp.gmail.com'
+app.config['MAIL_PORT'] = 587
+app.config['MAIL_USE_TLS'] = True
+app.config['MAIL_USERNAME'] = 'sgsstflow@gmail.com'
+app.config['MAIL_PASSWORD'] = 'ofut rtrw kiqk lzpr'
+# ----------------------------------------------
+
+
+# *** INICIALIZACIÓN DE EXTENSIONES ***
 jwt = JWTManager(app)
+mail = Mail(app) # <--- Inicialización de Flask-Mail
 
 # *** CONFIGURACIÓN DE CLOUDINARY ***
-# Asegúrate de que estas variables estén definidas en tu archivo .env
 cloudinary.config(
   cloud_name = os.getenv('CLOUDINARY_CLOUD_NAME'),
   api_key = os.getenv('CLOUDINARY_API_KEY'),
   api_secret = os.getenv('CLOUDINARY_API_SECRET'),
-  secure = True # Es importante usar True para obtener URLs HTTPS
+  secure = True
 )
 
 
@@ -78,7 +89,6 @@ setup_commands(app)
 
 
 # Add all endpoints form the API with a "api" prefix
-# Asegúrate de que esta línea esté DESPUÉS de CORS(app)
 app.register_blueprint(api, url_prefix='/api')
 
 # Handle/serialize errors like a JSON object

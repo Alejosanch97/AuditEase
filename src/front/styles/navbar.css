@@ -68,26 +68,62 @@
     justify-content: center; /* Centra los elementos de navegación */
 }
 
-/* Para dispositivos pequeños, el botón puede moverse a otra línea o apilarse */
-@media (max-width: 991.98px) { /* breakpoint de Bootstrap 'lg' */
-    .navbarContent {
-        flex-direction: column; /* Apila elementos verticalmente */
-        align-items: flex-start; /* Alinea a la izquierda en vista de columna */
+
+/* ---------------------------------------------------- */
+/* --- RESPONSIVIDAD: Media Queries Añadidas/Mejoradas --- */
+/* ---------------------------------------------------- */
+
+/* Para laptops y monitores grandes (ancho > 1200px) - No hay cambios, el diseño por defecto es ideal */
+
+/* Para pantallas de laptops pequeñas o tablets grandes (992px a 1199px) */
+@media (max-width: 1199px) {
+    /* Ajustes sutiles para que el espaciado no se vea apretado */
+    .navbarNav .navLink {
+        margin: 0 8px;
+        padding: 6px 10px;
     }
-    .navbarBrand {
-        margin-bottom: 10px; /* Espacio debajo del logo */
+}
+
+/* Para la mayoría de tablets (768px a 991px) */
+@media (max-width: 991px) {
+    /* Mantenemos el navbar en una sola línea, pero con más espacio */
+    .navbarContent {
+        flex-wrap: wrap; /* Permite que los elementos pasen a una nueva línea si no caben */
     }
     .navbarNavContainer {
-        width: 100%; /* Ocupa todo el ancho */
-        justify-content: flex-start; /* Alinea los enlaces a la izquierda */
-        margin-bottom: 10px; /* Espacio debajo de los enlaces */
+        justify-content: flex-start; /* Alinea los enlaces a la izquierda en lugar de centrarlos */
+        flex-grow: 0; /* No expande para evitar que los enlaces se separen demasiado */
     }
-    .ml-auto { /* Esta clase de Bootstrap puede necesitar ser reevaluada para móviles */
-        width: 100%;
-        margin-left: 0 !important; /* Anula el ml-auto de Bootstrap en móviles */
+    .navbarNav .navLink {
+        margin: 0 5px; /* Reducimos el espaciado para que quepan más enlaces */
     }
+}
+
+/* Para tablets pequeñas y la mayoría de celulares (ancho < 768px) */
+@media (max-width: 767px) {
+    .navbarContent {
+        flex-direction: column; /* Apila los elementos verticalmente */
+        align-items: flex-start; /* Alinea todo a la izquierda */
+    }
+    
+    .navbarBrand {
+        margin-bottom: 15px; /* Espacio debajo del logo */
+    }
+
+    .navbarNavContainer {
+        flex-direction: column; /* Apila los enlaces de navegación */
+        width: 100%; /* Ocupa el 100% del ancho disponible */
+        margin-bottom: 15px; /* Espacio debajo del contenedor de enlaces */
+        align-items: flex-start;
+    }
+
+    .navbarNav .navLink {
+        width: 100%; /* Cada enlace ocupa todo el ancho */
+        margin: 5px 0; /* Espaciado entre los enlaces apilados */
+    }
+
     .actionButton {
-        width: 100%; /* El botón ocupa todo el ancho */
-        text-align: center;
+        width: 100%; /* El botón de acción ocupa todo el ancho */
+        text-align: center; /* Centramos el texto del botón */
     }
 }

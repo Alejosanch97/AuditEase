@@ -1,11 +1,14 @@
+// src/components/UsersProfile.jsx
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import useGlobalReducer from '../hooks/useGlobalReducer';
 
+import '../styles/UserDashboardLayout.css'; // ¡Nuevo CSS para los layouts de grid!
+
 import { EditUserProfileModal } from '../components/EditUserProfileModal.jsx';
 import { EditUserByAdminModal } from '../components/EditUserByAdminModal.jsx';
 import { EditCompanyProfileModal } from '../components/EditCompanyProfileModal.jsx';
-import { ConfirmationModal } from '../components/ConfirmationModal.jsx'; 
+import { ConfirmationModal } from '../components/ConfirmationModal.jsx';
 
 export const UsersProfile = () => {
     const { store, dispatch } = useGlobalReducer();
@@ -194,7 +197,6 @@ export const UsersProfile = () => {
 
     // --- LÓGICA DE ACTIVACIÓN/DESACTIVACIÓN (PUT) Y ELIMINACIÓN (DELETE) ---
 
-    // Función para manejar la acción de desactivar/reactivar
     const handleToggleUserActiveStatus = async (userId, userName, isActive) => {
         const token = localStorage.getItem('access_token');
         if (!token) {
@@ -224,10 +226,9 @@ export const UsersProfile = () => {
             console.error(`Error al ${isActive ? 'reactivar' : 'desactivar'} usuario:`, error);
             dispatch({ type: 'SET_MESSAGE', payload: { type: 'error', text: `Error de conexión al ${isActive ? 'reactivar' : 'desactivar'} el usuario.` } });
         }
-        setShowConfirmationModal(false); // Cierra el modal después de la acción
+        setShowConfirmationModal(false);
     };
 
-    // Función que dispara el modal para DESACTIVAR
     const handleDeactivateClick = (userId, userName) => {
         if (userId === currentUser.id_usuario) {
             dispatch({ type: 'SET_MESSAGE', payload: { type: 'error', text: 'No puedes desactivarte a ti mismo.' } });
@@ -241,7 +242,6 @@ export const UsersProfile = () => {
         setShowConfirmationModal(true);
     };
 
-    // Función que dispara el modal para REACTIVAR
     const handleReactivateClick = (userId, userName) => {
         setConfirmationModalData({
             title: 'Reactivar Usuario',
@@ -251,7 +251,6 @@ export const UsersProfile = () => {
         setShowConfirmationModal(true);
     };
 
-    // Función para manejar la eliminación permanente (DELETE)
     const handlePermanentDeleteUser = async (userId, userName) => {
         const token = localStorage.getItem('access_token');
         if (!token) {
@@ -281,7 +280,6 @@ export const UsersProfile = () => {
         setShowConfirmationModal(false);
     };
 
-    // Función que dispara el modal para ELIMINAR PERMANENTEMENTE
     const handlePermanentDeleteClick = (userId, userName) => {
         setConfirmationModalData({
             title: 'Eliminar Usuario Permanentemente',
@@ -291,9 +289,6 @@ export const UsersProfile = () => {
         setShowConfirmationModal(true);
     };
     
-    // --- FIN DE LA LÓGICA DE ACTIVACIÓN/DESACTIVACIÓN Y ELIMINACIÓN ---
-
-
     if (!currentUser) {
         return (
             <div className="loading-spinner-container">
@@ -347,72 +342,75 @@ export const UsersProfile = () => {
                 </div>
             </header>
 
-            <div className="dashboard-grid">
-                <section className="card profile-card">
-                    <div className="profile-header">
-                        <img src={currentUser.imagen_perfil_url || "https://placehold.co/130x130/1abc9c/ffffff?text=HV"} alt="Imagen de Perfil" className="profile-picture" />
-                        <div className="profile-details">
-                            <h2>{currentUser.nombre_completo}</h2>
-                            <p><span>Rol:</span> {currentUser.rol === 'usuario_formulario' ? 'Usuario' : currentUser.rol}</p>
-                            <p><span>Cargo:</span> {currentUser.cargo || 'No especificado'}</p>
-                            <p><span>Email:</span> {currentUser.email}</p>
-                            <p><span>Teléfono:</span> {currentUser.telefono_personal || '(+0) No especificado'}</p>
-                            <p><span>Empresa:</span> {company ? company.nombre_empresa : 'N/A'}</p>
-                            <div className="social-links">
-                                <i className="fab fa-linkedin"></i>
-                                <i className="fab fa-facebook-f"></i>
-                                <i className="fab fa-twitter"></i>
+            {/* --- LÓGICA DE RENDER CONDICIONAL DEL DASHBOARD --- */}
+            {currentUser.rol === 'admin_empresa' ? (
+                // --- DASHBOARD PARA ADMIN_EMPRESA ---
+                <div className="dashboard-grid admin-layout">
+                    {/* Contenido común */}
+                    <section className="card profile-card">
+                        <div className="profile-header">
+                            <img src={currentUser.imagen_perfil_url || "https://placehold.co/130x130/1abc9c/ffffff?text=HV"} alt="Imagen de Perfil" className="profile-picture" />
+                            <div className="profile-details">
+                                <h2>{currentUser.nombre_completo}</h2>
+                                <p><span>Rol:</span> {currentUser.rol === 'usuario_formulario' ? 'Usuario' : currentUser.rol}</p>
+                                <p><span>Cargo:</span> {currentUser.cargo || 'No especificado'}</p>
+                                <p><span>Email:</span> {currentUser.email}</p>
+                                <p><span>Teléfono:</span> {currentUser.telefono_personal || '(+0) No especificado'}</p>
+                                <p><span>Empresa:</span> {company ? company.nombre_empresa : 'N/A'}</p>
+                                <div className="social-links">
+                                    <i className="fab fa-linkedin"></i>
+                                    <i className="fab fa-facebook-f"></i>
+                                    <i className="fab fa-twitter"></i>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                    <div className="profile-actions">
-                        <button className="edit-profile-btn" onClick={handleOpenEditUserModal}>
-                            <i className="fas fa-edit"></i> Editar Perfil
-                        </button>
-                    </div>
-                </section>
-
-                <section className="card calendar-card">
-                    <div className="card-header">
-                        <h3>Calendario</h3>
-                        <div className="calendar-nav">
-                            <i className="fas fa-chevron-left" onClick={handlePrevMonth}></i>
-                            <span>{monthNames[currentMonth.getMonth()]} {currentMonth.getFullYear()}</span>
-                            <i className="fas fa-chevron-right" onClick={handleNextMonth}></i>
+                        <div className="profile-actions">
+                            <button className="edit-profile-btn" onClick={handleOpenEditUserModal}>
+                                <i className="fas fa-edit"></i> Editar Perfil
+                            </button>
                         </div>
-                    </div>
-                    <table className="calendar-table">
-                        <thead>
-                            <tr>
-                                <th>Dom</th><th>Lun</th><th>Mar</th><th>Mié</th><th>Jue</th><th>Vie</th><th>Sáb</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {Array.from({ length: Math.ceil(calendarDays.length / 7) }).map((_, rowIndex) => (
-                                <tr key={rowIndex}>
-                                    {calendarDays.slice(rowIndex * 7, (rowIndex + 1) * 7).map((dayData, colIndex) => (
-                                        <td
-                                            key={colIndex}
-                                            className={`${!dayData.currentMonth ? 'inactive' : ''} ${
-                                                dayData.currentMonth &&
-                                                dayData.day === currentDay &&
-                                                currentMonth.getMonth() === currentMonthIndex &&
-                                                currentMonth.getFullYear() === currentYear
-                                                    ? 'current-day'
-                                                    : ''
-                                            }`}
-                                        >
-                                            {dayData.day}
-                                        </td>
-                                    ))}
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </section>
+                    </section>
 
-                {/* HE MODIFICADO ESTA CARD PARA QUE CONTENGA AMBAS LISTAS */}
-                {currentUser.rol === 'admin_empresa' && (
+                    <section className="card calendar-card">
+                        <div className="card-header">
+                            <h3>Calendario</h3>
+                            <div className="calendar-nav">
+                                <i className="fas fa-chevron-left" onClick={handlePrevMonth}></i>
+                                <span>{monthNames[currentMonth.getMonth()]} {currentMonth.getFullYear()}</span>
+                                <i className="fas fa-chevron-right" onClick={handleNextMonth}></i>
+                            </div>
+                        </div>
+                        <table className="calendar-table">
+                            <thead>
+                                <tr>
+                                    <th>Dom</th><th>Lun</th><th>Mar</th><th>Mié</th><th>Jue</th><th>Vie</th><th>Sáb</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {Array.from({ length: Math.ceil(calendarDays.length / 7) }).map((_, rowIndex) => (
+                                    <tr key={rowIndex}>
+                                        {calendarDays.slice(rowIndex * 7, (rowIndex + 1) * 7).map((dayData, colIndex) => (
+                                            <td
+                                                key={colIndex}
+                                                className={`${!dayData.currentMonth ? 'inactive' : ''} ${
+                                                    dayData.currentMonth &&
+                                                    dayData.day === currentDay &&
+                                                    currentMonth.getMonth() === currentMonthIndex &&
+                                                    currentMonth.getFullYear() === currentYear
+                                                        ? 'current-day'
+                                                        : ''
+                                                }`}
+                                            >
+                                                {dayData.day}
+                                            </td>
+                                        ))}
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </section>
+                    
+                    {/* Contenido específico de Admin */}
                     <section className="card admin-users-card">
                         <div className="card-header">
                             <h3>Usuarios</h3>
@@ -427,7 +425,6 @@ export const UsersProfile = () => {
                             <p className="error-message">Error al cargar usuarios: {errorCompanyUsers}</p>
                         ) : (
                             <>
-                                {/* Sub-sección para USUARIOS ACTIVOS */}
                                 {activeFormUsers.length > 0 ? (
                                     <div className="users-list active-users-list">
                                         {activeFormUsers.map(user => (
@@ -444,7 +441,7 @@ export const UsersProfile = () => {
                                                 </div>
                                                 <div className="item-actions">
                                                     <button
-                                                        className="manage-item-btn edit-btn"
+                                                        className="manage-item-btn"
                                                         onClick={() => handleOpenEditCompanyUserModal(user)}
                                                         disabled={user.id_usuario === currentUser.id_usuario}
                                                     >
@@ -465,7 +462,6 @@ export const UsersProfile = () => {
                                     <p>No hay usuarios de formulario activos registrados en esta empresa.</p>
                                 )}
 
-                                {/* Sub-sección para USUARIOS INACTIVOS (solo se muestra si hay alguno) */}
                                 {inactiveFormUsers.length > 0 && (
                                     <div className="users-list inactive-users-list">
                                         <h4>Usuarios Inactivos</h4>
@@ -503,137 +499,179 @@ export const UsersProfile = () => {
                             </>
                         )}
                     </section>
-                )}
-
-                {currentUser.rol === 'usuario_formulario' && (
-                    <section className="card upcoming-events-card">
+                    <section className="card occupation-info-card">
                         <div className="card-header">
-                            <h3>Próximos Eventos</h3>
-                            <button className="view-all-btn">Ver Todos</button>
+                            <h3>Información Laboral</h3>
+                            {canEditCompany && company && (
+                                <button className="edit-btn" onClick={() => handleOpenCompanyProfileModal(company)}>
+                                    Editar
+                                </button>
+                            )}
                         </div>
-                        <div className="event-item">
-                            <div className="event-details">
-                                <h4>Revisión de Diseño UX</h4>
-                                <p>09:00 AM - 10:00 AM</p>
+                        {company ? (
+                            <div className="profile-header">
+                                <img
+                                    src={company.logo_url || "https://placehold.co/100x100/2c3e50/ffffff?text=LOGO"}
+                                    alt="Logo de la Empresa"
+                                    className="company-logo-picture"
+                                />
+                                <div className="profile-details">
+                                    <h2>{company.nombre_empresa}</h2>
+                                    <p><span>Dirección:</span> {company.direccion || 'No especificada'}</p>
+                                    <p><span>Teléfono:</span> {company.telefono || 'No especificado'}</p>
+                                    <p><span>Email:</span> {company.email_contacto || 'No especificado'}</p>
+                                </div>
                             </div>
-                            <div className="event-participants">
-                                <img src="https://placehold.co/30x30/f00/ffffff?text=" alt="Participante" />
-                                <img src="https://placehold.co/30x30/0f0/ffffff?text=" alt="Participante" />
-                                <img src="https://placehold.co/30x30/00f/ffffff?text=" alt="Participante" />
-                                <span>+8</span>
+                        ) : (
+                            <p>No hay información de empresa disponible.</p>
+                        )}
+                    </section>
+                </div>
+            ) : (
+                // --- DASHBOARD PARA USUARIO REGULAR ---
+                <div className="user-layout-grid">
+                    {/* Contenido común */}
+                    <section className="card user-profile-card">
+                        <div className="profile-header">
+                            <img src={currentUser.imagen_perfil_url || "https://placehold.co/130x130/1abc9c/ffffff?text=HV"} alt="Imagen de Perfil" className="profile-picture" />
+                            <div className="profile-details">
+                                <h2>{currentUser.nombre_completo}</h2>
+                                <p><span>Rol:</span> {currentUser.rol === 'usuario_formulario' ? 'Usuario' : currentUser.rol}</p>
+                                <p><span>Cargo:</span> {currentUser.cargo || 'No especificado'}</p>
+                                <p><span>Email:</span> {currentUser.email}</p>
+                                <p><span>Teléfono:</span> {currentUser.telefono_personal || '(+0) No especificado'}</p>
+                                <p><span>Empresa:</span> {company ? company.nombre_empresa : 'N/A'}</p>
+                                <div className="social-links">
+                                    <i className="fab fa-linkedin"></i>
+                                    <i className="fab fa-facebook-f"></i>
+                                    <i className="fab fa-twitter"></i>
+                                </div>
                             </div>
                         </div>
-                        <div className="event-item">
-                            <div className="event-details">
-                                <h4>Capacitación SGSST</h4>
-                                <p>11:00 AM - 12:30 PM</p>
-                            </div>
-                            <div className="event-participants">
-                                <img src="https://placehold.co/30x30/f0f/ffffff?text=" alt="Participante" />
-                                <img src="https://placehold.co/30x30/ff0/ffffff?text=" alt="Participante" />
-                                <span>+5</span>
-                            </div>
-                        </div>
-                        <div className="event-item">
-                            <div className="event-details">
-                                <h4>Reunión de Seguridad</h4>
-                                <p>02:00 PM - 03:00 PM</p>
-                            </div>
-                            <div className="event-participants">
-                                <img src="https://placehold.co/30x30/0ff/ffffff?text=" alt="Participante" />
-                                <span>+3</span>
-                            </div>
+                        <div className="profile-actions">
+                            <button className="edit-profile-btn" onClick={handleOpenEditUserModal}>
+                                <i className="fas fa-edit"></i> Editar Perfil
+                            </button>
                         </div>
                     </section>
-                )}
 
-                <section className="card forms-to-fill-card">
-                    <div className="card-header">
-                        <h3>Formularios a Diligenciar</h3>
-                        <Link to="/answer-forms" className="view-all-forms-btn">Ver Todos</Link>
-                    </div>
-                    {favoriteFormsDetails.length > 0 ? (
-                        <div className="favorite-forms-list">
-                            {favoriteFormsDetails.map(form => (
-                                <div key={form.id_formulario} className="favorite-form-item">
-                                    <div className="form-info">
-                                        <h4>{form.nombre_formulario}</h4>
-                                        <p>{form.descripcion || 'Sin descripción.'}</p>
+                    <section className="card user-calendar-card">
+                        <div className="card-header">
+                            <h3>Calendario</h3>
+                            <div className="calendar-nav">
+                                <i className="fas fa-chevron-left" onClick={handlePrevMonth}></i>
+                                <span>{monthNames[currentMonth.getMonth()]} {currentMonth.getFullYear()}</span>
+                                <i className="fas fa-chevron-right" onClick={handleNextMonth}></i>
+                            </div>
+                        </div>
+                        <table className="calendar-table">
+                            <thead>
+                                <tr>
+                                    <th>Dom</th><th>Lun</th><th>Mar</th><th>Mié</th><th>Jue</th><th>Vie</th><th>Sáb</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {Array.from({ length: Math.ceil(calendarDays.length / 7) }).map((_, rowIndex) => (
+                                    <tr key={rowIndex}>
+                                        {calendarDays.slice(rowIndex * 7, (rowIndex + 1) * 7).map((dayData, colIndex) => (
+                                            <td
+                                                key={colIndex}
+                                                className={`${!dayData.currentMonth ? 'inactive' : ''} ${
+                                                    dayData.currentMonth &&
+                                                    dayData.day === currentDay &&
+                                                    currentMonth.getMonth() === currentMonthIndex &&
+                                                    currentMonth.getFullYear() === currentYear
+                                                        ? 'current-day'
+                                                        : ''
+                                                }`}
+                                            >
+                                                {dayData.day}
+                                            </td>
+                                        ))}
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </section>
+
+                    <section className="card user-forms-to-fill-card">
+                        <div className="card-header">
+                            <h3>Formularios a Diligenciar</h3>
+                            <Link to="/answer-forms" className="view-all-forms-btn">Ver Todos</Link>
+                        </div>
+                        {favoriteFormsDetails.length > 0 ? (
+                            <div className="favorite-forms-list">
+                                {favoriteFormsDetails.map(form => (
+                                    <div key={form.id_formulario} className="favorite-form-item">
+                                        <div className="form-info">
+                                            <h4>{form.nombre_formulario}</h4>
+                                            <p>{form.descripcion || 'Sin descripción.'}</p>
+                                        </div>
+                                        <button
+                                            className="fill-form-btn"
+                                            onClick={() => navigate(`/answer-form/${form.id_formulario}`)}
+                                        >
+                                            <i className="fas fa-file-signature"></i> Diligenciar
+                                        </button>
                                     </div>
-                                    <button
-                                        className="fill-form-btn"
-                                        onClick={() => navigate(`/answer-form/${form.id_formulario}`)}
-                                    >
-                                        <i className="fas fa-file-signature"></i> Diligenciar
-                                    </button>
-                                </div>
-                            ))}
-                        </div>
-                    ) : (
-                        <p className="no-favorites-message">No tienes formularios marcados como favoritos. <Link to="/answer-forms">Explora formularios</Link>.</p>
-                    )}
-                </section>
-
-                <section className="card occupation-info-card">
-                    <div className="card-header">
-                        <h3>Información Laboral</h3>
-                        {canEditCompany && company && (
-                            <button className="edit-btn" onClick={() => handleOpenCompanyProfileModal(company)}>
-                                Editar
-                            </button>
+                                ))}
+                            </div>
+                        ) : (
+                            <p className="no-favorites-message">No tienes formularios marcados como favoritos. <Link to="/answer-forms">Explora formularios</Link>.</p>
                         )}
-                    </div>
-                    {company ? (
-                        <div className="profile-header">
-                            <img
-                                src={company.logo_url || "https://placehold.co/100x100/2c3e50/ffffff?text=LOGO"}
-                                alt="Logo de la Empresa"
-                                className="company-logo-picture"
-                            />
-                            <div className="profile-details">
-                                <h2>{company.nombre_empresa}</h2>
-                                <p><span>Dirección:</span> {company.direccion || 'No especificada'}</p>
-                                <p><span>Teléfono:</span> {company.telefono || 'No especificado'}</p>
-                                <p><span>Email:</span> {company.email_contacto || 'No especificado'}</p>
-                        </div>
-                    </div>
-                    ) : (
-                        <p>No hay información de empresa disponible.</p>
-                    )}
-                </section>
-            </div>
+                    </section>
 
-            {/* Modales existentes */}
-            {showEditUserModal && currentUser && (
-                <EditUserProfileModal
-                    currentUser={currentUser}
-                    onClose={handleCloseEditUserModal}
-                    onUpdateSuccess={handleUserUpdateSuccess}
-                />
+                    <section className="card user-occupation-info-card">
+                        <div className="card-header">
+                            <h3>Información Laboral</h3>
+                        </div>
+                        {company ? (
+                            <div className="profile-header">
+                                <img
+                                    src={company.logo_url || "https://placehold.co/100x100/2c3e50/ffffff?text=LOGO"}
+                                    alt="Logo de la Empresa"
+                                    className="company-logo-picture"
+                                />
+                                <div className="profile-details">
+                                    <h2>{company.nombre_empresa}</h2>
+                                    <p><span>Dirección:</span> {company.direccion || 'No especificada'}</p>
+                                    <p><span>Teléfono:</span> {company.telefono || 'No especificado'}</p>
+                                    <p><span>Email:</span> {company.email_contacto || 'No especificado'}</p>
+                                </div>
+                            </div>
+                        ) : (
+                            <p>No hay información de empresa disponible.</p>
+                        )}
+                    </section>
+                </div>
             )}
             
-            {showEditCompanyUserModal && userToEdit && (
-                <EditUserByAdminModal
-                    userToEdit={userToEdit}
-                    onClose={handleCloseEditCompanyUserModal}
-                    onUpdateSuccess={handleUserUpdateSuccess}
+            {/* Modales fuera del render condicional */}
+            {showEditUserModal && (
+                <EditUserProfileModal 
+                    user={currentUser}
+                    onClose={handleCloseEditUserModal} 
+                    onUpdateSuccess={handleUserUpdateSuccess} 
                 />
             )}
-
             {showEditCompanyProfileModal && companyToEdit && (
                 <EditCompanyProfileModal
-                    currentCompany={companyToEdit}
+                    company={companyToEdit}
                     onClose={handleCloseCompanyProfileModal}
                     onUpdateSuccess={handleCompanyUpdateSuccess}
                 />
             )}
-
+            {showEditCompanyUserModal && userToEdit && (
+                <EditUserByAdminModal
+                    user={userToEdit}
+                    onClose={handleCloseEditCompanyUserModal}
+                    onUpdateSuccess={handleUserUpdateSuccess}
+                />
+            )}
             {showConfirmationModal && (
-                <ConfirmationModal
-                    title={confirmationModalData.title}
-                    message={confirmationModalData.message}
-                    onConfirm={confirmationModalData.onConfirm}
-                    onCancel={() => setShowConfirmationModal(false)}
+                <ConfirmationModal 
+                    {...confirmationModalData} 
+                    onClose={() => setShowConfirmationModal(false)} 
                 />
             )}
         </>
