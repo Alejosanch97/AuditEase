@@ -4117,41 +4117,40 @@ def get_forms_for_analytics():
         if not usuario:
             return jsonify({"error": "Usuario no encontrado."}), 404
 
-        formularios_accesibles = []
+        if usuario.rol == 'owner':
+            all_forms = Formulario.query.all()
+            formularios_data = [
+                {"id_formulario": f.id_formulario, "nombre_formulario": f.nombre_formulario, "es_plantilla": f.es_plantilla}
+                for f in all_forms
+            ]
+            return jsonify({"formularios": formularios_data}), 200
 
-        # Lógica centralizada para obtener todos los formularios accesibles
-        # para un usuario, incluyendo formularios de su empresa y plantillas.
+        formularios_accesibles = []
         
-        # 1. Obtener formularios de la empresa del usuario
         formularios_empresa = Formulario.query.filter_by(id_empresa=usuario.id_empresa).all()
         formularios_accesibles.extend(formularios_empresa)
         
-        # 2. Obtener plantillas globales
         plantillas_globales = Formulario.query.filter_by(es_plantilla_global=True).all()
         formularios_accesibles.extend(plantillas_globales)
         
-        # 3. Obtener plantillas compartidas con la empresa del usuario
         plantillas_compartidas = Formulario.query.filter(
             Formulario.compartir_con_empresas_ids.cast(db.String).ilike(f'%"{usuario.id_empresa}"%')
         ).all()
         formularios_accesibles.extend(plantillas_compartidas)
 
-        # Usar un conjunto para eliminar duplicados si un formulario cae en varias categorías
         formularios_finales = list({f.id_formulario: f for f in formularios_accesibles}.values())
 
-        # El rol 'owner' ve todo. Los demás, solo los que apliquen de la lógica anterior.
-        if usuario.rol == 'owner':
-            # Si el owner debe ver todo, simplificamos y no usamos la lógica de arriba
-            all_forms = Formulario.query.all()
-            return jsonify({"formularios": [{"id_formulario": f.id_formulario, "nombre_formulario": f.nombre_formulario} for f in all_forms]}), 200
-        else:
-            return jsonify({"formularios": [{"id_formulario": f.id_formulario, "nombre_formulario": f.nombre_formulario} for f in formularios_finales]}), 200
+        formularios_data = [
+            {"id_formulario": f.id_formulario, "nombre_formulario": f.nombre_formulario, "es_plantilla": f.es_plantilla}
+            for f in formularios_finales
+        ]
+        
+        return jsonify({"formularios": formularios_data}), 200
 
     except Exception as e:
         print(f"Error al obtener formularios para análisis: {e}")
         return jsonify({"error": f"Error interno del servidor: {str(e)}"}), 500
     
-# NUEVA RUTA: Para obtener las preguntas de un formulario específico para análisis
 @api.route('/formularios/<int:form_id>/preguntas/analytics', methods=['GET'])
 @jwt_required()
 def get_questions_for_analytics(form_id):
@@ -4165,7 +4164,6 @@ def get_questions_for_analytics(form_id):
         if not formulario:
             return jsonify({"error": "Formulario no encontrado."}), 404
 
-        # Control de acceso (similar a otras rutas de formulario)
         if usuario.rol != 'owner':
             is_allowed_template = False
             if formulario.es_plantilla:
@@ -4194,7 +4192,6 @@ def get_questions_for_analytics(form_id):
         print(f"Error al obtener preguntas para análisis: {e}")
         return jsonify({"error": f"Error interno del servidor: {str(e)}"}), 500
 
-# NUEVA RUTA: Para obtener datos agregados de respuestas para gráficos
 @api.route('/formularios/<int:form_id>/respuestas/analytics', methods=['GET'])
 @jwt_required()
 def get_responses_for_analytics(form_id):
@@ -4208,7 +4205,6 @@ def get_responses_for_analytics(form_id):
         if not formulario:
             return jsonify({"error": "Formulario no encontrado."}), 404
 
-        # Control de acceso
         if usuario.rol != 'owner':
             is_allowed_template = False
             if formulario.es_plantilla:
@@ -4221,23 +4217,23 @@ def get_responses_for_analytics(form_id):
                 return jsonify({"error": "No tienes permisos para acceder a este formulario."}), 403
 
         question_id = request.args.get('question_id', type=int)
-        
-        # Filtro de fecha opcional
         start_date_str = request.args.get('start_date')
         end_date_str = request.args.get('end_date')
 
-        query = db.session.query(Respuesta, Pregunta, TipoRespuesta, EnvioFormulario).\
-            join(Pregunta, Respuesta.id_pregunta == Pregunta.id_pregunta).\
-            join(TipoRespuesta, Pregunta.tipo_respuesta_id == TipoRespuesta.id_tipo_respuesta).\
-            join(EnvioFormulario, Respuesta.id_envio == EnvioFormulario.id_envio).\
+        if not question_id:
+             return jsonify({"data": [], "chart_type": "none", "message": "Selecciona una pregunta para ver el gráfico."}), 200
+
+        pregunta = Pregunta.query.get(question_id)
+        if not pregunta:
+            return jsonify({"error": "Pregunta no encontrada."}), 404
+
+        selected_question_type = pregunta.tipo_respuesta.nombre_tipo
+        
+        query = Respuesta.query.join(EnvioFormulario).\
+            filter(Respuesta.id_pregunta == question_id).\
+            filter(EnvioFormulario.id_formulario == form_id).\
             join(Usuario, EnvioFormulario.id_usuario == Usuario.id_usuario).\
-            filter(EnvioFormulario.id_formulario == form_id)
-
-        # --- AÑADIDO: FILTRAR RESPUESTAS POR EMPRESA DEL USUARIO ACTUAL ---
-        query = query.filter(Usuario.id_empresa == usuario.id_empresa)
-
-        if question_id:
-            query = query.filter(Respuesta.id_pregunta == question_id)
+            filter(Usuario.id_empresa == usuario.id_empresa)
         
         if start_date_str:
             start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
@@ -4250,41 +4246,27 @@ def get_responses_for_analytics(form_id):
         results = query.all()
 
         if not results:
-            return jsonify({"data": [], "chart_type": "none", "message": "No hay datos para mostrar el gráfico."}), 200
-
-        if not question_id:
-             return jsonify({"data": [], "chart_type": "none", "message": "Selecciona una pregunta para ver el gráfico."}), 200
-
-        selected_question_type = None
-        for _, pregunta, tipo_respuesta, _ in results:
-            if pregunta.id_pregunta == question_id:
-                selected_question_type = tipo_respuesta.nombre_tipo
-                break
-        
-        if not selected_question_type:
-            # Si no se encuentra el tipo, puede que la pregunta no tenga respuestas en el rango de fechas
-            # o para la empresa del usuario.
-            return jsonify({"data": [], "chart_type": "none", "message": "No se encontraron respuestas para esta pregunta y filtros."}), 200
+            return jsonify({"data": [], "chart_type": "none", "message": "No hay datos para mostrar el gráfico con los filtros seleccionados."}), 200
 
         chart_data = []
         chart_type = "none"
 
         if selected_question_type == 'booleano':
-            true_count = sum(1 for r, _, _, _ in results if r.valor_booleano is True)
-            false_count = sum(1 for r, _, _, _ in results if r.valor_booleano is False)
+            true_count = sum(1 for r in results if r.valor_booleano is True)
+            false_count = sum(1 for r in results if r.valor_booleano is False)
             chart_data = [
                 {"name": "Sí", "value": true_count},
                 {"name": "No", "value": false_count}
             ]
             chart_type = "pie"
         elif selected_question_type == 'numerico':
-            numeric_values = [r.valor_numerico for r, _, _, _ in results if r.valor_numerico is not None]
+            numeric_values = [r.valor_numerico for r in results if r.valor_numerico is not None]
             if numeric_values:
                 min_val = min(numeric_values)
                 max_val = max(numeric_values)
                 
                 if min_val == max_val:
-                    chart_data = [{"range": str(min_val), "count": len(numeric_values)}]
+                    chart_data = [{"name": str(min_val), "value": len(numeric_values)}]
                 else:
                     num_bins = 5 
                     bin_width = (max_val - min_val) / num_bins
@@ -4300,30 +4282,35 @@ def get_responses_for_analytics(form_id):
                     for i in range(num_bins):
                         lower_bound = round(min_val + i * bin_width, 2)
                         upper_bound = round(min_val + (i + 1) * bin_width, 2)
-                        chart_data.append({"range": f"{lower_bound}-{upper_bound}", "count": bins[i]})
+                        chart_data.append({"name": f"{lower_bound}-{upper_bound}", "value": bins[i]})
                 chart_type = "bar" 
             else:
                 chart_data = []
         elif selected_question_type == 'seleccion_unica':
             counts = Counter()
-            for r, _, _, _ in results:
+            for r in results:
                 if r.valor_texto: 
                     counts[r.valor_texto] += 1
-                elif r.valores_multiples_json: 
+            chart_data = [{"name": item, "value": count} for item, count in counts.items()]
+            chart_type = "pie"
+        elif selected_question_type == 'seleccion_multiple':
+            counts = Counter()
+            for r in results:
+                if r.valores_multiples_json:
                     try:
-                        val = json.loads(r.valores_multiples_json)
-                        if isinstance(val, list) and len(val) == 1: 
-                            counts[str(val[0])] += 1 
-                        elif isinstance(val, str): 
-                            counts[val] += 1
-                    except (json.JSONDecodeError, TypeError):
+                        selected_options = json.loads(r.valores_multiples_json)
+                        if isinstance(selected_options, list):
+                            for option in selected_options:
+                                counts[str(option)] += 1
+                        elif isinstance(selected_options, (int, str)):
+                            counts[str(selected_options)] += 1
+                    except (json.JSONDecodeError, TypeError) as e:
+                        print(f"Error parsing valores_multiples_json for multi selection: {r.valores_multiples_json} - {e}")
                         pass
             chart_data = [{"name": item, "value": count} for item, count in counts.items()]
-            chart_type = "pie" 
-        elif selected_question_type == 'seleccion_multiple' or selected_question_type == 'seleccion_recursos':
+            chart_type = "bar"
+        elif selected_question_type == 'seleccion_recursos':
             counts = Counter()
-            
-            # --- CORRECCIÓN: Filtrar recursos SOLO por la empresa del usuario actual ---
             empresa_id_actual = usuario.id_empresa
             
             all_espacios = {e.id_espacio: e.nombre_espacio for e in Espacio.query.filter_by(id_empresa=empresa_id_actual).all()}
@@ -4331,36 +4318,39 @@ def get_responses_for_analytics(form_id):
             all_objetos = {o.id_objeto: o.nombre_objeto for o in Objeto.query.join(SubEspacio).join(Espacio).filter(Espacio.id_empresa == empresa_id_actual).all()}
             resource_names_map = {**all_espacios, **all_subespacios, **all_objetos}
 
-            for r, _, _, _ in results:
+            for r in results:
                 if r.valores_multiples_json:
                     try:
                         selected_options = json.loads(r.valores_multiples_json)
                         if isinstance(selected_options, list):
                             for option_id in selected_options:
                                 name = resource_names_map.get(int(option_id), None)
-                                if name: # Solo cuenta si el recurso pertenece a la empresa
+                                if name:
                                     counts[name] += 1
                         elif isinstance(selected_options, (int, str)):
                             name = resource_names_map.get(int(selected_options), None)
                             if name:
                                 counts[name] += 1
                     except (json.JSONDecodeError, TypeError) as e:
-                        print(f"Error parsing valores_multiples_json for multi/resource selection: {r.valores_multiples_json} - {e}")
+                        print(f"Error parsing valores_multiples_json for resource selection: {r.valores_multiples_json} - {e}")
                         pass
             
             chart_data = [{"name": item, "value": count} for item, count in counts.items()]
             chart_type = "bar"
-        elif selected_question_type == 'texto_corto' or selected_question_type == 'texto_largo':
-            counts = Counter()
-            for r, _, _, _ in results:
-                if r.valor_texto:
-                    counts[r.valor_texto] += 1
-            chart_data = [{"name": item, "value": count} for item, count in counts.items()]
-            chart_type = "bar"
-        elif selected_question_type in ['firma', 'dibujo', 'fecha', 'hora']:
-            chart_data = []
-            chart_type = "none"
-            
+        # CORRECCIÓN: Agregar 'texto' a la lista de tipos de respuesta para tablas de texto
+        elif selected_question_type in ['texto', 'texto_corto', 'texto_largo', 'fecha', 'hora']:
+            chart_data = [
+                {"id": r.id_respuesta, "value": r.valor_texto}
+                for r in results
+            ]
+            chart_type = "table_text"
+        elif selected_question_type in ['firma', 'dibujo']:
+            chart_data = [
+                {"id": r.id_respuesta, "value": r.valor_texto}
+                for r in results if r.valor_texto
+            ]
+            chart_type = "table_image"
+        
         return jsonify({"data": chart_data, "chart_type": chart_type, "message": "Datos de gráfico generados exitosamente."}), 200
 
     except Exception as e:

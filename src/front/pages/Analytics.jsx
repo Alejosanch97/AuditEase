@@ -1,4 +1,3 @@
-// src/pages/Analytics.jsx
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useGlobalReducer from '../hooks/useGlobalReducer';
@@ -41,7 +40,6 @@ export const Analytics = () => {
     }
 
     try {
-      // Usa la nueva ruta de la API que devuelve todos los formularios accesibles.
       const url = `${import.meta.env.VITE_BACKEND_URL}/api/formularios/analytics`;
       
       const response = await fetch(url, {
@@ -49,7 +47,6 @@ export const Analytics = () => {
       });
       const data = await response.json();
       if (response.ok) {
-        // Añade un prefijo a las plantillas para distinguirlas si lo deseas.
         const formattedForms = data.formularios.map(form => ({
           ...form,
           nombre_formulario: form.es_plantilla ? `(Plantilla) ${form.nombre_formulario}` : form.nombre_formulario
@@ -163,7 +160,7 @@ export const Analytics = () => {
     fetchChartData();
   }, [selectedQuestionId, startDate, endDate, fetchChartData]);
 
-  // --- Render Chart based on Type ---
+  // --- Render Chart based on Type (Lógica final) ---
   const renderChart = () => {
     if (loading) {
       return <p className="analytics-loading-message">Cargando datos del gráfico...</p>;
@@ -171,8 +168,13 @@ export const Analytics = () => {
     if (error) {
       return <p className="analytics-error-message">Error: {error}</p>;
     }
+    
+    // CORRECCIÓN: Manejamos el caso de datos vacíos de manera más específica
     if (!chartData || chartData.length === 0) {
-      return <p className="analytics-info-message">{message || "No hay datos para mostrar el gráfico."}</p>;
+      if (message) {
+        return <p className="analytics-info-message">{message}</p>;
+      }
+      return <p className="analytics-info-message">No hay datos para mostrar el gráfico.</p>;
     }
 
     switch (chartType) {
@@ -200,9 +202,6 @@ export const Analytics = () => {
           </ResponsiveContainer>
         );
       case 'bar':
-        const xAxisKey = chartData[0] && chartData[0].range ? 'range' : 'name';
-        const yAxisKey = chartData[0] && chartData[0].count ? 'count' : 'value';
-
         return (
           <ResponsiveContainer width="100%" height={300}>
             <BarChart
@@ -210,13 +209,65 @@ export const Analytics = () => {
               margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
             >
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey={xAxisKey} />
+              <XAxis dataKey="name" />
               <YAxis />
               <Tooltip />
               <Legend />
-              <Bar dataKey={yAxisKey} fill="#8884d8" />
+              <Bar dataKey="value" fill="#8884d8" />
             </BarChart>
           </ResponsiveContainer>
+        );
+      case 'table_text':
+        return (
+          <div className="analytics-table-container">
+            <h3>Respuestas de Texto</h3>
+            <table className="analytics-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Respuesta</th>
+                </tr>
+              </thead>
+              <tbody>
+                {/* CORRECCIÓN: Usar entry.id como clave para mayor eficiencia */}
+                {chartData.map((entry, index) => (
+                  <tr key={entry.id || index}>
+                    <td>{index + 1}</td>
+                    <td>{entry.value || 'Sin respuesta'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        );
+      case 'table_image':
+        return (
+          <div className="analytics-table-container">
+            <h3>Firmas y Dibujos</h3>
+            <table className="analytics-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Imagen</th>
+                </tr>
+              </thead>
+              <tbody>
+                {/* CORRECCIÓN: Usar entry.id como clave para mayor eficiencia */}
+                {chartData.map((entry, index) => (
+                  <tr key={entry.id || index}>
+                    <td>{index + 1}</td>
+                    <td>
+                      {entry.value ? (
+                        <img src={entry.value} alt={`Respuesta ${entry.id}`} className="analytics-image-response" />
+                      ) : (
+                        <span>Sin imagen</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         );
       case 'none':
       default:
@@ -226,6 +277,38 @@ export const Analytics = () => {
 
   return (
     <>
+      <style>
+        {`
+          .analytics-table-container {
+            width: 100%;
+            overflow-x: auto;
+          }
+          .analytics-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+          }
+          .analytics-table th, .analytics-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+            word-wrap: break-word;
+            max-width: 300px;
+          }
+          .analytics-table th {
+            background-color: #f2f2f2;
+          }
+          .analytics-image-response {
+            max-width: 100%;
+            height: auto;
+            max-height: 150px;
+            display: block;
+            margin: auto;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+          }
+        `}
+      </style>
       <header className="main-header">
         <h1 className="headline">Análisis de Formularios</h1>
         <div className="header-right">

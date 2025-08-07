@@ -8,6 +8,8 @@ import "../styles/answer-form-page.css";
 // Importa los componentes dedicados
 import { ResourceSelectionQuestion } from '../components/ResourceSelectionQuestion';
 import { DrawingQuestion } from '../components/DrawingQuestion';
+// [NUEVO] Importa tu componente ConfirmationModal
+import { ConfirmationModal } from '../components/ConfirmationModal';
 
 export const AnswerFormPage = () => {
   const { formId } = useParams();
@@ -29,8 +31,11 @@ export const AnswerFormPage = () => {
   const [userSubmissionsInPeriod, setUserSubmissionsInPeriod] = useState(0);
   const [submissionLimitMessage, setSubmissionLimitMessage] = useState('');
   
-  // --- [NUEVO] ESTADO PARA GUARDAR EL PERFIL DEL USUARIO Y LA FIRMA ---
   const [userProfile, setUserProfile] = useState(null);
+
+  // --- [NUEVO] ESTADOS PARA CONTROLAR EL MODAL DE CONFIRMACIÓN ---
+  const [showConfirmationModal, setShowConfirmationModal] = useState(false);
+  const [modalMessage, setModalMessage] = useState('');
 
   // --- OPTIMIZATION: Create maps for quick resource lookups ---
   const espaciosMap = useMemo(() => {
@@ -58,7 +63,6 @@ export const AnswerFormPage = () => {
   }, [storeObjetos]);
   // --- END OPTIMIZATION ---
 
-  // --- [NUEVO] EFFECT PARA CARGAR EL PERFIL DEL USUARIO Y SU FIRMA ---
   useEffect(() => {
     const fetchUserProfile = async () => {
         if (!currentUser) return;
@@ -83,8 +87,6 @@ export const AnswerFormPage = () => {
     fetchUserProfile();
   }, [currentUser]);
 
-
-  // --- MAIN EFFECT TO LOAD FORM DETAILS AND QUESTIONS ---
   useEffect(() => {
     if (!isLoggedIn || !currentUser) {
       navigate('/login');
@@ -172,8 +174,6 @@ export const AnswerFormPage = () => {
                 case 'seleccion_multiple':
                 case 'seleccion_recursos': initialAnswers[q.id_pregunta] = []; break;
                 case 'dibujo': initialAnswers[q.id_pregunta] = ''; break;
-                // --- [NUEVO] INICIALIZACIÓN PARA EL TIPO 'firma' ---
-                // Aquí usamos el perfil del usuario para obtener la URL de la firma si existe
                 case 'firma': 
                     initialAnswers[q.id_pregunta] = userProfile?.firma_digital_url || ''; 
                     break;
@@ -195,13 +195,10 @@ export const AnswerFormPage = () => {
       }
     };
     
-    // Solo cargamos los datos del formulario si tenemos el perfil del usuario,
-    // ya que la firma es parte del estado inicial.
     if (formId && currentUser && userProfile) {
       fetchData();
     }
   }, [formId, isLoggedIn, currentUser, navigate, dispatch, userProfile]);
-
 
   useEffect(() => {
     const fetchUserSubmissionCount = async () => {
@@ -253,7 +250,6 @@ export const AnswerFormPage = () => {
       } else if (type === 'numerico') {
         newAnswers[questionId] = value;
       } else if (type === 'dibujo' || type === 'firma') {
-        // Para 'dibujo' y 'firma' guardamos directamente el valor (URL o datos)
         newAnswers[questionId] = value;
       } else {
         newAnswers[questionId] = value;
@@ -374,6 +370,17 @@ export const AnswerFormPage = () => {
       setSubmitting(false);
       return;
     }
+    
+    // [NUEVO] VALIDACIÓN ESPECÍFICA PARA LA FIRMA
+    const firmaQuestion = formDetails.preguntas.find(q => getTipoRespuestaNombre(q.tipo_respuesta_id) === 'firma');
+    if (firmaQuestion) {
+        if (!userProfile?.firma_digital_url) {
+            setModalMessage('Necesitas subir una firma digital en tu perfil para poder responder este formulario.');
+            setShowConfirmationModal(true);
+            setSubmitting(false);
+            return;
+        }
+    }
 
     const missingAnswers = formDetails.preguntas.filter(q => {
       const tipoNombre = getTipoRespuestaNombre(q.tipo_respuesta_id);
@@ -400,7 +407,6 @@ export const AnswerFormPage = () => {
       const tipoNombre = getTipoRespuestaNombre(q.tipo_respuesta_id);
       let valorRespuesta = answers[q.id_pregunta];
 
-      // La firma se guarda como un string en valor_texto
       if (tipoNombre === 'numerico') {
         valorRespuesta = parseFloat(valorRespuesta);
         if (isNaN(valorRespuesta)) valorRespuesta = null;
@@ -466,6 +472,16 @@ export const AnswerFormPage = () => {
     }
   };
 
+  // --- [NUEVO] MANEJADORES PARA EL MODAL DE CONFIRMACIÓN ---
+  const handleConfirm = () => {
+    setShowConfirmationModal(false);
+    navigate('/profile'); // Navega a la página de perfil para subir la firma
+  };
+
+  const handleCancel = () => {
+    setShowConfirmationModal(false);
+  };
+  
   const isSubmitDisabled = submitting || (formDetails && formDetails.max_submissions_per_period > 0 && userSubmissionsInPeriod >= formDetails.max_submissions_per_period);
 
   if (loading) {
@@ -527,7 +543,6 @@ export const AnswerFormPage = () => {
                 const tipoNombre = getTipoRespuestaNombre(question.tipo_respuesta_id);
                 const currentAnswer = answers[question.id_pregunta];
                 
-                // [DEBBUGING]: Log para entender por qué las opciones no se cargan
                 if (tipoNombre === 'seleccion_unica' || tipoNombre === 'seleccion_multiple') {
                     console.log(`[DEPURACIÓN - OPCIONES DE RESPUESTA] Pregunta ID: ${question.id_pregunta}, Título: "${question.texto_pregunta}"`);
                     console.log('   -> Datos de opciones recibidos:', question.opciones_respuesta_json);
@@ -589,7 +604,6 @@ export const AnswerFormPage = () => {
                             handleAnswerChange={handleAnswerChange}
                           />
                       )}
-                      {/* --- [NUEVO] LÓGICA PARA VISUALIZAR LA FIRMA --- */}
                       {tipoNombre === 'firma' && (
                         <div className="signature-display-container">
                           {currentAnswer ? (
@@ -602,7 +616,6 @@ export const AnswerFormPage = () => {
                           )}
                         </div>
                       )}
-                      {/* --- FIN DE LA LÓGICA PARA LA FIRMA --- */}
                     </div>
                   </div>
                 );
@@ -616,6 +629,15 @@ export const AnswerFormPage = () => {
           </button>
         </form>
       </div>
+      
+      {/* [NUEVO] Renderiza tu modal de confirmación si es necesario */}
+      {showConfirmationModal && (
+          <ConfirmationModal
+              message={modalMessage}
+              onConfirm={handleConfirm}
+              onCancel={handleCancel}
+          />
+      )}
     </>
   );
 };
