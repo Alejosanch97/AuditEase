@@ -69,6 +69,63 @@ def handle_hello():
     }
     return jsonify(response_body), 200
 
+# [NUEVA RUTA] Endpoint para enviar correo desde el formulario de contacto
+@api.route('/send-contact-email', methods=['POST'])
+def send_contact_email():
+    """
+    Endpoint para recibir los datos del formulario de contacto y enviar un correo electrónico.
+    """
+    if not request.is_json:
+        return jsonify({"message": "La solicitud debe ser JSON"}), 400
+
+    data = request.get_json()
+    company_name = data.get('companyName')
+    responsible_name = data.get('responsibleName')
+    email = data.get('email')
+    whatsapp = data.get('whatsapp')
+
+    if not all([company_name, responsible_name, email]):
+        return jsonify({"message": "Faltan campos obligatorios"}), 400
+
+    # Lógica corregida para enviar el correo
+    try:
+        # Creamos el mensaje de correo.
+        msg = Message(
+            subject=f"Nueva solicitud de empresa: {company_name}",
+            sender='sgsstflow@gmail.com',
+            recipients=['sgsstflow@gmail.com']
+        )
+        
+        # El cuerpo del mensaje contendrá los datos del formulario.
+        msg.body = (
+            f"Hola equipo SGSST Flow,\n\n"
+            f"¡Tienes una nueva solicitud de registro de empresa!\n\n"
+            f"Detalles:\n"
+            f"- Nombre de la empresa: {company_name}\n"
+            f"- Nombre del responsable: {responsible_name}\n"
+            f"- Correo electrónico: {email}\n"
+            f"- WhatsApp: {whatsapp if whatsapp else 'No proporcionado'}\n\n"
+            f"Por favor, ponte en contacto con ellos lo antes posible."
+        )
+
+        # Accedemos a la instancia de Flask-Mail usando `current_app`
+        # Este es el cambio clave que soluciona el error.
+        mail_instance = current_app.extensions.get('mail')
+        if mail_instance:
+            mail_instance.send(msg)
+        else:
+            raise RuntimeError("Flask-Mail no se ha inicializado correctamente en la aplicación.")
+
+        # Responde con un mensaje de éxito si el envío es exitoso.
+        return jsonify({
+            "message": "Solicitud recibida. Nos pondremos en contacto contigo pronto."
+        }), 200
+    except Exception as e:
+        # Si hay un error, responde con un error 500 y un mensaje útil.
+        print(f"Error al enviar el correo: {e}")
+        return jsonify({"message": f"Error del servidor al enviar el correo: {str(e)}"}), 500
+
+
 @api.route('/registro', methods=['POST'])
 def registro_owner_inicial():
     """

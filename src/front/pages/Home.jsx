@@ -7,18 +7,83 @@ import "bootstrap/dist/css/bootstrap.min.css";
 export const Home = () => {
   // Estado para controlar la visibilidad del modal
   const [showModal, setShowModal] = useState(false);
+  // Estado para los datos del formulario de contacto
+  const [formData, setFormData] = useState({
+    companyName: "",
+    responsibleName: "",
+    email: "",
+    whatsapp: "",
+  });
+  // Estado para controlar el estado de envío y mostrar feedback
+  const [isSending, setIsSending] = useState(false);
+  const [statusMessage, setStatusMessage] = useState("");
 
   // Funciones para abrir y cerrar el modal
-  const handleCloseModal = () => setShowModal(false);
+  const handleCloseModal = () => {
+    setShowModal(false);
+    // Reinicia los estados cuando se cierra el modal
+    setFormData({
+      companyName: "",
+      responsibleName: "",
+      email: "",
+      whatsapp: "",
+    });
+    setStatusMessage("");
+  };
   const handleShowModal = () => setShowModal(true);
 
-  // Manejador para el envío del formulario del modal (puedes añadir tu lógica de envío aquí)
-  const handleFormSubmit = (event) => {
-    event.preventDefault(); // Previene el comportamiento por defecto del formulario
-    // Aquí puedes añadir la lógica para enviar los datos del formulario
-    console.log("Formulario enviado");
-    handleCloseModal(); // Cierra el modal después de enviar
+  // Manejador para actualizar los datos del formulario
+  const handleInputChange = (e) => {
+    const { id, value } = e.target;
+    setFormData((prevData) => ({
+      ...prevData,
+      [id]: value,
+    }));
   };
+
+  // Manejador para el envío del formulario del modal
+  const handleFormSubmit = async (event) => {
+    event.preventDefault(); // Previene el comportamiento por defecto del formulario
+
+    // Verifica que los campos requeridos no estén vacíos
+    if (!formData.companyName || !formData.responsibleName || !formData.email) {
+      setStatusMessage("Por favor, completa todos los campos obligatorios.");
+      return;
+    }
+
+    setIsSending(true);
+    setStatusMessage("Enviando...");
+
+    try {
+      // Usa la URL del backend directamente desde las variables de entorno
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/send-contact-email`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        setStatusMessage("¡Solicitud enviada con éxito! Pronto se contactarán contigo.");
+        // Cierra el modal después de un breve retraso para que el usuario vea el mensaje
+        setTimeout(handleCloseModal, 2000);
+      } else {
+        setStatusMessage(
+          result.message || "Ocurrió un error al enviar el correo."
+        );
+        console.error("Error del backend:", result.message);
+      }
+    } catch (error) {
+      console.error("Error en el envío del formulario:", error);
+      setStatusMessage("Error de conexión. Inténtalo de nuevo más tarde.");
+    } finally {
+      setIsSending(false);
+    }
+  };
+
 
   useEffect(() => {
     AOS.init({ duration: 1000 });
@@ -260,7 +325,7 @@ export const Home = () => {
       <footer className="text-center py-4 bg-dark text-white">
         <h5 className="mb-1">SGSST Flow</h5>
         <p>Tecnología para transformar tu sistema de Seguridad y Salud en el Trabajo.</p>
-        <p className="small mb-0">📧 sgsstflow@gmail.com | 📱 WhatsApp: +57 3173769865</p>
+        <p className="small mb-0">� sgsstflow@gmail.com | 📱 WhatsApp: +57 3173769865</p>
       </footer>
 
       {/* Modal Personalizado */}
@@ -280,23 +345,64 @@ export const Home = () => {
               <form onSubmit={handleFormSubmit}>
                 <div className="mb-3">
                   <label htmlFor="companyName" className="form-label">Nombre de la empresa</label>
-                  <input type="text" className="form-control custom-input-field" id="companyName" placeholder="Tu empresa" required />
+                  <input
+                    type="text"
+                    className="form-control custom-input-field"
+                    id="companyName"
+                    placeholder="Tu empresa"
+                    value={formData.companyName}
+                    onChange={handleInputChange}
+                    required
+                  />
                 </div>
                 <div className="mb-3">
                   <label htmlFor="responsibleName" className="form-label">Nombre del responsable</label>
-                  <input type="text" className="form-control custom-input-field" id="responsibleName" placeholder="Tu nombre" required />
+                  <input
+                    type="text"
+                    className="form-control custom-input-field"
+                    id="responsibleName"
+                    placeholder="Tu nombre"
+                    value={formData.responsibleName}
+                    onChange={handleInputChange}
+                    required
+                  />
                 </div>
                 <div className="mb-3">
                   <label htmlFor="email" className="form-label">Correo electrónico</label>
-                  <input type="email" className="form-control custom-input-field" id="email" placeholder="ejemplo@empresa.com" required />
+                  <input
+                    type="email"
+                    className="form-control custom-input-field"
+                    id="email"
+                    placeholder="ejemplo@empresa.com"
+                    value={formData.email}
+                    onChange={handleInputChange}
+                    required
+                  />
                 </div>
                 <div className="mb-4">
                   <label htmlFor="whatsapp" className="form-label">WhatsApp</label>
-                  <input type="text" className="form-control custom-input-field" id="whatsapp" placeholder="+57 3XX XXX XXXX" />
+                  <input
+                    type="text"
+                    className="form-control custom-input-field"
+                    id="whatsapp"
+                    placeholder="+57 3XX XXX XXXX"
+                    value={formData.whatsapp}
+                    onChange={handleInputChange}
+                  />
                 </div>
+                {/* Mensaje de estado */}
+                {statusMessage && (
+                  <p className={`text-center mb-3 ${statusMessage.includes("éxito") ? "text-success" : "text-danger"}`}>
+                    {statusMessage}
+                  </p>
+                )}
                 <div className="custom-modal-footer d-flex justify-content-center">
-                  <button type="submit" className="custom-btn-modal-submit">
-                    Enviar mi solicitud
+                  <button
+                    type="submit"
+                    className="custom-btn-modal-submit"
+                    disabled={isSending}
+                  >
+                    {isSending ? "Enviando..." : "Enviar mi solicitud"}
                   </button>
                 </div>
               </form>
@@ -307,3 +413,4 @@ export const Home = () => {
     </div>
   );
 };
+

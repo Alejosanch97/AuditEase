@@ -1,6 +1,6 @@
-
 import React from "react";
 import { Link } from "react-router-dom";
+import "bootstrap/dist/css/bootstrap.min.css";
 
 export const Navbar = () => {
   return (
@@ -41,7 +41,7 @@ export const Navbar = () => {
         {/* Navigation Links and Call to Actions */}
         <div className="collapse navbar-collapse" id="navbarNav">
           <ul className="navbar-nav me-auto mb-2 mb-lg-0">
-            {/* Productos Dropdown */}
+            {/* Productos Dropdown - Textos mejorados */}
             <li className="nav-item dropdown">
               <Link
                 className="nav-link dropdown-toggle"
@@ -55,19 +55,29 @@ export const Navbar = () => {
               </Link>
               <ul className="dropdown-menu" aria-labelledby="navbarDropdownProductos">
                 <li>
-                  <Link className="dropdown-item" to="/products/project-management">
-                    Gestión de Proyectos
+                  <Link className="dropdown-item" to="/">
+                    Digitalización de Formularios
                   </Link>
                 </li>
                 <li>
-                  <Link className="dropdown-item" to="/products/crm">
-                    CRM
+                  <Link className="dropdown-item" to="/">
+                    Asistente de IA
+                  </Link>
+                </li>
+                <li>
+                  <Link className="dropdown-item" to="/">
+                    Reportes y Paneles
+                  </Link>
+                </li>
+                <li>
+                  <Link className="dropdown-item" to="/">
+                    Firma Digital y Exportación
                   </Link>
                 </li>
               </ul>
             </li>
 
-            {/* Soluciones Dropdown */}
+            {/* Soluciones Dropdown - Textos mejorados */}
             <li className="nav-item dropdown">
               <Link
                 className="nav-link dropdown-toggle"
@@ -81,19 +91,29 @@ export const Navbar = () => {
               </Link>
               <ul className="dropdown-menu" aria-labelledby="navbarDropdownSoluciones">
                 <li>
-                  <Link className="dropdown-item" to="/solutions/marketing">
-                    Marketing
+                  <Link className="dropdown-item" to="/">
+                    Gestión de Riesgos
                   </Link>
                 </li>
                 <li>
-                  <Link className="dropdown-item" to="/solutions/sales">
-                    Ventas
+                  <Link className="dropdown-item" to="/">
+                    Cumplimiento Normativo
+                  </Link>
+                </li>
+                <li>
+                  <Link className="dropdown-item" to="/">
+                    Para Colegios y Gimnasios
+                  </Link>
+                </li>
+                <li>
+                  <Link className="dropdown-item" to="/">
+                    Para Empresas de Construcción
                   </Link>
                 </li>
               </ul>
             </li>
 
-            {/* Recursos Dropdown */}
+            {/* Recursos Dropdown - Textos mejorados */}
             <li className="nav-item dropdown">
               <Link
                 className="nav-link dropdown-toggle"
@@ -107,22 +127,21 @@ export const Navbar = () => {
               </Link>
               <ul className="dropdown-menu" aria-labelledby="navbarDropdownRecursos">
                 <li>
-                  <Link className="dropdown-item" to="/resources/blog">
+                  <Link className="dropdown-item" to="/">
                     Blog
                   </Link>
                 </li>
                 <li>
-                  <Link className="dropdown-item" to="/resources/guides">
-                    Guías
+                  <Link className="dropdown-item" to="/">
+                    Guías de Implementación
+                  </Link>
+                </li>
+                <li>
+                  <Link className="dropdown-item" to="/">
+                    Casos de Éxito
                   </Link>
                 </li>
               </ul>
-            </li>
-
-            <li className="nav-item">
-              <Link className="nav-link" to="/enterprise">
-                Enterprise
-              </Link>
             </li>
           </ul>
 

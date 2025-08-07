@@ -62,15 +62,9 @@ export const Sidebar = ({ currentUser, handleLogout }) => {
           <li className={location.pathname === '/analytics' ? 'active' : ''}>
             <Link to="/analytics"><i className="fas fa-chart-line"></i> Generar Graficas</Link>
           </li>
-          <li className={location.pathname === '/agenda' ? 'active' : ''}>
-            <Link to="/agenda"><i className="fas fa-calendar-alt"></i> Agenda y Citas</Link>
-          </li>
-          <li className={location.pathname === '/notifications' ? 'active' : ''}>
-            <Link to="/notifications"><i className="fas fa-bell"></i> Notificaciones</Link>
-          </li>
           
           <li className={location.pathname === '/help-support' ? 'active' : ''}>
-            <Link to="/help-support"><i className="fas fa-question-circle"></i> Ayuda y Soporte</Link>
+            <Link to="/"><i className="fas fa-question-circle"></i> Ayuda y Soporte</Link>
           </li>
           <li>
             {/* El manejador de logout se pasa como prop */}
