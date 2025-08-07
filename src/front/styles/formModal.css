@@ -3,36 +3,36 @@
 
 /* Modal Overlay: Fondo semi-transparente que cubre toda la pantalla */
 .modal-overlay {
-    position: fixed; /* Fija el overlay en la ventana de visualización */
+    position: fixed;
     top: 0;
     left: 0;
-    width: 100vw; /* Ocupa el 100% del ancho del viewport */
-    height: 100vh; /* Ocupa el 100% del alto del viewport */
-    background-color: rgba(0, 0, 0, 0.7); /* Fondo negro semi-transparente */
-    display: flex; /* Para centrar el contenido del modal */
-    justify-content: center; /* Centrado horizontal */
-    align-items: center; /* Centrado vertical */
-    z-index: 1000; /* Asegura que esté por encima de todos los demás elementos */
-    backdrop-filter: blur(4px); /* Efecto de desenfoque sutil en el fondo */
-    -webkit-backdrop-filter: blur(4px); /* Para compatibilidad con Safari */
-    animation: fadeIn 0.3s ease-out forwards; /* Animación de entrada */
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    animation: fadeIn 0.3s ease-out forwards;
 }
 
 /* Modal Content: La "mini-ventana" donde está el formulario */
 .modal-content {
-    background-color: #2e3b4e; /* Fondo del modal oscuro */
-    padding: 25px 30px; /* Padding reducido para un tamaño más compacto */
-    border-radius: 15px; /* Bordes más redondeados */
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5); /* Sombra más pronunciada */
+    background-color: #2e3b4e;
+    padding: 25px 30px;
+    border-radius: 15px;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5);
     width: 90%;
-    max-width: 480px; /* Ancho máximo aún más reducido para un formulario más compacto */
-    box-sizing: border-box; /* Incluye padding y borde en el ancho/alto */
-    position: relative; /* Para posicionar el botón de cerrar */
-    max-height: 90vh; /* Altura máxima para evitar desbordamiento en pantallas pequeñas */
-    overflow-y: auto; /* Permite desplazamiento si el contenido es largo */
-    color: #e0e0e0; /* Color de texto claro para el contenido del modal */
-    animation: fadeInScale 0.3s ease-out forwards; /* Animación de entrada */
-    display: flex; /* Para organizar el contenido interno */
+    max-width: 480px;
+    box-sizing: border-box;
+    position: relative;
+    max-height: 90vh;
+    overflow-y: auto;
+    color: #e0e0e0;
+    animation: fadeInScale 0.3s ease-out forwards;
+    display: flex;
     flex-direction: column;
 }
 
@@ -56,27 +56,27 @@
 
 /* Título del modal */
 .modal-content h2 {
-    color: #61dafb; /* Azul claro de acento */
-    margin-bottom: 20px; /* Espacio debajo del título reducido */
+    color: #61dafb;
+    margin-bottom: 20px;
     text-align: center;
-    font-size: 1.8em; /* Título ligeramente más pequeño */
-    font-weight: 700; /* Más audaz */
-    border-bottom: 2px solid #4a5a70; /* Borde más distintivo */
-    padding-bottom: 12px; /* Espacio debajo del borde reducido */
+    font-size: 1.8em;
+    font-weight: 700;
+    border-bottom: 2px solid #4a5a70;
+    padding-bottom: 12px;
     letter-spacing: 0.5px;
 }
 
 /* Grupos de formulario */
 .form-group {
-    margin-bottom: 18px; /* Espacio entre grupos de formulario reducido */
+    margin-bottom: 18px;
 }
 
 .form-group label {
     display: block;
-    margin-bottom: 6px; /* Espacio entre label e input reducido */
-    font-weight: 600; /* Un poco más audaz */
-    color: #e0e0e0; /* Color de etiqueta más suave */
-    font-size: 0.95em; /* Tamaño de fuente de la etiqueta ajustado */
+    margin-bottom: 6px;
+    font-weight: 600;
+    color: #e0e0e0;
+    font-size: 0.95em;
 }
 
 .form-group input[type="text"],
@@ -85,13 +85,13 @@
 .form-group input[type="number"],
 .form-group select,
 .form-group textarea {
-    width: calc(100% - 16px); /* Ajuste de ancho para padding */
-    padding: 10px; /* Padding de inputs reducido */
-    border: 1px solid #4a5a70; /* Borde sutil */
-    border-radius: 8px; /* Más redondeado */
-    font-size: 0.95em; /* Tamaño de fuente de input ajustado */
-    background-color: #3a475a; /* Fondo del input un poco más claro que el modal */
-    color: #ffffff; /* Texto blanco en el input */
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #4a5a70;
+    border-radius: 8px;
+    font-size: 0.95em;
+    background-color: #3a475a;
+    color: #ffffff;
     transition: border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
@@ -101,141 +101,141 @@
 .form-group input[type="number"]:focus,
 .form-group select:focus,
 .form-group textarea:focus {
-    border-color: #61dafb; /* Borde de enfoque azul */
+    border-color: #61dafb;
     outline: none;
-    box-shadow: 0 0 0 3px rgba(97, 218, 251, 0.3); /* Sombra de enfoque */
+    box-shadow: 0 0 0 3px rgba(97, 218, 251, 0.3);
 }
 
 /* Estilos para el input de tipo file */
 .form-group input[type="file"] {
     width: 100%;
-    padding: 8px 0; /* Ajuste de padding */
-    color: #e0e0e0; /* Color del texto del input file */
-    appearance: none; /* Quita el estilo por defecto del navegador */
-    background-color: #4a5a70; /* Color de fondo del botón */
-    border: 1px solid #61dafb; /* Borde azul */
+    padding: 8px 0;
+    color: #e0e0e0;
+    appearance: none;
+    background-color: #4a5a70;
+    border: 1px solid #61dafb;
     border-radius: 8px;
     cursor: pointer;
-    font-size: 0.9em; /* Tamaño de fuente ajustado */
-    padding: 6px 10px; /* Ajuste de padding */
+    font-size: 0.9em;
+    padding: 6px 10px;
     transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 .form-group input[type="file"]::-webkit-file-upload-button {
-    background-color: #61dafb; /* Color del botón de selección */
+    background-color: #61dafb;
     color: white;
-    padding: 6px 10px; /* Ajuste de padding */
+    padding: 6px 10px;
     border: none;
     border-radius: 5px;
     cursor: pointer;
-    margin-right: 8px; /* Margen reducido */
+    margin-right: 8px;
     transition: background-color 0.3s ease;
 }
 
 .form-group input[type="file"]::-webkit-file-upload-button:hover {
-    background-color: #4aadc4; /* Tono de azul más oscuro */
+    background-color: #4aadc4;
 }
 
 /* Vista previa de imagen de perfil y logo de empresa */
 .profile-image-preview,
 .company-logo-preview {
-    max-width: 100px; /* Tamaño aún más pequeño */
+    max-width: 100px;
     max-height: 100px;
-    border-radius: 50%; /* Mantener redondo para perfil */
+    border-radius: 50%;
     object-fit: cover;
-    margin-top: 12px; /* Espacio reducido */
-    margin-left: auto; /* Centrar la imagen */
-    margin-right: auto; /* Centrar la imagen */
-    display: block; /* Para que margin: auto funcione */
-    border: 3px solid #61dafb; /* Borde más visible */
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2); /* Sombra ajustada */
+    margin-top: 12px;
+    margin-left: auto;
+    margin-right: auto;
+    display: block;
+    border: 3px solid #61dafb;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 .company-logo-preview {
-    border-radius: 10px; /* Para logos, un poco redondeado pero no circular */
+    border-radius: 10px;
 }
 
 /* Botón para eliminar imagen (si aplica) */
 .btn-remove-image {
-    background-color: #e74c3c; /* Rojo para eliminar */
+    background-color: #e74c3c;
     color: white;
-    padding: 6px 10px; /* Padding ajustado */
+    padding: 6px 10px;
     border: none;
-    border-radius: 8px; /* Usar valor directo */
+    border-radius: 8px;
     cursor: pointer;
-    font-size: 0.8em; /* Tamaño de fuente ajustado */
-    margin-top: 6px; /* Espacio ajustado */
+    font-size: 0.8em;
+    margin-top: 6px;
     transition: background-color 0.2s ease;
 }
 
 .btn-remove-image:hover {
-    background-color: #c0392b; /* Rojo más oscuro al pasar el mouse */
+    background-color: #c0392b;
 }
 
 
 /* Mensajes de error y éxito */
 .error-message {
-    color: #ff6b6b; /* Rojo vibrante para errores */
-    background-color: rgba(255, 107, 107, 0.1); /* Fondo claro para error */
+    color: #ff6b6b;
+    background-color: rgba(255, 107, 107, 0.1);
     border: 1px solid #ff6b6b;
-    padding: 8px 12px; /* Padding ajustado */
+    padding: 8px 12px;
     border-radius: 8px;
-    margin-bottom: 12px; /* Espacio ajustado */
+    margin-bottom: 12px;
     text-align: center;
-    font-size: 0.85em; /* Tamaño de fuente ajustado */
+    font-size: 0.85em;
     font-weight: 500;
 }
 
 .success-message {
-    color: #61db93; /* Verde para éxito */
-    background-color: rgba(97, 219, 147, 0.1); /* Fondo claro para éxito */
+    color: #61db93;
+    background-color: rgba(97, 219, 147, 0.1);
     border: 1px solid #61db93;
-    padding: 8px 12px; /* Padding ajustado */
+    padding: 8px 12px;
     border-radius: 8px;
-    margin-bottom: 12px; /* Espacio ajustado */
+    margin-bottom: 12px;
     text-align: center;
-    font-size: 0.85em; /* Tamaño de fuente ajustado */
+    font-size: 0.85em;
     font-weight: 500;
 }
 
 /* Contenedor de acciones (botones) */
 .modal-actions {
     display: flex;
-    justify-content: center; /* Centrar los botones de acción */
-    gap: 12px; /* Espacio entre botones reducido */
-    margin-top: 20px; /* Espacio superior reducido */
-    padding-top: 12px; /* Padding superior reducido */
-    border-top: 1px solid #4a5a70; /* Línea divisoria */
+    justify-content: center;
+    gap: 12px;
+    margin-top: 20px;
+    padding-top: 12px;
+    border-top: 1px solid #4a5a70;
 }
 
 .modal-actions .btn {
-    padding: 10px 20px; /* Padding de botones reducido */
+    padding: 10px 20px;
     border: none;
-    border-radius: 10px; /* Más redondeado */
+    border-radius: 10px;
     cursor: pointer;
-    font-size: 0.95em; /* Texto de botón ajustado */
-    font-weight: 700; /* Más audaz */
+    font-size: 0.95em;
+    font-weight: 700;
     transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
     letter-spacing: 0.5px;
 }
 
 .modal-actions .btn-primary {
-    background-color: #61dafb; /* Azul brillante como primario */
-    color: #20232a; /* Texto oscuro para contraste */
+    background-color: #61dafb;
+    color: #20232a;
 }
 
 .modal-actions .btn-primary:hover:not(:disabled) {
-    background-color: #4aadc4; /* Tono de azul más oscuro al pasar el ratón */
-    transform: translateY(-2px); /* Efecto de elevación */
+    background-color: #4aadc4;
+    transform: translateY(-2px);
     box-shadow: 0 4px 10px rgba(97, 218, 251, 0.4);
 }
 
 .modal-actions .btn-secondary {
-    background-color: #4a5a70; /* Gris azulado para secundario */
+    background-color: #4a5a70;
     color: #e0e0e0;
 }
 
 .modal-actions .btn-secondary:hover:not(:disabled) {
-    background-color: #3a475a; /* Tono de gris azulado más oscuro */
+    background-color: #3a475a;
     transform: translateY(-2px);
     box-shadow: 0 4px 10px rgba(74, 90, 112, 0.4);
 }
@@ -250,32 +250,35 @@
 /* Botón de cerrar (la "X") */
 .close-button {
     position: absolute;
-    top: 10px; /* Ajustado */
-    right: 10px; /* Ajustado */
+    top: 10px;
+    right: 10px;
     background: none;
     border: none;
-    font-size: 1.8em; /* Más pequeño */
-    color: #e0e0e0; /* Color claro */
+    font-size: 1.8em;
+    color: #e0e0e0;
     cursor: pointer;
-    padding: 4px 6px; /* Ajustado */
-    border-radius: 50%; /* Circular */
+    padding: 4px 6px;
+    border-radius: 50%;
     transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
-    line-height: 1; /* Asegura que la 'x' esté centrada */
+    line-height: 1;
 }
 
 .close-button:hover {
-    background-color: #ff6b6b; /* Rojo al pasar el mouse */
-    color: white; /* Texto blanco al pasar el mouse */
-    transform: rotate(90deg); /* Animación de rotación */
+    background-color: #ff6b6b;
+    color: white;
+    transform: rotate(90deg);
 }
 
+/* ======================================================================== */
+/* --- MEDIA QUERIES PARA RESPONSIVIDAD --- */
+/* ======================================================================== */
 
-/* Media Queries para responsividad */
+/* Estilos para tabletas y pantallas de hasta 768px */
 @media (max-width: 768px) {
     .modal-content {
         width: 95%;
-        padding: 18px; /* Padding ajustado */
-        max-width: 380px; /* Ajuste para pantallas medianas */
+        padding: 18px;
+        max-width: 95%; /* Aseguramos que el ancho se ajuste mejor */
     }
 
     .modal-content h2 {
@@ -298,22 +301,22 @@
     }
 
     .modal-actions {
-        flex-direction: column; /* Apila los botones en pantallas pequeñas */
+        flex-direction: column;
         gap: 8px;
     }
 
     .modal-actions .btn {
-        width: 100%; /* Ocupa el ancho completo */
-        min-width: unset; /* Elimina el ancho mínimo para que se ajuste */
+        width: 100%;
+        min-width: unset;
         padding: 8px;
         font-size: 0.9em;
     }
 }
 
+/* Estilos para móviles pequeños hasta 480px */
 @media (max-width: 480px) {
     .modal-content {
         padding: 15px;
-        max-width: 95%; /* Asegura que no se desborde en pantallas muy pequeñas */
     }
 
     .modal-content h2 {
@@ -333,12 +336,17 @@
 
     .profile-image-preview,
     .company-logo-preview {
-        max-width: 60px; /* Más pequeño en móviles */
+        max-width: 60px;
         max-height: 60px;
     }
 
     .modal-actions .btn {
         font-size: 0.85em;
         padding: 6px;
+    }
+
+    .btn-remove-image {
+        font-size: 0.7em;
+        padding: 4px 8px;
     }
 }

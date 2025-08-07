@@ -28,14 +28,9 @@ export const AnswerFormPage = () => {
   const [submitting, setSubmitting] = useState(false);
   const [userSubmissionsInPeriod, setUserSubmissionsInPeriod] = useState(0);
   const [submissionLimitMessage, setSubmissionLimitMessage] = useState('');
-
-  const canvasRefs = useRef({});
-  const drawingContexts = useRef({});
-  const isDrawingMap = useRef({});
-  const latestAnswers = useRef(answers);
-  useEffect(() => {
-    latestAnswers.current = answers;
-  }, [answers]);
+  
+  // --- [NUEVO] ESTADO PARA GUARDAR EL PERFIL DEL USUARIO Y LA FIRMA ---
+  const [userProfile, setUserProfile] = useState(null);
 
   // --- OPTIMIZATION: Create maps for quick resource lookups ---
   const espaciosMap = useMemo(() => {
@@ -63,6 +58,31 @@ export const AnswerFormPage = () => {
   }, [storeObjetos]);
   // --- END OPTIMIZATION ---
 
+  // --- [NUEVO] EFFECT PARA CARGAR EL PERFIL DEL USUARIO Y SU FIRMA ---
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+        if (!currentUser) return;
+        const token = localStorage.getItem('access_token');
+        if (!token) return;
+
+        try {
+            const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/perfil`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await response.json();
+            if (response.ok && data.usuario) {
+                setUserProfile(data.usuario);
+            } else {
+                console.error("Error fetching user profile:", data.error);
+            }
+        } catch (err) {
+            console.error("Connection error fetching user profile:", err);
+        }
+    };
+
+    fetchUserProfile();
+  }, [currentUser]);
+
 
   // --- MAIN EFFECT TO LOAD FORM DETAILS AND QUESTIONS ---
   useEffect(() => {
@@ -82,41 +102,37 @@ export const AnswerFormPage = () => {
       setLoading(true);
       setError(null);
       try {
-        const [tiposRespuestaRes, espaciosRes, subEspaciosRes, objetosRes] = await Promise.all([
+        const [tiposRespuestaRes, espaciosRes, subEspaciosRes, objetosRes, formDetailsResponse] = await Promise.all([
           fetch(`${import.meta.env.VITE_BACKEND_URL}/api/tipos-respuesta`, { headers: { 'Authorization': `Bearer ${token}` } }),
           fetch(`${import.meta.env.VITE_BACKEND_URL}/api/espacios`, { headers: { 'Authorization': `Bearer ${token}` } }),
           fetch(`${import.meta.env.VITE_BACKEND_URL}/api/subespacios`, { headers: { 'Authorization': `Bearer ${token}` } }),
-          fetch(`${import.meta.env.VITE_BACKEND_URL}/api/objetos`, { headers: { 'Authorization': `Bearer ${token}` } })
+          fetch(`${import.meta.env.VITE_BACKEND_URL}/api/objetos`, { headers: { 'Authorization': `Bearer ${token}` } }),
+          fetch(`${import.meta.env.VITE_BACKEND_URL}/api/formularios/${formId}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          })
         ]);
 
-        const tiposRespuestaData = await tiposRespuestaRes.json();
+        const [tiposRespuestaData, espaciosData, subEspaciosData, objetosData, formDetailsData] = await Promise.all([
+            tiposRespuestaRes.json(),
+            espaciosRes.json(),
+            subEspaciosRes.json(),
+            objetosRes.json(),
+            formDetailsResponse.json()
+        ]);
+        
         if (tiposRespuestaRes.ok && tiposRespuestaData.tipos_respuesta) {
             dispatch({ type: 'SET_TIPOS_RESPUESTA', payload: tiposRespuestaData.tipos_respuesta });
         }
-
-        const espaciosData = await espaciosRes.json();
         if (espaciosRes.ok && espaciosData.espacios) {
             dispatch({ type: 'SET_ESPACIOS', payload: espaciosData.espacios });
-            console.log("[DEPURACIÓN] Datos de Espacios cargados:", espaciosData.espacios);
         }
-
-        const subEspaciosData = await subEspaciosRes.json();
         if (subEspaciosRes.ok && subEspaciosData.sub_espacios) {
             dispatch({ type: 'SET_SUBESPACIOS', payload: subEspaciosData.sub_espacios });
-            console.log("[DEPURACIÓN] Datos de Sub-Espacios cargados:", subEspaciosData.sub_espacios);
         }
-
-        const objetosData = await objetosRes.json();
         if (objetosRes.ok && objetosData.objetos) {
             dispatch({ type: 'SET_OBJETOS', payload: objetosData.objetos });
-            console.log("[DEPURACIÓN] Datos de Objetos cargados:", objetosData.objetos);
         }
-
-        const formDetailsResponse = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/formularios/${formId}`, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        const formDetailsData = await formDetailsResponse.json();
-
+        
         if (!formDetailsResponse.ok || !formDetailsData.formulario) {
           setError(formDetailsData.error || 'Error loading form details.');
           setFormDetails(null);
@@ -156,6 +172,11 @@ export const AnswerFormPage = () => {
                 case 'seleccion_multiple':
                 case 'seleccion_recursos': initialAnswers[q.id_pregunta] = []; break;
                 case 'dibujo': initialAnswers[q.id_pregunta] = ''; break;
+                // --- [NUEVO] INICIALIZACIÓN PARA EL TIPO 'firma' ---
+                // Aquí usamos el perfil del usuario para obtener la URL de la firma si existe
+                case 'firma': 
+                    initialAnswers[q.id_pregunta] = userProfile?.firma_digital_url || ''; 
+                    break;
                 default: initialAnswers[q.id_pregunta] = '';
               }
             });
@@ -174,10 +195,13 @@ export const AnswerFormPage = () => {
       }
     };
     
-    if (formId && currentUser) {
+    // Solo cargamos los datos del formulario si tenemos el perfil del usuario,
+    // ya que la firma es parte del estado inicial.
+    if (formId && currentUser && userProfile) {
       fetchData();
     }
-  }, [formId, isLoggedIn, currentUser, navigate, dispatch]);
+  }, [formId, isLoggedIn, currentUser, navigate, dispatch, userProfile]);
+
 
   useEffect(() => {
     const fetchUserSubmissionCount = async () => {
@@ -228,7 +252,8 @@ export const AnswerFormPage = () => {
         newAnswers[questionId] = value === 'true';
       } else if (type === 'numerico') {
         newAnswers[questionId] = value;
-      } else if (type === 'dibujo') {
+      } else if (type === 'dibujo' || type === 'firma') {
+        // Para 'dibujo' y 'firma' guardamos directamente el valor (URL o datos)
         newAnswers[questionId] = value;
       } else {
         newAnswers[questionId] = value;
@@ -330,130 +355,6 @@ export const AnswerFormPage = () => {
     return recursosFiltrados;
   }, [getTipoRespuestaNombre, currentUser, storeEspacios, storeSubEspacios, storeObjetos, espaciosMap, subEspaciosMap]);
 
-  const getPointerPos = useCallback((e, canvas) => {
-    const rect = canvas.getBoundingClientRect();
-    let clientX, clientY;
-    if (e.touches && e.touches.length > 0) {
-      clientX = e.touches[0].clientX;
-      clientY = e.touches[0].clientY;
-    } else {
-      clientX = e.clientX;
-      clientY = e.clientY;
-    }
-    return {
-      x: (clientX - rect.left) * (canvas.width / rect.width),
-      y: (clientY - rect.top) * (canvas.height / rect.height)
-    };
-  }, []);
-
-  const startDrawing = useCallback((e, questionId) => {
-    e.preventDefault();
-    const ctx = drawingContexts.current[questionId];
-    if (!ctx) return;
-    isDrawingMap.current[questionId] = true;
-    const canvas = canvasRefs.current[questionId];
-    const { x, y } = getPointerPos(e, canvas);
-    ctx.beginPath();
-    ctx.moveTo(x, y);
-  }, [getPointerPos]);
-
-  const draw = useCallback((e, questionId) => {
-    if (!isDrawingMap.current[questionId]) return;
-    e.preventDefault();
-    const ctx = drawingContexts.current[questionId];
-    if (!ctx) return;
-    const canvas = canvasRefs.current[questionId];
-    const { x, y } = getPointerPos(e, canvas);
-    ctx.lineTo(x, y);
-    ctx.stroke();
-  }, [getPointerPos]);
-
-  const stopDrawing = useCallback((questionId) => {
-    const ctx = drawingContexts.current[questionId];
-    if (!ctx) return;
-    isDrawingMap.current[questionId] = false;
-    ctx.closePath();
-    const canvas = canvasRefs.current[questionId];
-    const signatureData = canvas.toDataURL('image/png');
-    handleAnswerChange(questionId, signatureData, 'dibujo');
-  }, [handleAnswerChange]);
-
-  const clearCanvas = useCallback((questionId) => {
-    const ctx = drawingContexts.current[questionId];
-    if (!ctx) return;
-    const canvas = canvasRefs.current[questionId];
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    handleAnswerChange(questionId, '', 'dibujo');
-  }, [handleAnswerChange]);
-  
-  useEffect(() => {
-    if (!formDetails || !formDetails.preguntas || !Array.isArray(allTiposRespuesta) || allTiposRespuesta.length === 0) return;
-    const drawingQuestions = formDetails.preguntas.filter(q => getTipoRespuestaNombre(q.tipo_respuesta_id) === 'dibujo');
-    const cleanupFunctions = [];
-
-    drawingQuestions.forEach(question => {
-      const canvas = canvasRefs.current[question.id_pregunta];
-      if (!canvas) return;
-      const context = canvas.getContext('2d');
-      context.lineWidth = 2;
-      context.lineCap = 'round';
-      context.strokeStyle = '#000000';
-      drawingContexts.current[question.id_pregunta] = context;
-
-      const initialSignature = latestAnswers.current[question.id_pregunta];
-      if (initialSignature && initialSignature !== '') {
-        const img = new Image();
-        img.onload = () => {
-          const currentCanvasData = canvas.toDataURL('image/png');
-          if (currentCanvasData !== initialSignature) {
-            context.clearRect(0, 0, canvas.width, canvas.height);
-            context.drawImage(img, 0, 0, canvas.width, canvas.height);
-          }
-        };
-        img.src = initialSignature;
-      } else {
-        context.clearRect(0, 0, canvas.width, canvas.height);
-      }
-
-      const start = (e) => startDrawing(e, question.id_pregunta);
-      const move = (e) => draw(e, question.id_pregunta);
-      const end = () => stopDrawing(question.id_pregunta);
-
-      canvas.addEventListener('mousedown', start);
-      canvas.addEventListener('mousemove', move);
-      canvas.addEventListener('mouseup', end);
-      canvas.addEventListener('mouseout', end);
-
-      canvas.addEventListener('touchstart', start, { passive: false });
-      canvas.addEventListener('touchmove', move, { passive: false });
-      canvas.addEventListener('touchend', end);
-      canvas.addEventListener('touchcancel', end);
-
-      cleanupFunctions.push(() => {
-        canvas.removeEventListener('mousedown', start);
-        canvas.removeEventListener('mousemove', move);
-        canvas.removeEventListener('mouseup', end);
-        canvas.removeEventListener('mouseout', end);
-        canvas.removeEventListener('touchstart', start);
-        canvas.removeEventListener('touchmove', move);
-        canvas.removeEventListener('touchend', end);
-        canvas.removeEventListener('touchcancel', end);
-      });
-    });
-
-    return () => {
-      cleanupFunctions.forEach(cleanup => cleanup());
-    };
-  }, [
-    formDetails,
-    allTiposRespuesta,
-    getPointerPos,
-    startDrawing,
-    draw,
-    stopDrawing,
-    clearCanvas
-  ]);
-
   const handleSubmitForm = async (e) => {
     e.preventDefault();
     setSubmitting(true);
@@ -477,7 +378,7 @@ export const AnswerFormPage = () => {
     const missingAnswers = formDetails.preguntas.filter(q => {
       const tipoNombre = getTipoRespuestaNombre(q.tipo_respuesta_id);
       const answer = answers[q.id_pregunta];
-      if (tipoNombre === 'texto' || tipoNombre === 'dibujo') {
+      if (tipoNombre === 'texto' || tipoNombre === 'dibujo' || tipoNombre === 'firma') {
         return !answer || String(answer).trim() === '';
       } else if (tipoNombre === 'numerico') {
         return !answer || isNaN(parseFloat(answer));
@@ -499,6 +400,7 @@ export const AnswerFormPage = () => {
       const tipoNombre = getTipoRespuestaNombre(q.tipo_respuesta_id);
       let valorRespuesta = answers[q.id_pregunta];
 
+      // La firma se guarda como un string en valor_texto
       if (tipoNombre === 'numerico') {
         valorRespuesta = parseFloat(valorRespuesta);
         if (isNaN(valorRespuesta)) valorRespuesta = null;
@@ -510,7 +412,7 @@ export const AnswerFormPage = () => {
 
       return {
         pregunta_id: q.id_pregunta,
-        valor_texto: (tipoNombre === 'texto' || tipoNombre === 'dibujo' || tipoNombre === 'seleccion_unica') ? valorRespuesta : null,
+        valor_texto: (tipoNombre === 'texto' || tipoNombre === 'dibujo' || tipoNombre === 'seleccion_unica' || tipoNombre === 'firma') ? valorRespuesta : null,
         valor_booleano: (tipoNombre === 'booleano') ? valorRespuesta : null,
         valor_numerico: (tipoNombre === 'numerico') ? valorRespuesta : null,
         valores_multiples_json: (tipoNombre === 'seleccion_multiple' || tipoNombre === 'seleccion_recursos') ? valorRespuesta : null,
@@ -624,6 +526,13 @@ export const AnswerFormPage = () => {
               .map(question => {
                 const tipoNombre = getTipoRespuestaNombre(question.tipo_respuesta_id);
                 const currentAnswer = answers[question.id_pregunta];
+                
+                // [DEBBUGING]: Log para entender por qué las opciones no se cargan
+                if (tipoNombre === 'seleccion_unica' || tipoNombre === 'seleccion_multiple') {
+                    console.log(`[DEPURACIÓN - OPCIONES DE RESPUESTA] Pregunta ID: ${question.id_pregunta}, Título: "${question.texto_pregunta}"`);
+                    console.log('   -> Datos de opciones recibidos:', question.opciones_respuesta_json);
+                    console.log('   -> Tipo de dato:', Array.isArray(question.opciones_respuesta_json) ? 'Array' : typeof question.opciones_respuesta_json);
+                }
 
                 return (
                   <div key={question.id_pregunta} className="question-card">
@@ -652,7 +561,7 @@ export const AnswerFormPage = () => {
                       )}
                       {(tipoNombre === 'seleccion_unica' || tipoNombre === 'seleccion_multiple') && (
                         <div className="options-group">
-                          {question.opciones_respuesta_json && question.opciones_respuesta_json.length > 0 ? (
+                          {question.opciones_respuesta_json && Array.isArray(question.opciones_respuesta_json) && question.opciones_respuesta_json.length > 0 ? (
                             question.opciones_respuesta_json.map((option) => (
                               <label key={option} className="option-item">
                                 <input type={tipoNombre === 'seleccion_unica' ? 'radio' : 'checkbox'} name={`question-${question.id_pregunta}`} value={option} checked={tipoNombre === 'seleccion_unica' ? currentAnswer === option : (currentAnswer || []).includes(option)} onChange={(e) => handleAnswerChange(question.id_pregunta, e.target.value, tipoNombre)} />
@@ -680,6 +589,20 @@ export const AnswerFormPage = () => {
                             handleAnswerChange={handleAnswerChange}
                           />
                       )}
+                      {/* --- [NUEVO] LÓGICA PARA VISUALIZAR LA FIRMA --- */}
+                      {tipoNombre === 'firma' && (
+                        <div className="signature-display-container">
+                          {currentAnswer ? (
+                            <>
+                              <img src={currentAnswer} alt="Firma del usuario" className="user-signature-image" />
+                              <p className="signature-info">Tu firma se ha cargado automáticamente.</p>
+                            </>
+                          ) : (
+                            <p className="no-signature-message">No se encontró una firma para tu perfil.</p>
+                          )}
+                        </div>
+                      )}
+                      {/* --- FIN DE LA LÓGICA PARA LA FIRMA --- */}
                     </div>
                   </div>
                 );

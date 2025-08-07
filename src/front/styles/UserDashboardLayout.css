@@ -1,6 +1,10 @@
-/* src/styles/UserDashboardLayout.css */
+/* src/styles/UserDashboardLayout.css - Estilos optimizados para responsividad */
 
 /* --- LAYOUT PARA ADMIN Y OWNER --- */
+/*
+  Define un layout de dos columnas para pantallas grandes.
+  grid-template-areas asigna cada tarjeta a una posición específica.
+*/
 .dashboard-grid.admin-layout {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
@@ -17,6 +21,10 @@
 /* ... puedes añadir más aquí si los usas en el admin ... */
 
 /* --- LAYOUT PARA USUARIO REGULAR --- */
+/*
+  Define un layout de dos columnas similar al de admin, pero con
+  diferentes tarjetas.
+*/
 .user-layout-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
@@ -37,8 +45,8 @@
 
 /* --- ESTILOS COMUNES DE ÁREAS (aplicables a ambos layouts) --- */
 /*
-  Estas reglas son las que aseguran que las tarjetas comunes (profile, calendar, occupation)
-  se ubiquen correctamente en ambos grids sin romper nada.
+  Estas reglas aseguran que las tarjetas comunes (profile, calendar, occupation)
+  se ubiquen correctamente en ambos grids.
 */
 .profile-card, .user-profile-card { grid-area: profile; }
 .calendar-card, .user-calendar-card { grid-area: calendar; }
@@ -48,15 +56,25 @@
 
 
 /* --- MEDIA QUERIES PARA RESPONSIVIDAD --- */
+/*
+  Este es el breakpoint clave para tabletas y dispositivos móviles.
+  Por debajo de 991px, el layout de grid se colapsa a una sola columna
+  para que las tarjetas se apilen verticalmente.
+*/
 @media (max-width: 991px) {
     /* En pantallas pequeñas, ambos layouts se vuelven de 1 columna */
     .dashboard-grid.admin-layout,
     .user-layout-grid {
+        /* Fuerza una sola columna con el ancho completo */
         grid-template-columns: 1fr;
-        grid-template-areas: none; /* Deshabilita el grid de áreas */
+        /* Deshabilita el layout de áreas para que las tarjetas se apilen */
+        grid-template-areas: none;
     }
 
-    /* Las tarjetas ocupan el ancho completo */
+    /*
+      Deshabilita la asignación de área y asegura que cada tarjeta ocupe
+      el ancho completo de la columna única.
+    */
     .profile-card,
     .user-profile-card,
     .calendar-card,
@@ -65,7 +83,8 @@
     .occupation-info-card,
     .user-occupation-info-card,
     .user-forms-to-fill-card,
-    .user-upcoming-events-card {
+    .user-upcoming-events-card,
+    .owner-companies-card { /* Añadido owner-companies-card para consistencia */
         grid-area: unset;
         grid-column: span 1;
     }

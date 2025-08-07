@@ -1,4 +1,3 @@
-// src/components/UsersProfile.jsx
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import useGlobalReducer from '../hooks/useGlobalReducer';
@@ -647,9 +646,9 @@ export const UsersProfile = () => {
             )}
             
             {/* Modales fuera del render condicional */}
-            {showEditUserModal && (
+            {showEditUserModal && currentUser && ( // <-- ¡Esta es la línea corregida!
                 <EditUserProfileModal 
-                    user={currentUser}
+                    currentUser={currentUser}
                     onClose={handleCloseEditUserModal} 
                     onUpdateSuccess={handleUserUpdateSuccess} 
                 />

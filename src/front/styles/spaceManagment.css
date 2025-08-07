@@ -1,31 +1,30 @@
 /* Contenedor principal del contenido de la página de gestión de espacios */
 .sm-content-area {
     padding: 20px;
-    background-color: var(--background-body); /* Usar variable global */
-    border-radius: 8px; /* Usar valor fijo o variable global si existe */
-    box-shadow: var(--shadow-light); /* Usar variable global */
+    background-color: var(--background-body);
+    border-radius: 8px;
+    box-shadow: var(--shadow-light);
     flex-grow: 1;
     display: flex;
     flex-direction: column;
-    gap: 25px; /* Espacio entre las secciones */
+    gap: 25px;
 }
 
-/* Header de la página (ya definido en dashboard.css, pero aquí se asegura el estilo) */
-/* main-header y headline son clases globales del dashboard, no las prefijo */
+/* Header de la página */
 .main-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     padding: 20px;
-    background-color: var(--card-background); /* Usar variable global */
-    border-bottom: 1px solid var(--border-color-light); /* Usar variable global */
-    border-radius: 8px; /* Usar valor fijo o variable global si existe */
+    background-color: var(--card-background);
+    border-bottom: 1px solid var(--border-color-light);
+    border-radius: 8px;
     margin-bottom: 20px;
-    box-shadow: var(--shadow-light); /* Usar variable global */
+    box-shadow: var(--shadow-light);
 }
 
 .main-header .headline {
-    color: var(--primary-dark); /* Usar variable global */
+    color: var(--primary-dark);
     font-size: 2em;
     margin: 0;
     font-weight: 700;
@@ -39,22 +38,22 @@
 
 /* Botón de volver a perfil */
 .sm-back-button {
-    background-color: var(--secondary-accent); /* Usar variable global */
-    color: var(--text-light); /* Usar variable global */
+    background-color: var(--secondary-accent);
+    color: var(--text-light);
     border: none;
     padding: 10px 18px;
-    border-radius: 8px; /* Usar valor fijo o variable global si existe */
+    border-radius: 8px;
     cursor: pointer;
     font-size: 0.95em;
     display: flex;
     align-items: center;
     gap: 8px;
     transition: background-color 0.3s ease, transform 0.2s ease;
-    box-shadow: var(--shadow-light); /* Usar variable global */
+    box-shadow: var(--shadow-light);
 }
 
 .sm-back-button:hover {
-    background-color: #2980b9; /* Azul oscuro - mantener este valor si no tienes una variable específica para el hover de secondary-accent */
+    background-color: #2980b9;
     transform: translateY(-2px);
 }
 
@@ -65,33 +64,33 @@
 
 .sm-alert {
     padding: 12px 20px;
-    border-radius: 8px; /* Usar valor fijo o variable global si existe */
+    border-radius: 8px;
     margin-bottom: 12px;
     font-size: 0.95em;
     display: flex;
     align-items: center;
     gap: 10px;
-    box-shadow: var(--shadow-light); /* Usar variable global */
+    box-shadow: var(--shadow-light);
 }
 
 .sm-alert-danger {
-    background-color: #ffe6e6; /* Rojo coral muy claro - si no tienes una variable para esto */
-    color: var(--error-color); /* Usar variable global */
-    border: 1px solid var(--error-color); /* Usar variable global */
+    background-color: #ffe6e6;
+    color: var(--error-color);
+    border: 1px solid var(--error-color);
 }
 
 .sm-alert-success {
-    background-color: #e6ffe6; /* Verde esmeralda muy claro - si no tienes una variable para esto */
-    color: var(--secondary-accent); /* Usar variable global (asumiendo que es tu color de éxito) */
-    border: 1px solid var(--secondary-accent); /* Usar variable global */
+    background-color: #e6ffe6;
+    color: var(--secondary-accent);
+    border: 1px solid var(--secondary-accent);
 }
 
 /* Secciones de formularios y tablas */
 .sm-section {
-    background-color: var(--card-background); /* Usar variable global */
+    background-color: var(--card-background);
     padding: 25px;
-    border-radius: 12px; /* Usar valor fijo o variable global si existe */
-    box-shadow: var(--shadow-light); /* Usar variable global */
+    border-radius: 12px;
+    box-shadow: var(--shadow-light);
     margin-bottom: 0;
     border: none;
 }
@@ -102,11 +101,11 @@
     align-items: center;
     margin-bottom: 20px;
     padding-bottom: 15px;
-    border-bottom: 1px solid var(--border-color-light); /* Usar variable global */
+    border-bottom: 1px solid var(--border-color-light);
 }
 
 .sm-section-header h2 {
-    color: var(--primary-dark); /* Usar variable global */
+    color: var(--primary-dark);
     font-size: 1.7em;
     margin: 0;
     font-weight: 600;
@@ -114,19 +113,19 @@
 
 /* Botón de alternar formularios */
 .sm-toggle-button {
-    background-color: var(--info-color); /* Usar variable global */
-    color: var(--text-light); /* Usar variable global */
+    background-color: var(--info-color);
+    color: var(--text-light);
     border: none;
     padding: 9px 16px;
-    border-radius: 8px; /* Usar valor fijo o variable global si existe */
+    border-radius: 8px;
     cursor: pointer;
     font-size: 0.9em;
     transition: background-color 0.3s ease, transform 0.2s ease;
-    box-shadow: var(--shadow-light); /* Usar variable global */
+    box-shadow: var(--shadow-light);
 }
 
 .sm-toggle-button:hover {
-    background-color: #e67e22; /* Naranja oscuro - mantener este valor si no tienes una variable específica para el hover de info-color */
+    background-color: #e67e22;
     transform: translateY(-2px);
 }
 
@@ -147,7 +146,7 @@
     display: block;
     margin-bottom: 8px;
     font-weight: 600;
-    color: var(--text-dark); /* Usar variable global */
+    color: var(--text-dark);
     font-size: 0.95em;
 }
 
@@ -156,11 +155,11 @@
 .sm-form-group input[type="password"],
 .sm-form-group input[type="number"],
 .sm-form-group select,
-.sm-textarea { /* Clase específica para textarea */
+.sm-textarea {
     width: 100%;
     padding: 12px;
-    border: 1px solid var(--border-color-light); /* Usar variable global */
-    border-radius: 4px; /* Usar valor fijo o variable global si existe */
+    border: 1px solid var(--border-color-light);
+    border-radius: 4px;
     font-size: 1em;
     box-sizing: border-box;
     transition: border-color 0.3s ease, box-shadow 0.3s ease;
@@ -168,61 +167,61 @@
 
 /* Aumentar la altura del textarea */
 .sm-textarea {
-    min-height: 100px; /* Altura mínima para la descripción */
-    resize: vertical; /* Permite redimensionar verticalmente */
+    min-height: 100px;
+    resize: vertical;
 }
 
 .sm-form-group input:focus,
 .sm-form-group select:focus,
-.sm-textarea:focus { /* Asegura que el textarea también tenga el efecto focus */
-    border-color: var(--secondary-accent); /* Usar variable global */
+.sm-textarea:focus {
+    border-color: var(--secondary-accent);
     outline: none;
-    box-shadow: 0 0 0 3px rgba(26, 188, 156, 0.15); /* Usar el RGB de secondary-accent si no tienes una variable para el shadow */
+    box-shadow: 0 0 0 3px rgba(26, 188, 156, 0.15);
 }
 
 .sm-required-star {
-    color: var(--error-color); /* Usar variable global */
+    color: var(--error-color);
     margin-left: 4px;
 }
 
 /* Clases para validación de formularios */
 .sm-is-invalid {
-    border-color: var(--error-color) !important; /* Usar variable global */
+    border-color: var(--error-color) !important;
 }
 
 .sm-invalid-feedback {
-    color: var(--error-color); /* Usar variable global */
+    color: var(--error-color);
     font-size: 0.85em;
     margin-top: 6px;
 }
 
 /* Botón de submit */
 .sm-submit-button {
-    background-color: var(--secondary-accent); /* Usar variable global */
-    color: var(--text-light); /* Usar variable global */
+    background-color: var(--secondary-accent);
+    color: var(--text-light);
     border: none;
     padding: 14px 25px;
-    border-radius: 8px; /* Usar valor fijo o variable global si existe */
+    border-radius: 8px;
     cursor: pointer;
     font-size: 1.1em;
     font-weight: 700;
     transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.2s ease;
     margin-top: 15px;
     width: auto;
-    grid-column: 1 / -1; /* Ocupa todo el ancho disponible */
-    justify-self: start; /* Alinea a la izquierda */
-    box-shadow: var(--shadow-light); /* Usar variable global */
+    grid-column: 1 / -1;
+    justify-self: start;
+    box-shadow: var(--shadow-light);
 }
 
 .sm-submit-button:hover:not(:disabled) {
-    background-color: #16a085; /* Verde turquesa oscuro - si no tienes una variable para el hover de secondary-accent */
+    background-color: #16a085;
     transform: translateY(-3px);
-    box-shadow: rgba(0, 0, 0, 0.15) 0px 4px 8px; /* Sombra más pronunciada */
+    box-shadow: rgba(0, 0, 0, 0.15) 0px 4px 8px;
 }
 
 .sm-submit-button:disabled {
-    background-color: var(--border-color-light); /* Usar variable global para un gris claro */
-    color: var(--text-dark); /* Color de texto para deshabilitado */
+    background-color: var(--border-color-light);
+    color: var(--text-dark);
     cursor: not-allowed;
     opacity: 0.8;
     transform: none;
@@ -231,45 +230,44 @@
 
 /* Contenedor para los botones de acción del formulario */
 .sm-form-actions {
-    grid-column: 1 / -1; /* Ocupa todas las columnas disponibles en el grid */
+    grid-column: 1 / -1;
     display: flex;
-    justify-content: flex-start; /* Alinea los botones a la izquierda */
-    gap: 15px; /* Espacio entre los botones */
+    justify-content: flex-start;
+    gap: 15px;
     margin-top: 10px;
-    flex-wrap: wrap; /* Permite que los botones se envuelvan en pantallas pequeñas */
+    flex-wrap: wrap;
 }
 
 /* Botón de cancelar edición */
 .sm-button-cancel {
-    background-color: var(--primary-dark); /* Usar variable global */
-    color: var(--text-light); /* Usar variable global */
+    background-color: var(--primary-dark);
+    color: var(--text-light);
     border: none;
     padding: 14px 25px;
-    border-radius: 8px; /* Usar valor fijo o variable global si existe */
+    border-radius: 8px;
     font-size: 1.1em;
     font-weight: 600;
     transition: background-color 0.3s ease, transform 0.2s ease;
-    box-shadow: var(--shadow-light); /* Usar variable global */
+    box-shadow: var(--shadow-light);
 }
 
 .sm-button-cancel:hover {
-    background-color: #34495e; /* Azul ligeramente más claro para hover */
+    background-color: #34495e;
     transform: translateY(-2px);
 }
 
 /* Clase para que un campo ocupe todo el ancho en el grid */
 .sm-full-width {
-    grid-column: 1 / -1; /* Ocupa todas las columnas disponibles */
+    grid-column: 1 / -1;
 }
-
 
 /* --- Estilos de Tablas --- */
 .sm-table-container {
     overflow-x: auto;
     margin-top: 20px;
-    border-radius: 8px; /* Usar valor fijo o variable global si existe */
-    box-shadow: var(--shadow-light); /* Usar variable global */
-    background-color: var(--card-background); /* Usar variable global */
+    border-radius: 8px;
+    box-shadow: var(--shadow-light);
+    background-color: var(--card-background);
 }
 
 .sm-table {
@@ -282,34 +280,34 @@
 .sm-table td {
     padding: 12px 15px;
     text-align: left;
-    border-bottom: 1px solid var(--border-color-light); /* Usar variable global */
+    border-bottom: 1px solid var(--border-color-light);
 }
 
 .sm-table th {
-    background-color: var(--primary-dark); /* Usar variable global */
-    color: var(--text-light); /* Usar variable global */
+    background-color: var(--primary-dark);
+    color: var(--text-light);
     font-weight: 600;
     text-transform: uppercase;
     font-size: 0.9em;
 }
 
 .sm-table tbody tr:nth-child(even) {
-    background-color: var(--background-body); /* Usar variable global */
+    background-color: var(--background-body);
 }
 
 .sm-table tbody tr:hover {
-    background-color: #f0f8ff; /* Azul muy claro para hover, si no hay variable global específica */
+    background-color: #f0f8ff;
 }
 
 .sm-table td {
-    color: var(--text-dark); /* Usar variable global */
+    color: var(--text-dark);
     font-size: 0.95em;
 }
 
 /* Botones de acción dentro de las tablas */
 .sm-table td .sm-button {
     padding: 8px 12px;
-    border-radius: 4px; /* Usar valor fijo o variable global si existe */
+    border-radius: 4px;
     font-size: 0.85em;
     cursor: pointer;
     transition: background-color 0.3s ease, transform 0.2s ease;
@@ -320,34 +318,34 @@
 }
 
 .sm-button-edit {
-    background-color: var(--info-color); /* Usar variable global */
-    color: var(--text-light); /* Usar variable global */
+    background-color: var(--info-color);
+    color: var(--text-light);
 }
 
 .sm-button-edit:hover {
-    background-color: #e67e22; /* Naranja oscuro - si no tienes una variable específica para el hover */
+    background-color: #e67e22;
     transform: translateY(-1px);
 }
 
 .sm-button-delete {
-    background-color: var(--error-color); /* Usar variable global */
-    color: var(--text-light); /* Usar variable global */
+    background-color: var(--error-color);
+    color: var(--text-light);
 }
 
 .sm-button-delete:hover {
-    background-color: #c0392b; /* Rojo más oscuro - si no tienes una variable específica para el hover */
+    background-color: #c0392b;
     transform: translateY(-1px);
 }
 
 /* Mensaje de no hay datos */
 .sm-no-data-message {
     text-align: center;
-    color: var(--text-color-medium); /* Usar variable global */
+    color: var(--text-color-medium);
     padding: 20px;
     font-style: italic;
-    background-color: var(--card-background); /* Usar variable global */
-    border-radius: 8px; /* Usar valor fijo o variable global si existe */
-    box-shadow: var(--shadow-light); /* Usar variable global */
+    background-color: var(--card-background);
+    border-radius: 8px;
+    box-shadow: var(--shadow-light);
     margin-top: 20px;
 }
 
@@ -355,42 +353,48 @@
 .sm-select {
     width: 100%;
     padding: 12px;
-    border: 1px solid var(--border-color-light); /* Usar variable global */
-    border-radius: 4px; /* Usar valor fijo o variable global si existe */
+    border: 1px solid var(--border-color-light);
+    border-radius: 4px;
     font-size: 1em;
     box-sizing: border-box;
-    background-color: var(--card-background); /* Usar variable global */
+    background-color: var(--card-background);
     appearance: none;
-    background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%237f8c8d%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-6.5%200-13%205.4-13%2013s5.4%2013%2013%2013h255.2c6.5%200%2013-5.4%2013-13%200-.7-.2-1.5-.4-2.2zM287%20223a17.6%2017.6%200%200%200-13-5.4H18.4c-6.5%200-13%205.4-13%2013s5.4%2013%2013%2013h255.2c6.5%200%2013-5.4%2013-13%200-.7-.2-1.5-.4-2.2z%22%2F%3E%3C%2Fsvg%3E'); /* Flecha personalizada, color ajustado a text-color-medium */
+    background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%237f8c8d%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-6.5%200-13%205.4-13%2013s5.4%2013%2013%2013h255.2c6.5%200%2013-5.4%2013-13%200-.7-.2-1.5-.4-2.2zM287%20223a17.6%2017.6%200%200%200-13-5.4H18.4c-6.5%200-13%205.4-13%2013s5.4%2013%2013%2013h255.2c6.5%200%2013-5.4%2013-13%200-.7-.2-1.5-.4-2.2z%22%2F%3E%3C%2Fsvg%3E');
     background-repeat: no-repeat;
     background-position: right 10px center;
     background-size: 12px auto;
 }
 
-/* Media Queries para responsividad */
+/* ======================================================================== */
+/* --- MEDIA QUERIES PARA RESPONSIVIDAD --- */
+/* ======================================================================== */
+
+/* Estilos para tabletas y pantallas de hasta 992px */
 @media (max-width: 992px) {
     .main-header .headline {
         font-size: 1.8em;
     }
     .sm-section-header h2 {
-        font-size: 1.4em;
+        font-size: 1.5em; /* Ajuste para mejor legibilidad */
     }
     .sm-form {
-        grid-template-columns: 1fr;
+        grid-template-columns: 1fr; /* Forzar a una sola columna */
     }
-    .sm-submit-button, .sm-form-actions {
-        grid-column: span 1;
+    .sm-submit-button,
+    .sm-form-actions {
+        grid-column: 1 / -1; /* Ocupa todo el ancho */
         width: 100%;
-        justify-content: center;
+        justify-content: center; /* Centrar los botones para mejor estética */
     }
     .sm-button-cancel {
         margin-left: 0;
     }
     .sm-table {
-        min-width: 0;
+        min-width: 0; /* Permitir que la tabla se encoja para ser responsive */
     }
 }
 
+/* Estilos para tabletas en vertical y pantallas de hasta 768px */
 @media (max-width: 768px) {
     .sm-content-area {
         padding: 15px;
@@ -431,10 +435,19 @@
     .sm-form-group select,
     .sm-textarea {
         padding: 10px;
+        font-size: 0.95em;
     }
     .sm-submit-button {
         padding: 12px 20px;
         font-size: 1em;
+    }
+    .sm-form-actions {
+        flex-direction: column; /* Apilar botones en móviles */
+        gap: 10px;
+    }
+    .sm-button-cancel {
+        width: 100%;
+        text-align: center;
     }
     .sm-table th,
     .sm-table td {
@@ -449,11 +462,38 @@
     }
 }
 
+/* Estilos para móviles pequeños hasta 480px */
 @media (max-width: 480px) {
+    .sm-content-area {
+        gap: 15px;
+    }
+    .main-header {
+        gap: 10px;
+    }
     .main-header .headline {
         font-size: 1.4em;
+    }
+    .sm-section {
+        padding: 15px;
     }
     .sm-section-header h2 {
         font-size: 1.2em;
     }
+    .sm-form {
+        gap: 15px;
+    }
+    .sm-form-group label {
+        font-size: 0.9em;
+    }
+    .sm-form-group input,
+    .sm-form-group select,
+    .sm-textarea {
+        font-size: 0.9em;
+    }
+    .sm-submit-button,
+    .sm-button-cancel {
+        padding: 10px 15px;
+        font-size: 0.9em;
+    }
 }
+

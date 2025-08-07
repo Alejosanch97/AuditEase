@@ -257,6 +257,13 @@ def verificar_token():
 @api.route('/perfil', methods=['GET', 'PUT'])
 @jwt_required()
 def gestionar_perfil():
+    """
+    Gestiona la obtención y actualización del perfil de usuario.
+
+    El método GET ahora devuelve la información del usuario, incluyendo
+    los campos 'firma_perfil' y 'ultima_entrega', que deben estar
+    disponibles en el método serialize() del modelo Usuario.
+    """
     current_user_id = get_jwt_identity()
     usuario = Usuario.query.get(int(current_user_id))
 
@@ -264,11 +271,12 @@ def gestionar_perfil():
         return jsonify({"error": "Usuario no encontrado"}), 404
 
     if request.method == 'GET':
+        # La información de la firma y última entrega se obtiene
+        # automáticamente a través del método serialize()
         return jsonify({"usuario": usuario.serialize()}), 200
 
     elif request.method == 'PUT':
         try:
-            # MODIFICADO: Ahora espera JSON para los datos de texto del perfil
             data = request.get_json()
 
             nombre_completo = data.get('nombre_completo')
@@ -276,6 +284,7 @@ def gestionar_perfil():
             telefono_personal = data.get('telefono_personal')
             cargo = data.get('cargo')
 
+            # Imprime los datos recibidos para depuración
             print(f"DEBUG_UPDATE_PROFILE: Datos de JSON recibidos: {data}")
 
             if nombre_completo:
@@ -283,6 +292,8 @@ def gestionar_perfil():
 
             if email:
                 new_email = email.strip().lower()
+                # Valida el nuevo email
+                # Esta función validate_email debe estar definida en tu código
                 if not validate_email(new_email):
                     return jsonify({"error": "El formato del email no es válido."}), 400
                 if new_email != usuario.email:
@@ -296,9 +307,8 @@ def gestionar_perfil():
             if cargo is not None:
                 usuario.cargo = cargo.strip() if cargo else None
 
-            # IMPORTANTE: La lógica de 'imagen_perfil' ya NO se maneja aquí.
-            # Se ha movido a la nueva ruta /perfil/imagen-perfil
-            # if 'imagen_perfil' in request.files: ... (ESTO SE ELIMINA DE AQUÍ)
+            # IMPORTANTE: La lógica para 'imagen_perfil' y 'firma_perfil'
+            # se manejan en rutas separadas, por lo que se elimina de aquí.
 
             db.session.commit()
             return jsonify({"message": "Perfil actualizado exitosamente", "usuario": usuario.serialize()}), 200
@@ -307,7 +317,7 @@ def gestionar_perfil():
             db.session.rollback()
             print(f"Error interno del servidor al actualizar el perfil: {str(e)}")
             return jsonify({"error": f"Error interno del servidor al actualizar el perfil: {str(e)}"}), 500
-
+        
 # NUEVA RUTA: Para subir o actualizar la imagen de perfil del usuario
 @api.route('/perfil/imagen-perfil', methods=['PUT'])
 @jwt_required()
@@ -2739,7 +2749,6 @@ def get_preguntas_by_formulario(form_id):
         print(f"Error al obtener preguntas del formulario: {e}")
         return jsonify({"error": f"Error interno del servidor al obtener preguntas: {str(e)}"}), 500
 
-# --- RUTA GET /formularios/<form_id>/preguntas/plantilla (CORREGIDA) ---
 @api.route('/formularios/<int:form_id>/preguntas/plantilla', methods=['GET'])
 @jwt_required()
 @role_required(['owner', 'admin_empresa', 'usuario_formulario'])
@@ -2769,8 +2778,7 @@ def get_preguntas_de_plantilla(form_id):
             p_data = p.serialize()
             p_data['tipo_respuesta_nombre'] = p.tipo_respuesta.nombre_tipo if p.tipo_respuesta else None
             
-            # --- LÓGICA CORREGIDA PARA PLANTILLAS DE SELECCIÓN DE RECURSOS ---
-            # Ahora usamos la nueva columna `recurso_asociado` para determinar qué enviar
+            # --- LÓGICA EXISTENTE PARA PLANTILLAS DE SELECCIÓN DE RECURSOS (SIN CAMBIOS) ---
             if p.recurso_asociado:
                 opciones = {}
                 if p.recurso_asociado == 'espacio':
@@ -2788,7 +2796,18 @@ def get_preguntas_de_plantilla(form_id):
                     'subespacios': [],
                     'objetos': []
                 }
-            # --- FIN DE LÓGICA CORREGIDA ---
+            # --- FIN DE LÓGICA DE SELECCIÓN DE RECURSOS ---
+            
+            # --- NUEVA LÓGICA PARA CARGAR OPCIONES DE SELECCIÓN ÚNICA Y MÚLTIPLE ---
+            # Si la pregunta no es de selección de recursos, aseguramos que se envíe
+            # el JSON de opciones tal cual está en la base de datos para los
+            # tipos 'seleccion_unica' y 'seleccion_multiple'.
+            elif p.tipo_respuesta.nombre_tipo in ['seleccion_unica', 'seleccion_multiple']:
+                p_data['opciones_respuesta_json'] = p.opciones_respuesta_json
+            # --- FIN DE NUEVA LÓGICA ---
+            
+            # Para el tipo 'dibujo' y otros, no se necesita lógica especial aquí
+            # ya que el frontend se encargará de renderizar el componente correcto.
             
             preguntas_data.append(p_data)
 
@@ -2797,7 +2816,7 @@ def get_preguntas_de_plantilla(form_id):
     except Exception as e:
         print(f"Error al obtener preguntas de plantilla: {e}")
         return jsonify({"error": f"Error interno del servidor al obtener preguntas de plantilla: {str(e)}"}), 500
-
+    
 # --- RUTA POST /formularios/<form_id>/preguntas (CORREGIDA) ---
 @api.route('/formularios/<int:form_id>/preguntas', methods=['POST'])
 @role_required(['owner', 'admin_empresa'])
@@ -2894,7 +2913,8 @@ def create_pregunta_plantilla(form_id):
         texto_pregunta = data.get('texto_pregunta', '').strip()
         tipo_respuesta_id = data.get('tipo_respuesta_id')
         orden = data.get('orden')
-        opciones_respuesta_json = None # En esta ruta, este campo siempre será nulo.
+        # Inicializamos opciones_respuesta_json a None, pero lo actualizaremos si es necesario
+        opciones_respuesta_json = None 
         recurso_asociado = data.get('recurso_asociado')
 
 
@@ -2909,6 +2929,14 @@ def create_pregunta_plantilla(form_id):
         if tipo_respuesta.nombre_tipo == 'seleccion_recursos':
             if not recurso_asociado or recurso_asociado not in ['espacio', 'subespacio', 'objeto']:
                 return jsonify({"error": "Para 'seleccion_recursos', 'recurso_asociado' es requerido y debe ser 'espacio', 'subespacio' u 'objeto'."}), 400
+        
+        # --- CAMBIO AÑADIDO: Lógica para guardar opciones de respuesta ---
+        # Si el tipo de pregunta es seleccion_unica o seleccion_multiple,
+        # asignamos el valor del body a opciones_respuesta_json.
+        elif tipo_respuesta.nombre_tipo in ['seleccion_unica', 'seleccion_multiple']:
+            opciones_respuesta_json = data.get('opciones_respuesta_json')
+            if not opciones_respuesta_json or not isinstance(opciones_respuesta_json, list) or len(opciones_respuesta_json) == 0:
+                 return jsonify({"error": "Para 'seleccion_unica' y 'seleccion_multiple', 'opciones_respuesta_json' es requerido y debe ser una lista no vacía."}), 400
         
         else: # Para todos los demás tipos de preguntas en plantillas
             recurso_asociado = None
@@ -2933,6 +2961,7 @@ def create_pregunta_plantilla(form_id):
         db.session.rollback()
         print(f"Error al crear pregunta para plantilla: {e}")
         return jsonify({"error": f"Error interno del servidor: {str(e)}"}), 500
+    
     
 
 # --- RUTA GET /preguntas/<pregunta_id> (CORREGIDA) ---

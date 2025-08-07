@@ -1,107 +1,114 @@
-/* src/styles/confirmationModal.css - Estilos específicos para el modal de confirmación */
+/* src/styles/confirmationModal.css - Estilos mejorados para el modal de confirmación */
 
-/* Overlay del modal de confirmación */
+/* ======================================================================== */
+/* --- OVERLAY DEL MODAL --- */
+/* ======================================================================== */
 .confirmation-modal-overlay {
     position: fixed;
     top: 0;
     left: 0;
     width: 100vw;
     height: 100vh;
-    background-color: rgba(0, 0, 0, 0.6); /* Fondo oscuro semi-transparente */
+    background-color: rgba(0, 0, 0, 0.6);
     display: flex;
     justify-content: center;
     align-items: center;
-    z-index: 1000; /* Asegura que esté por encima de otros elementos */
-    opacity: 0; /* Inicialmente oculto */
-    visibility: hidden; /* Inicialmente oculto */
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
     transition: opacity 0.3s ease, visibility 0.3s ease;
 }
 
-/* Clase para mostrar el modal */
 .confirmation-modal-overlay.active {
     opacity: 1;
     visibility: visible;
 }
 
-/* Contenido del modal de confirmación */
+/* ======================================================================== */
+/* --- CONTENIDO DEL MODAL --- */
+/* ======================================================================== */
 .confirmation-modal-content {
-    background-color: #ffffff; /* Fondo blanco puro */
-    padding: 30px; /* Padding generoso */
-    border-radius: 12px; /* Esquinas redondeadas */
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.25); /* Sombra más pronunciada y suave */
-    width: 90%; /* Ancho predeterminado */
-    max-width: 450px; /* Ancho máximo para modals de confirmación, más compacto */
-    transform: translateY(-20px); /* Efecto de entrada */
-    transition: transform 0.3s ease, opacity 0.3s ease; /* Animación más completa */
+    background-color: #ffffff;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.25);
+    width: 90%;
+    max-width: 450px;
+    transform: translateY(-20px);
+    transition: transform 0.3s ease, opacity 0.3s ease;
     display: flex;
     flex-direction: column;
-    gap: 25px; /* Espacio entre secciones */
-    position: relative; /* Para posicionar el botón de cierre */
-    color: #333333; /* Color de texto general oscuro */
+    gap: 25px;
+    position: relative;
+    color: #333333;
 }
 
 .confirmation-modal-overlay.active .confirmation-modal-content {
-    transform: translateY(0); /* Vuelve a su posición original al activarse */
+    transform: translateY(0);
     opacity: 1;
 }
 
-/* Header del modal */
+/* ======================================================================== */
+/* --- HEADER DEL MODAL --- */
+/* ======================================================================== */
 .confirmation-modal-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     padding-bottom: 15px;
-    border-bottom: 1px solid #e0e6ec; /* Línea divisoria suave */
+    border-bottom: 1px solid #e0e6ec;
 }
 
 .confirmation-modal-header h2 {
     margin: 0;
-    font-size: 1.6em; /* Tamaño de título ajustado */
-    color: #2c3e50; /* Azul oscuro para el título */
+    font-size: 1.6em;
+    color: #2c3e50;
     font-weight: 700;
 }
 
-/* Botón de cerrar (X) */
 .confirmation-modal-close-btn {
     background: none;
     border: none;
-    font-size: 2em; /* Tamaño grande para fácil interacción */
-    color: #888888; /* Color neutro */
+    font-size: 2em;
+    color: #888888;
     cursor: pointer;
     transition: color 0.2s ease, transform 0.2s ease;
-    padding: 5px; /* Espacio para hacer clic */
+    padding: 5px;
 }
 
 .confirmation-modal-close-btn:hover {
-    color: #e74c3c; /* Rojo al pasar el ratón */
-    transform: rotate(90deg); /* Pequeña animación */
+    color: #e74c3c;
+    transform: rotate(90deg);
 }
 
-/* Cuerpo del modal */
+/* ======================================================================== */
+/* --- CUERPO DEL MODAL --- */
+/* ======================================================================== */
 .confirmation-modal-body {
     padding: 10px 0;
-    text-align: center; /* Centrar el mensaje */
+    text-align: center;
 }
 
 .confirmation-modal-body p {
-    font-size: 1.05em; /* Tamaño de fuente legible */
-    color: #444444; /* Gris oscuro para el texto del mensaje */
+    font-size: 1.05em;
+    color: #444444;
     line-height: 1.6;
     margin: 0;
 }
 
-/* Sección de acciones (botones) */
+/* ======================================================================== */
+/* --- SECCIÓN DE ACCIONES (BOTONES) --- */
+/* ======================================================================== */
 .confirmation-modal-actions {
     display: flex;
-    justify-content: center; /* Centra los botones */
-    gap: 15px; /* Espacio entre los botones */
-    padding-top: 20px; /* Más espacio superior */
-    border-top: 1px solid #e0e6ec; /* Línea divisoria suave */
+    justify-content: center;
+    gap: 15px;
+    padding-top: 20px;
+    border-top: 1px solid #e0e6ec;
 }
 
-/* Estilos para los botones */
-.confirmation-modal-actions .btn-confirm, /* Nueva clase para el botón de confirmar */
-.confirmation-modal-actions .btn-cancel { /* Nueva clase para el botón de cancelar */
+.confirmation-modal-actions .btn-confirm,
+.confirmation-modal-actions .btn-cancel {
     padding: 12px 25px;
     border: none;
     border-radius: 8px;
@@ -110,37 +117,42 @@
     font-weight: 600;
     transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.2s ease;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    flex-grow: 1; /* Permite que los botones crezcan en el layout de escritorio */
 }
 
 .confirmation-modal-actions .btn-confirm {
-    background-color: #e74c3c; /* Rojo para confirmar (acción de peligro) */
-    color: #ffffff; /* Texto blanco */
+    background-color: #e74c3c;
+    color: #ffffff;
 }
 
 .confirmation-modal-actions .btn-confirm:hover {
-    background-color: #c0392b; /* Tono más oscuro */
+    background-color: #c0392b;
     transform: translateY(-2px);
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
 .confirmation-modal-actions .btn-cancel {
-    background-color: #cccccc; /* Gris claro para cancelar */
-    color: #333333; /* Texto oscuro */
+    background-color: #cccccc;
+    color: #333333;
 }
 
 .confirmation-modal-actions .btn-cancel:hover {
-    background-color: #b0b0b0; /* Tono más oscuro */
+    background-color: #b0b0b0;
     transform: translateY(-2px);
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
+/* ======================================================================== */
+/* --- MEDIA QUERIES PARA RESPONSIVIDAD --- */
+/* ======================================================================== */
 
-/* Responsive adjustments */
+/* Estilos para tabletas y pantallas de hasta 768px */
 @media (max-width: 768px) {
     .confirmation-modal-content {
         padding: 20px;
         width: 95%;
-        max-width: 380px; /* Ajuste para pantallas medianas */
+        max-width: 380px;
+        gap: 20px;
     }
     .confirmation-modal-header h2 {
         font-size: 1.4em;
@@ -150,28 +162,36 @@
     }
     .confirmation-modal-actions {
         flex-direction: column; /* Apila los botones en pantallas pequeñas */
-        gap: 10px;
+        gap: 12px;
     }
     .confirmation-modal-actions .btn-confirm,
     .confirmation-modal-actions .btn-cancel {
-        width: 100%; /* Botones ocupan todo el ancho */
-        text-align: center;
-        padding: 10px 20px; /* Ajuste de padding */
+        width: 100%;
+        padding: 12px 20px;
     }
 }
 
+/* Estilos para móviles pequeños hasta 480px */
 @media (max-width: 480px) {
     .confirmation-modal-content {
         padding: 15px;
         max-width: 95%;
     }
     .confirmation-modal-header h2 {
-        font-size: 1.2em;
+        font-size: 1.3em;
     }
     .confirmation-modal-close-btn {
-        font-size: 1.6em;
+        font-size: 1.8em;
     }
     .confirmation-modal-body p {
+        font-size: 0.9em;
+    }
+    .confirmation-modal-actions {
+        gap: 10px;
+    }
+    .confirmation-modal-actions .btn-confirm,
+    .confirmation-modal-actions .btn-cancel {
+        padding: 10px 15px;
         font-size: 0.9em;
     }
 }

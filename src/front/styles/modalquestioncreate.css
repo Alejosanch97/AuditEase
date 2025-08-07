@@ -1,4 +1,4 @@
-/* src/styles/create-edit-question-modal.css */
+/* src/styles/create-edit-question-modal.css - Estilos optimizados para responsividad */
 
 /* Overlay del modal: Cubre toda la pantalla y centra el contenido */
 .question-modal-overlay {
@@ -7,11 +7,11 @@
     left: 0;
     width: 100vw;
     height: 100vh;
-    background-color: rgba(0, 0, 0, 0.6); /* Fondo semi-transparente oscuro */
+    background-color: rgba(0, 0, 0, 0.6);
     display: flex;
     justify-content: center;
     align-items: center;
-    z-index: 1000; /* Asegura que esté por encima de todo */
+    z-index: 1000;
     animation: questionModalFadeIn 0.3s ease-out;
 }
 
@@ -21,7 +21,7 @@
     border-radius: 12px;
     box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
     width: 90%;
-    max-width: 650px; /* Ancho ajustado para este modal */
+    max-width: 650px;
     padding: 35px;
     position: relative;
     display: flex;
@@ -118,7 +118,7 @@
     background-color: #fdfdfd;
     display: flex;
     flex-direction: column;
-    gap: 10px; /* Espacio entre cada campo de opción */
+    gap: 10px;
 }
 
 .option-input-item {
@@ -128,17 +128,17 @@
 }
 
 .option-input-item input[type="text"] {
-    flex-grow: 1; /* Permite que el input ocupe el espacio disponible */
+    flex-grow: 1;
     padding: 10px 12px;
     border-radius: 8px;
     font-size: 0.95em;
 }
 
 .remove-option-btn {
-    background-color: #e74c3c; /* Rojo */
+    background-color: #e74c3c;
     color: white;
     border: none;
-    border-radius: 50%; /* Botón redondo */
+    border-radius: 50%;
     width: 30px;
     height: 30px;
     display: flex;
@@ -147,7 +147,7 @@
     font-size: 1.2em;
     cursor: pointer;
     transition: background-color 0.2s ease;
-    flex-shrink: 0; /* Evita que el botón se encoja */
+    flex-shrink: 0;
 }
 
 .remove-option-btn:hover {
@@ -155,7 +155,7 @@
 }
 
 .add-option-btn {
-    background-color: var(--secondary-accent, #3498db); /* Azul */
+    background-color: var(--secondary-accent, #3498db);
     color: white;
     border: none;
     border-radius: 8px;
@@ -164,7 +164,7 @@
     font-size: 0.95em;
     font-weight: 600;
     transition: background-color 0.2s ease;
-    align-self: flex-start; /* Alinea a la izquierda dentro del contenedor */
+    align-self: flex-start;
     margin-top: 5px;
 }
 
@@ -172,21 +172,20 @@
     background-color: #2980b9;
 }
 
-
 /* Estilos para el contenedor de checkboxes (reutilizado) */
 .checkbox-list-container {
     border: 1px solid #dcdcdc;
     border-radius: 10px;
     padding: 10px 15px;
-    max-height: 200px; /* Altura máxima para el scroll */
-    overflow-y: auto; /* Habilita el scroll vertical */
+    max-height: 200px;
+    overflow-y: auto;
     background-color: #fdfdfd;
 }
 
 .checkbox-item {
     display: flex;
     align-items: center;
-    margin-bottom: 8px; /* Espacio entre items */
+    margin-bottom: 8px;
     cursor: pointer;
     font-size: 1em;
     color: #333;
@@ -196,15 +195,15 @@
 }
 
 .checkbox-item:hover {
-    background-color: #f0f0f0; /* Fondo al pasar el ratón */
+    background-color: #f0f0f0;
 }
 
 .checkbox-item input[type="checkbox"] {
     margin-right: 10px;
-    min-width: 18px; /* Tamaño mínimo para el checkbox */
+    min-width: 18px;
     min-height: 18px;
     cursor: pointer;
-    accent-color: var(--primary-color, #1abc9c); /* Color del checkbox al ser checkeado */
+    accent-color: var(--primary-color, #1abc9c);
 }
 
 .question-modal-group small {
@@ -283,12 +282,16 @@
     to { transform: translateY(0); opacity: 1; }
 }
 
-/* Media Queries para responsividad */
+/* ======================================================================== */
+/* --- MEDIA QUERIES PARA RESPONSIVIDAD --- */
+/* ======================================================================== */
+
+/* Estilos para tabletas y pantallas de hasta 768px */
 @media (max-width: 768px) {
     .question-modal-content {
         width: 95%;
         padding: 25px;
-        max-width: 90%;
+        max-width: 95%;
     }
 
     .question-modal-header h2 {
@@ -304,19 +307,30 @@
     }
 
     .question-modal-group label {
-        font-size: 0.9em;
+        font-size: 0.95em;
     }
 
     .question-modal-group input,
     .question-modal-group textarea,
     .question-modal-group select {
         padding: 12px;
-        font-size: 0.95em;
+        font-size: 1em;
+    }
+
+    .options-input-container {
+        padding: 12px;
+        gap: 8px;
+    }
+
+    .add-option-btn {
+        font-size: 0.9em;
+        padding: 8px 12px;
     }
 
     .question-modal-actions {
         flex-direction: column;
         gap: 10px;
+        justify-content: center;
     }
 
     .question-modal-btn-primary,
@@ -327,10 +341,16 @@
     }
 }
 
+/* Estilos para móviles pequeños hasta 480px */
 @media (max-width: 480px) {
     .question-modal-content {
         border-radius: 8px;
         padding: 20px;
+    }
+
+    .question-modal-header {
+        padding-bottom: 12px;
+        margin-bottom: 15px;
     }
 
     .question-modal-header h2 {
@@ -339,5 +359,51 @@
 
     .question-modal-close-btn {
         font-size: 1.8em;
+    }
+
+    .question-modal-form {
+        gap: 12px;
+    }
+
+    .question-modal-group label {
+        font-size: 0.9em;
+    }
+
+    .question-modal-group input,
+    .question-modal-group textarea {
+        padding: 10px;
+        font-size: 0.95em;
+    }
+    
+    .options-input-container {
+        padding: 10px;
+    }
+    
+    .option-input-item input[type="text"] {
+        padding: 8px 10px;
+        font-size: 0.9em;
+    }
+
+    .remove-option-btn {
+        width: 25px;
+        height: 25px;
+        font-size: 1em;
+    }
+
+    .add-option-btn {
+        font-size: 0.85em;
+        padding: 6px 10px;
+    }
+
+    .question-modal-actions {
+        gap: 8px;
+        margin-top: 20px;
+        padding-top: 20px;
+    }
+
+    .question-modal-btn-primary,
+    .question-modal-btn-secondary {
+        font-size: 0.9em;
+        padding: 10px 15px;
     }
 }

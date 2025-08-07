@@ -1,17 +1,17 @@
-/* src/styles/create-edit-form-modal.css */
+/* src/styles/create-edit-form-modal.css - Estilos optimizados para responsividad */
 
 /* Overlay del modal: Cubre toda la pantalla y centra el contenido */
 .form-modal-overlay {
-    position: fixed; /* Fija el overlay a la ventana del navegador */
+    position: fixed;
     top: 0;
     left: 0;
-    width: 100vw; /* Ocupa el 100% del ancho del viewport */
-    height: 100vh; /* Ocupa el 100% de la altura del viewport */
-    background-color: rgba(0, 0, 0, 0.6); /* Fondo semi-transparente oscuro */
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.6);
     display: flex;
-    justify-content: center; /* Centra horizontalmente el contenido */
-    align-items: center; /* Centra verticalmente el contenido */
-    z-index: 1000; /* Asegura que esté por encima de todo */
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
     animation: formModalFadeIn 0.3s ease-out;
 }
 
@@ -19,17 +19,17 @@
 .form-modal-content {
     background-color: #ffffff;
     border-radius: 12px;
-    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3); /* Sombra más pronunciada */
-    width: 90%; /* Ocupa el 90% del ancho del overlay */
-    max-width: 600px; /* Ancho máximo para que se vea como una mini-ventana */
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
+    width: 90%;
+    max-width: 600px;
     padding: 35px;
-    position: relative; /* Necesario para que el botón de cierre se posicione correctamente dentro */
+    position: relative;
     display: flex;
     flex-direction: column;
     animation: formModalSlideIn 0.3s ease-out;
-    max-height: 90vh; /* Altura máxima para evitar desbordamiento en pantallas pequeñas */
-    overflow-y: auto; /* Permite scroll si el contenido es muy largo */
-    border: 1px solid #e0e0e0; /* Borde sutil */
+    max-height: 90vh;
+    overflow-y: auto;
+    border: 1px solid #e0e0e0;
 }
 
 /* Encabezado del modal */
@@ -85,7 +85,7 @@
 .form-modal-group input[type="text"],
 .form-modal-group input[type="number"],
 .form-modal-group textarea,
-.form-modal-group select { /* Mantener estilos para select si se usa en otros modales */
+.form-modal-group select {
     width: 100%;
     padding: 14px 16px;
     border: 1px solid #dcdcdc;
@@ -110,20 +110,20 @@
     min-height: 100px;
 }
 
-/* Estilos para el contenedor de checkboxes (nuevo) */
+/* Estilos para el contenedor de checkboxes */
 .checkbox-list-container {
     border: 1px solid #dcdcdc;
     border-radius: 10px;
     padding: 10px 15px;
-    max-height: 200px; /* Altura máxima para el scroll */
-    overflow-y: auto; /* Habilita el scroll vertical */
+    max-height: 200px;
+    overflow-y: auto;
     background-color: #fdfdfd;
 }
 
 .checkbox-item {
     display: flex;
     align-items: center;
-    margin-bottom: 8px; /* Espacio entre items */
+    margin-bottom: 8px;
     cursor: pointer;
     font-size: 1em;
     color: #333;
@@ -133,15 +133,15 @@
 }
 
 .checkbox-item:hover {
-    background-color: #f0f0f0; /* Fondo al pasar el ratón */
+    background-color: #f0f0f0;
 }
 
 .checkbox-item input[type="checkbox"] {
     margin-right: 10px;
-    min-width: 18px; /* Tamaño mínimo para el checkbox */
+    min-width: 18px;
     min-height: 18px;
     cursor: pointer;
-    accent-color: var(--primary-color, #1abc9c); /* Color del checkbox al ser checkeado */
+    accent-color: var(--primary-color, #1abc9c);
 }
 
 .form-modal-group small {
@@ -209,10 +209,6 @@
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
 
-/* src/styles/modalformcreate.css */
-
-/* ... (tus estilos existentes) ... */
-
 /* Estilos para la sección de crear nuevo tipo de respuesta */
 .new-tipo-respuesta-section {
     border-top: 1px solid #f0f0f0;
@@ -260,44 +256,6 @@
     cursor: not-allowed;
 }
 
-/* Puedes reutilizar .checkbox-list-container y .checkbox-item de tus otros CSS */
-/* Asegúrate de que los estilos de .checkbox-list-container y .checkbox-item estén disponibles */
-/* en modalformcreate.css o en un archivo CSS compartido que se importe aquí. */
-
-/* Ejemplo si no están ya en modalformcreate.css: */
-.checkbox-list-container {
-    border: 1px solid #dcdcdc;
-    border-radius: 10px;
-    padding: 10px 15px;
-    max-height: 150px; /* Ajusta la altura si es necesario */
-    overflow-y: auto;
-    background-color: #fdfdfd;
-}
-
-.checkbox-item {
-    display: flex;
-    align-items: center;
-    margin-bottom: 8px;
-    cursor: pointer;
-    font-size: 1em;
-    color: #333;
-    transition: background-color 0.2s ease;
-    padding: 5px;
-    border-radius: 5px;
-}
-
-.checkbox-item:hover {
-    background-color: #f0f0f0;
-}
-
-.checkbox-item input[type="checkbox"] {
-    margin-right: 10px;
-    min-width: 18px;
-    min-height: 18px;
-    cursor: pointer;
-    accent-color: var(--primary-color, #1abc9c);
-}
-
 /* Animaciones */
 @keyframes formModalFadeIn {
     from { opacity: 0; }
@@ -309,12 +267,16 @@
     to { transform: translateY(0); opacity: 1; }
 }
 
-/* Media Queries para responsividad */
+/* ======================================================================== */
+/* --- MEDIA QUERIES PARA RESPONSIVIDAD --- */
+/* ======================================================================== */
+
+/* Estilos para tabletas y pantallas de hasta 768px */
 @media (max-width: 768px) {
     .form-modal-content {
         width: 95%;
         padding: 25px;
-        max-width: 90%;
+        max-width: 95%; /* Ajuste para un mejor flujo en tabletas */
     }
 
     .form-modal-header h2 {
@@ -330,18 +292,19 @@
     }
 
     .form-modal-group label {
-        font-size: 0.9em;
+        font-size: 0.95em;
     }
 
     .form-modal-group input,
     .form-modal-group textarea {
         padding: 12px;
-        font-size: 0.95em;
+        font-size: 1em;
     }
 
     .form-modal-actions {
         flex-direction: column;
         gap: 10px;
+        justify-content: center;
     }
 
     .form-modal-btn-primary,
@@ -350,12 +313,32 @@
         padding: 12px 20px;
         font-size: 1em;
     }
+
+    .new-tipo-respuesta-section {
+        padding-top: 15px;
+        margin-top: 15px;
+    }
+
+    .new-tipo-respuesta-section .add-new-tipo-btn {
+        font-size: 0.9em;
+        padding: 8px 12px;
+    }
+
+    .checkbox-list-container {
+        max-height: 150px;
+    }
 }
 
+/* Estilos para móviles pequeños hasta 480px */
 @media (max-width: 480px) {
     .form-modal-content {
         border-radius: 8px;
         padding: 20px;
+    }
+
+    .form-modal-header {
+        padding-bottom: 12px;
+        margin-bottom: 15px;
     }
 
     .form-modal-header h2 {
@@ -364,5 +347,31 @@
 
     .form-modal-close-btn {
         font-size: 1.8em;
+    }
+
+    .form-modal-form {
+        gap: 12px;
+    }
+
+    .form-modal-group label {
+        font-size: 0.9em;
+    }
+
+    .form-modal-group input,
+    .form-modal-group textarea {
+        padding: 10px;
+        font-size: 0.95em;
+    }
+
+    .form-modal-actions {
+        gap: 8px;
+        margin-top: 20px;
+        padding-top: 20px;
+    }
+
+    .form-modal-btn-primary,
+    .form-modal-btn-secondary {
+        font-size: 0.9em;
+        padding: 10px 15px;
     }
 }

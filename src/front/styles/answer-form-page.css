@@ -1,142 +1,146 @@
-/* src/styles/answer-form-page.css - Estilos específicos para la página de responder formularios */
+/* src/styles/answer-form-page.css - Estilos mejorados para la página de responder formularios */
 
-/* Contenedor principal del formulario de respuesta */
+/* ======================================================================== */
+/* --- CONTENEDOR Y ESTILOS GENERALES DE LA PÁGINA --- */
+/* ======================================================================== */
 .form-answer-container {
-    background-color: #ffffff; /* Fondo blanco para el contenedor principal */
+    background-color: #ffffff;
     border-radius: 12px;
-    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08); /* Sombra más suave y moderna */
-    padding: 35px; /* Más padding para espacio */
-    margin-top: 30px; /* Espacio superior */
-    margin-bottom: 30px; /* Espacio inferior */
-    max-width: 900px; /* Ancho máximo para mejor legibilidad */
-    margin-left: auto;
-    margin-right: auto;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+    padding: 35px;
+    margin: 30px auto;
+    max-width: 900px;
+    font-family: 'Inter', sans-serif;
 }
 
-/* Tarjeta de detalles del formulario (nombre, descripción, frecuencia) */
+/* ======================================================================== */
+/* --- TARJETA DE DETALLES DEL FORMULARIO --- */
+/* ======================================================================== */
 .form-details-card {
-    background-color: #f0f4f8; /* Un gris azulado muy claro */
-    border: 1px solid #d0dbe6; /* Borde sutil */
+    background-color: #f0f4f8;
+    border: 1px solid #d0dbe6;
     border-radius: 10px;
-    padding: 30px; /* Más padding */
-    margin-bottom: 35px; /* Más espacio debajo */
+    padding: 30px;
+    margin-bottom: 35px;
     text-align: center;
-    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05); /* Sombra ligera */
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
 }
 
 .form-details-card h2 {
-    color: #2c3e50; /* Azul oscuro primario */
-    font-size: 2.2em; /* Título más grande y legible */
+    color: #2c3e50;
+    font-size: 2.2em;
     margin-bottom: 12px;
     font-weight: 700;
 }
 
 .form-details-card .form-description {
-    color: #555555; /* Gris oscuro para la descripción */
+    color: #555555;
     font-size: 1.1em;
     margin-bottom: 18px;
     line-height: 1.6;
 }
 
 .form-details-card .form-frequency {
-    color: #34495e; /* Un gris azulado más oscuro */
+    color: #34495e;
     font-weight: 600;
     font-size: 0.95em;
 }
 
 .submission-limit-message {
-    color: #e74c3c; /* Rojo de error */
+    color: #e74c3c;
     font-weight: 600;
     margin-top: 15px;
     padding: 10px;
-    background-color: #ffebeb; /* Fondo claro para el mensaje de error */
+    background-color: #ffebeb;
     border: 1px solid #e74c3c;
     border-radius: 8px;
 }
 
-
-/* Sección de preguntas y respuestas */
+/* ======================================================================== */
+/* --- SECCIÓN DE PREGUNTAS Y RESPUESTAS --- */
+/* ======================================================================== */
 .question-answer-section {
     display: flex;
     flex-direction: column;
-    gap: 30px; /* Más espacio entre preguntas */
+    gap: 30px;
 }
 
-/* Tarjeta de cada pregunta individual */
 .question-card {
     background-color: #ffffff;
-    border: 1px solid #e0e6ec; /* Borde más claro */
+    border: 1px solid #e0e6ec;
     border-radius: 10px;
-    padding: 25px; /* Más padding */
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.07); /* Sombra más pronunciada */
+    padding: 25px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.07);
 }
 
 .question-text {
-    font-size: 1.2em; /* Pregunta más grande */
+    font-size: 1.2em;
     font-weight: 600;
-    color: #2f3640; /* Texto oscuro para la pregunta */
-    margin-bottom: 18px; /* Más espacio debajo de la pregunta */
+    color: #2f3640;
+    margin-bottom: 18px;
     line-height: 1.5;
 }
 
 .answer-input-area {
-    padding-left: 20px; /* Más padding a la izquierda */
-    border-left: 4px solid #1abc9c; /* Verde/Azul de acento más visible */
+    padding-left: 20px;
+    border-left: 4px solid #1abc9c;
 }
 
-/* Estilos para inputs de texto/número */
+/* ======================================================================== */
+/* --- ESTILOS DE INPUTS --- */
+/* ======================================================================== */
 .text-input,
 .number-input {
     width: 100%;
-    padding: 12px 15px; /* Más padding */
-    border: 1px solid #cccccc; /* Borde neutro */
+    padding: 12px 15px;
+    border: 1px solid #cccccc;
     border-radius: 8px;
     font-size: 1em;
-    color: #333333; /* Texto oscuro en el input */
-    margin-top: 8px; /* Más espacio superior */
+    color: #333333;
+    margin-top: 8px;
     box-sizing: border-box;
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .text-input:focus,
 .number-input:focus {
-    border-color: #1abc9c; /* Color de acento al enfocar */
+    border-color: #1abc9c;
     outline: none;
-    box-shadow: 0 0 0 3px rgba(26, 188, 156, 0.2); /* Sombra de enfoque */
+    box-shadow: 0 0 0 3px rgba(26, 188, 156, 0.2);
 }
 
 textarea.text-input {
-    min-height: 100px; /* Altura mínima aumentada */
+    min-height: 100px;
     resize: vertical;
 }
 
-/* Estilos para grupos de radio/checkboxes */
+/* ======================================================================== */
+/* --- GRUPOS DE OPCIONES (RADIO/CHECKBOX) --- */
+/* ======================================================================== */
 .radio-group,
 .options-group {
     display: flex;
     flex-direction: column;
-    gap: 12px; /* Más espacio entre opciones */
+    gap: 12px;
     margin-top: 12px;
 }
 
-/* Corrección clave para alineación de checkboxes/radios */
 .radio-item,
 .option-item {
     display: flex;
-    align-items: center; /* Alinea verticalmente el input y el texto */
-    font-size: 1.05em; /* Opciones ligeramente más grandes */
-    color: #333333; /* Texto oscuro para las opciones */
+    align-items: center;
+    font-size: 1.05em;
+    color: #333333;
     cursor: pointer;
 }
 
 .radio-item input[type="radio"],
 .option-item input[type="checkbox"] {
     margin-right: 12px;
-    accent-color: #1abc9c; /* Color del radio/checkbox (verde/azul de acento) */
-    width: 20px; /* Tamaño ligeramente más grande */
+    accent-color: #1abc9c;
+    width: 20px;
     height: 20px;
     cursor: pointer;
-    /* Asegurarse de que no haya márgenes inesperados que desalineen */
     margin-top: 0;
     margin-bottom: 0;
 }
@@ -144,57 +148,73 @@ textarea.text-input {
 .no-options-message,
 .no-questions-message {
     text-align: center;
-    color: #888888; /* Gris más claro para mensajes informativos */
+    color: #888888;
     font-style: italic;
     padding: 25px;
     font-size: 1.05em;
 }
 
-.signature-area small {
-    display: block;
-    margin-top: 10px;
-    color: #666666; /* Gris medio para el texto de ayuda */
-    font-size: 0.88em;
-}
-
-/* Acciones de envío del formulario (botones) */
+/* ======================================================================== */
+/* --- ACCIONES DE ENVÍO (BOTONES) --- */
+/* ======================================================================== */
 .form-submit-actions {
     display: flex;
-    justify-content: center; /* Centrar los botones */
-    gap: 25px; /* Más espacio entre botones */
-    margin-top: 45px; /* Más espacio superior */
+    justify-content: center;
+    gap: 25px;
+    margin-top: 45px;
     padding-top: 25px;
-    border-top: 1px solid #e0e6ec; /* Línea divisoria suave */
+    border-top: 1px solid #e0e6ec;
 }
 
-.submit-form-btn { /* Clase directa para el botón de submit */
-    padding: 14px 30px; /* Más padding para botones */
-    font-size: 1.1em; /* Texto de botón más grande */
+.submit-form-btn,
+.clear-canvas-btn { /* Unificar estilos comunes de botones */
+    padding: 14px 30px;
+    font-size: 1.1em;
     border-radius: 8px;
     cursor: pointer;
     transition: background-color 0.2s ease, transform 0.1s ease, box-shadow 0.2s ease;
     font-weight: 600;
-    background-color: #1abc9c; /* Verde/Azul de acento como primario */
-    color: white;
     border: none;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+.submit-form-btn {
+    background-color: #1abc9c;
+    color: white;
     box-shadow: 0 4px 10px rgba(26, 188, 156, 0.3);
 }
 
+.clear-canvas-btn {
+    background-color: #e74c3c;
+    color: white;
+    box-shadow: 0 4px 10px rgba(231, 76, 60, 0.3);
+    padding: 10px 20px; /* Ajuste específico para el botón de firma */
+    font-size: 1em;
+}
+
 .submit-form-btn:hover:not(:disabled) {
-    background-color: #16a085; /* Tono más oscuro al pasar el ratón */
+    background-color: #16a085;
     transform: translateY(-2px);
     box-shadow: 0 6px 15px rgba(26, 188, 156, 0.4);
 }
 
-.submit-form-btn:disabled {
+.clear-canvas-btn:hover:not(:disabled) {
+    background-color: #c0392b;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 15px rgba(231, 76, 60, 0.4);
+}
+
+.submit-form-btn:disabled,
+.clear-canvas-btn:disabled {
     opacity: 0.6;
     cursor: not-allowed;
     transform: none;
     box-shadow: none;
 }
 
-
-/* Mensajes de carga y error */
+/* ======================================================================== */
+/* --- ESTILOS DE MENSAJES (CARGA, ERROR, ETC.) --- */
+/* ======================================================================== */
 .loading-spinner-container,
 .error-message-container,
 .no-form-found {
@@ -202,149 +222,48 @@ textarea.text-input {
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    min-height: calc(100vh - 120px); /* Ajustar a la altura del contenido principal */
+    min-height: calc(100vh - 120px);
     font-size: 1.5em;
-    color: #2c3e50; /* Azul oscuro primario */
+    color: #2c3e50;
     text-align: center;
 }
 
 .error-message-container p {
     margin-bottom: 25px;
-    color: #e74c3c; /* Rojo de error */
+    color: #e74c3c;
 }
 .no-form-found p {
     margin-bottom: 25px;
     color: #888888;
 }
 
-/* --- ESTILOS ESPECÍFICOS PARA SELECCIÓN DE RECURSOS --- */
-/* Contenedor para el checkbox "Seleccionar/Deseleccionar Todos" */
+/* ======================================================================== */
+/* --- ESTILOS PARA SELECCIÓN DE RECURSOS Y FIRMA --- */
+/* ======================================================================== */
 .select-all-resources-control {
     padding-bottom: 10px;
     border-bottom: 1px solid #e0e6ec;
-    margin-bottom: 12px; /* Espacio consistente con el gap de .options-group */
+    margin-bottom: 12px;
 }
 
-/* Asegura que el checkbox y el texto estén alineados en "Seleccionar/Deseleccionar Todos" */
 .select-all-resources-control .option-item {
-    font-weight: 600; /* Negrita para el texto "Seleccionar/Deseleccionar Todos" */
+    font-weight: 600;
     color: #2c3e50;
 }
 
-/* No necesitamos .resource-category ni .resource-category-title si los recursos se listan planos */
-/* Si en el futuro se reintroducen categorías, estos estilos se pueden reevaluar */
-
-
-/* Responsividad */
-@media (max-width: 992px) {
-    .form-answer-container {
-        padding: 30px;
-        margin-top: 20px;
-    }
-    .form-details-card h2 {
-        font-size: 2em;
-    }
-    .question-text {
-        font-size: 1.1em;
-    }
-    .text-input, .number-input {
-        padding: 10px 12px;
-    }
-    /* .form-submit-actions ya no existe, ahora es .submit-form-btn */
-}
-
-@media (max-width: 768px) {
-    .form-answer-container {
-        padding: 25px;
-        margin-top: 15px;
-    }
-    .form-details-card {
-        padding: 20px;
-        margin-bottom: 25px;
-    }
-    .form-details-card h2 {
-        font-size: 1.8em;
-    }
-    .form-details-card .form-description {
-        font-size: 1em;
-    }
-    .form-frequency {
-        font-size: 0.9em;
-    }
-    .question-card {
-        padding: 20px;
-    }
-    .question-text {
-        font-size: 1em;
-        margin-bottom: 15px;
-    }
-    .answer-input-area {
-        padding-left: 15px;
-    }
-    .text-input, .number-input {
-        padding: 8px 10px;
-        font-size: 0.95em;
-    }
-    .radio-item, .option-item {
-        font-size: 0.95em;
-    }
-    .radio-item input[type="radio"], .option-item input[type="checkbox"] {
-        width: 16px;
-        height: 16px;
-        margin-right: 8px;
-    }
-    /* .form-submit-actions ya no existe, ahora es .submit-form-btn */
-    .submit-form-btn {
-        width: 100%; /* El botón de submit ocupa todo el ancho en móvil */
-        padding: 10px 20px;
-        font-size: 1em;
-    }
-}
-
-@media (max-width: 480px) {
-    .form-answer-container {
-        padding: 15px;
-        margin-top: 10px;
-    }
-    .form-details-card {
-        padding: 15px;
-    }
-    .form-details-card h2 {
-        font-size: 1.5em;
-    }
-    .question-card {
-        padding: 15px;
-    }
-    .question-text {
-        font-size: 0.95em;
-    }
-    .text-input, .number-input {
-        font-size: 0.9em;
-    }
-    .radio-item, .option-item {
-        font-size: 0.9em;
-    }
-    /* .form-submit-actions ya no existe, ahora es .submit-form-btn */
-    .submit-form-btn {
-        font-size: 0.9em;
-        padding: 8px 15px;
-    }
-}
-
-/* --- ESTILOS PARA LA SECCIÓN DE FIRMA (CANVAS) --- */
 .signature-area {
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 10px;
-    padding: 15px; /* Increased padding for more internal space */
+    padding: 15px;
     border: 1px solid #e0e0e0;
     border-radius: 8px;
     background-color: #fcfcfc;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
-    width: 100%; /* Occupies the full width of its parent */
-    max-width: 650px; /* Increased max width for more signature space */
-    margin: 0 auto; /* Centers the container */
+    width: 100%;
+    max-width: 650px;
+    margin: 0 auto;
 }
 
 .signature-canvas {
@@ -352,10 +271,9 @@ textarea.text-input {
     border-radius: 6px;
     background-color: #ffffff;
     cursor: crosshair;
-    touch-action: none; /* Important to prevent scroll on touch */
-    width: 100%; /* Makes the canvas responsive */
-    height: 280px; /* Increased visual height for more drawing space */
-    /* Ensures the canvas is not distorted if resized by CSS */
+    touch-action: none;
+    width: 100%;
+    height: 280px;
     display: block;
 }
 
@@ -363,56 +281,132 @@ textarea.text-input {
     font-size: 0.88em;
     color: #777;
     text-align: center;
-    margin-top: 5px; /* Adjusted top margin */
+    margin-top: 5px;
 }
 
-.clear-canvas-btn {
-    background-color: #e74c3c; /* Red for clearing */
-    color: white;
-    padding: 10px 20px; /* Increased padding for an easier-to-touch button */
-    border: none;
-    border-radius: 6px;
-    font-size: 1em; /* Increased font size */
-    font-weight: 600;
-    cursor: pointer;
-    transition: background-color 0.2s ease, transform 0.1s ease;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px; /* More space between icon and text */
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-}
+/* ======================================================================== */
+/* --- MEDIA QUERIES PARA RESPONSIVIDAD --- */
+/* ======================================================================== */
 
-.clear-canvas-btn:hover {
-    background-color: #c0392b;
-    transform: translateY(-1px);
-    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
-}
-
-/* Media Queries for signature responsiveness */
-@media (max-width: 768px) {
-    .signature-area {
-        padding: 10px;
-        gap: 8px;
+/* Tabletas y pantallas de hasta 992px */
+@media (max-width: 992px) {
+    .form-answer-container {
+        padding: 25px;
+        margin-top: 25px;
+        margin-bottom: 25px;
+    }
+    .form-details-card {
+        padding: 25px;
+        margin-bottom: 30px;
+    }
+    .form-details-card h2 {
+        font-size: 2em;
+    }
+    .question-card {
+        padding: 20px;
+    }
+    .question-text {
+        font-size: 1.1em;
+    }
+    .text-input, .number-input {
+        padding: 10px 12px;
+        font-size: 0.95em;
+    }
+    .submit-form-btn,
+    .clear-canvas-btn {
+        padding: 12px 25px;
+        font-size: 1em;
     }
     .signature-canvas {
-        height: 220px; /* Slightly smaller on mobile */
+        height: 220px;
     }
-    .clear-signature-btn {
-        padding: 8px 15px;
+}
+
+/* Teléfonos móviles y tabletas pequeñas hasta 768px */
+@media (max-width: 768px) {
+    .form-answer-container {
+        padding: 20px;
+        margin-top: 20px;
+        margin-bottom: 20px;
+    }
+    .form-details-card {
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+    .form-details-card h2 {
+        font-size: 1.8em;
+    }
+    .form-details-card .form-description {
+        font-size: 1em;
+    }
+    .question-card {
+        padding: 15px;
+    }
+    .question-text {
+        font-size: 1em;
+    }
+    .answer-input-area {
+        padding-left: 15px;
+    }
+    .text-input, .number-input {
+        padding: 8px 10px;
         font-size: 0.9em;
-        gap: 6px;
+    }
+    .radio-item, .option-item {
+        font-size: 0.95em;
+    }
+    .radio-item input[type="radio"],
+    .option-item input[type="checkbox"] {
+        width: 18px;
+        height: 18px;
+    }
+    .form-submit-actions {
+        flex-direction: column; /* Apila los botones en móviles */
+        gap: 15px;
+    }
+    .submit-form-btn,
+    .clear-canvas-btn {
+        width: 100%;
+        padding: 10px 20px;
+        font-size: 1em;
+    }
+    .signature-canvas {
+        height: 180px;
     }
     .signature-area small {
         font-size: 0.8em;
     }
 }
 
+/* Teléfonos móviles pequeños hasta 480px */
 @media (max-width: 480px) {
-    .signature-canvas {
-        height: 180px; /* Even smaller on very small screens */
+    .form-answer-container {
+        padding: 15px;
+        margin-top: 15px;
+        margin-bottom: 15px;
     }
-    .clear-signature-btn {
-        padding: 7px 12px;
+    .form-details-card h2 {
+        font-size: 1.6em;
+    }
+    .question-card {
+        padding: 10px;
+    }
+    .question-text {
+        font-size: 0.9em;
+    }
+    .text-input, .number-input {
         font-size: 0.85em;
+        padding: 8px;
+    }
+    .radio-item, .option-item {
+        font-size: 0.9em;
+    }
+    .submit-form-btn,
+    .clear-canvas-btn {
+        font-size: 0.9em;
+        padding: 8px 15px;
+    }
+    .signature-canvas {
+        height: 150px;
     }
 }

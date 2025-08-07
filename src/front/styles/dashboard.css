@@ -2151,6 +2151,245 @@ body {
     background-color: #e74c3c;
 }
 
+/* ========================================================= */
+/* === AJUSTES PARA PANTALLAS GRANDES Y TABLETAS (<= 1200px) === */
+/* ========================================================= */
+@media (max-width: 1200px) {
+    .sidebar {
+        width: 250px;
+        padding: 20px 0;
+    }
+    .sidebar-nav ul {
+        padding: 0 10px;
+    }
+    .sidebar-nav li a {
+        font-size: 1em;
+    }
+    .main-content {
+        padding: 20px;
+    }
+    .main-header {
+        padding: 15px 20px;
+        flex-wrap: wrap;
+        gap: 15px;
+    }
+    .headline {
+        font-size: 1.8em;
+    }
+    /* La cuadrícula se ajusta a un ancho mínimo más pequeño para tabletas */
+    .dashboard-grid {
+        gap: 20px;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    }
+    .card {
+        padding: 20px;
+    }
+    /* El perfil se vuelve una columna para mejor visualización */
+    .profile-header {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+    }
+    .profile-details h2 {
+        font-size: 1.5em;
+    }
+    .forms-to-fill-card .form-info {
+        flex-grow: 1;
+        flex-basis: 60%;
+        margin-right: 10px;
+    }
+}
+
+/* ========================================================= */
+/* === AJUSTES PARA DISPOSITIVOS MÓVILES (<= 768px) === */
+/* ========================================================= */
+@media (max-width: 768px) {
+    /* La barra lateral y el contenido principal se apilan verticalmente */
+    .dashboard-container {
+        flex-direction: column;
+    }
+    .sidebar {
+        width: 100%;
+        height: auto;
+        position: relative;
+        overflow-y: visible;
+        padding: 20px;
+        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+    }
+    .sidebar-header {
+        flex-direction: row;
+        align-items: center;
+        justify-content: center;
+        padding: 0 0 20px 0;
+        margin-bottom: 20px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    /* Ocultamos la navegación principal y la haremos con un menú desplegable si es necesario */
+    .sidebar-nav {
+        display: none;
+        width: 100%;
+    }
+    .sidebar-nav ul {
+        display: flex;
+        flex-direction: column;
+        padding: 0;
+    }
+    .sidebar-nav li a {
+        justify-content: center;
+        text-align: center;
+    }
+    .sidebar-nav li a i {
+        margin-right: 10px;
+    }
+    .main-content {
+        padding: 15px;
+    }
+    /* El encabezado principal se apila */
+    .main-header {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        gap: 10px;
+        padding: 15px;
+    }
+    .header-right {
+        gap: 15px;
+    }
+    /* La cuadrícula se convierte en una sola columna para dispositivos móviles */
+    .dashboard-grid {
+        grid-template-columns: 1fr;
+        gap: 15px;
+        grid-template-areas:
+            "profile"
+            "calendar"
+            "admin-users"
+            "owner-companies"
+            "inactive-companies"
+            "forms-to-fill"
+            "occupation-info"
+            "basic-info"
+            "onboarding"
+            "chart-1"
+            "data-table"
+            "progress";
+    }
+    /* Todos los ítems de la cuadrícula ocupan el ancho completo */
+    .profile-card,
+    .calendar-card,
+    .owner-companies-card,
+    .admin-users-card,
+    .inactive-companies-card,
+    .forms-to-fill-card,
+    .occupation-info-card,
+    .basic-info-card,
+    .onboarding-card,
+    .chart-card-1,
+    .data-table-card,
+    .progress-overview-card {
+        grid-column: 1 / -1;
+    }
+    /* Ajustes para la tarjeta de perfil */
+    .profile-header {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+    }
+    /* El grupo de información se vuelve una columna */
+    .info-group {
+        grid-template-columns: 1fr;
+    }
+    /* Los botones de acción se centran y se apilan */
+    .profile-actions {
+        justify-content: center;
+        flex-direction: column;
+        gap: 8px;
+    }
+    .edit-profile-btn {
+        width: 100%;
+        justify-content: center;
+    }
+    /* Ajustes para la tarjeta de formularios */
+    .forms-to-fill-card .favorite-form-item {
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 15px 10px;
+    }
+    .forms-to-fill-card .fill-form-btn {
+        width: 100%;
+        justify-content: center;
+        margin-top: 10px;
+    }
+    /* Tabla de calendario más compacta */
+    .calendar-table th, .calendar-table td {
+        padding: 8px 2px;
+        font-size: 0.8em;
+    }
+    /* Tareas de onboarding en móvil */
+    .task-item {
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+    .assigned-to, .due-date {
+        text-align: left;
+        width: 100%;
+        order: 3; /* Asegura que la fecha y el asignado aparezcan abajo */
+    }
+    .task-actions {
+        order: 4;
+    }
+}
+
+/* ========================================================= */
+/* === AJUSTES ADICIONALES PARA MÓVILES MUY PEQUEÑOS (<= 480px) === */
+/* ========================================================= */
+@media (max-width: 480px) {
+    .headline {
+        font-size: 1.5em;
+    }
+    .user-avatar {
+        width: 70px;
+        height: 70px;
+    }
+    .user-info h3 {
+        font-size: 1.2em;
+    }
+    .user-info p {
+        font-size: 0.9em;
+    }
+    .profile-picture {
+        width: 100px;
+        height: 100px;
+    }
+    .profile-details h2 {
+        font-size: 1.4em;
+    }
+    .profile-details p {
+        font-size: 0.9em;
+    }
+    .social-links {
+        justify-content: center;
+    }
+    .card-header h3 {
+        font-size: 1.2em;
+    }
+    .card-header .edit-btn,
+    .card-header .view-all-btn {
+        padding: 8px 12px;
+        font-size: 0.85em;
+    }
+    .occupation-info-card .profile-header {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+    }
+    .occupation-info-card .profile-details h2 {
+        font-size: 1.3em;
+    }
+    .occupation-info-card .edit-btn {
+        width: 100%;
+        justify-content: center;
+    }
+}
 
 
 

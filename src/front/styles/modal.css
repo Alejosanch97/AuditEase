@@ -1,40 +1,40 @@
-/* src/styles/modal.css - Estilos específicos para modales, ahora con colores directos */
+/* src/styles/modal.css - Estilos específicos para modales, ahora con colores directos y optimizado para responsividad */
 
 /* Modal Overlay: Fondo semi-transparente que cubre toda la pantalla */
 .modal-overlay {
-    position: fixed !important; /* Forzar la posición fija */
-    top: 0 !important;
-    left: 0 !important;
-    width: 100vw !important; /* Ocupa el 100% del ancho del viewport */
-    height: 100vh !important; /* Ocupa el 100% del alto del viewport */
-    background-color: rgba(0, 0, 0, 0.7) !important; /* Fondo negro semi-transparente */
-    display: flex !important; /* Para centrar el contenido del modal */
-    justify-content: center !important; /* Centrado horizontal */
-    align-items: center !important; /* Centrado vertical */
-    z-index: 9999 !important; /* ¡Aumentar z-index al máximo para forzar visibilidad! */
-    backdrop-filter: blur(4px) !important; /* Efecto de desenfoque sutil en el fondo */
-    -webkit-backdrop-filter: blur(4px) !important; /* Para compatibilidad con Safari */
-    animation: fadeIn 0.3s ease-out forwards !important; /* Animación de entrada */
-    visibility: visible !important; /* Asegurar que sea visible */
-    opacity: 1 !important; /* Asegurar opacidad total */
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    animation: fadeIn 0.3s ease-out forwards;
+    visibility: visible;
+    opacity: 1;
 }
 
-/* Modal Content: La "mini-ventana" donde está el formulario */
+/* Modal Content: La "mini-ventana" del modal */
 .modal-content {
-    background-color: #2e3b4e !important; /* Fondo del modal oscuro */
-    padding: 35px 40px !important; /* Más padding para que se vea más espacioso */
-    border-radius: 15px !important; /* Bordes más redondeados */
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5) !important; /* Sombra más pronunciada */
-    width: 90% !important;
-    max-width: 650px !important; /* Un poco más ancho para mejor distribución */
-    box-sizing: border-box !important; /* Incluye padding y borde en el ancho/alto */
-    position: relative !important; /* Para posicionar el botón de cerrar */
-    max-height: 90vh !important; /* Altura máxima para evitar desbordamiento en pantallas pequeñas */
-    overflow-y: auto !important; /* Permite desplazamiento si el contenido es largo */
-    color: #e0e0e0 !important; /* Color de texto claro para el contenido del modal */
-    animation: fadeInScale 0.3s ease-out forwards !important; /* Animación de entrada */
-    display: flex !important; /* Para organizar el contenido interno */
-    flex-direction: column !important;
+    background-color: #2e3b4e;
+    padding: 35px 40px;
+    border-radius: 15px;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5);
+    width: 90%;
+    max-width: 650px;
+    box-sizing: border-box;
+    position: relative;
+    max-height: 90vh;
+    overflow-y: auto;
+    color: #e0e0e0;
+    animation: fadeInScale 0.3s ease-out forwards;
+    display: flex;
+    flex-direction: column;
 }
 
 /* Animación de entrada del overlay */
@@ -57,43 +57,44 @@
 
 /* Título del modal */
 .modal-content h2 {
-    color: #61dafb; /* Azul claro de acento */
+    color: #61dafb;
     margin-bottom: 28px;
     text-align: center;
-    font-size: 2.2em; /* Título más grande */
-    font-weight: 700; /* Más audaz */
-    border-bottom: 2px solid #4a5a70; /* Borde más distintivo */
+    font-size: 2.2em;
+    font-weight: 700;
+    border-bottom: 2px solid #4a5a70;
     padding-bottom: 18px;
     letter-spacing: 0.5px;
 }
 
 /* Grupos de formulario */
 .form-group {
-    margin-bottom: 22px; /* Más espacio entre grupos de formulario */
+    margin-bottom: 22px;
 }
 
 .form-group label {
     display: block;
     margin-bottom: 10px;
-    font-weight: 600; /* Un poco más audaz */
-    color: #e0e0e0; /* Color de etiqueta más suave */
-    font-size: 1.05em; /* Ligeramente más grande */
+    font-weight: 600;
+    color: #e0e0e0;
+    font-size: 1.05em;
 }
 
 .form-group input[type="text"],
 .form-group input[type="email"],
-.form-group input[type="password"], /* Asegúrate de incluir todos los tipos de input */
+.form-group input[type="password"],
 .form-group input[type="number"],
 .form-group select,
 .form-group textarea {
-    width: calc(100% - 24px); /* Ajuste de ancho para padding */
-    padding: 14px; /* Más padding */
-    border: 1px solid #4a5a70; /* Borde sutil */
-    border-radius: 10px; /* Más redondeado */
+    width: 100%; /* Ajustado a 100% para mejor responsividad */
+    padding: 14px;
+    border: 1px solid #4a5a70;
+    border-radius: 10px;
     font-size: 1.05em;
-    background-color: #3a475a; /* Fondo del input un poco más claro que el modal */
-    color: #ffffff; /* Texto blanco en el input */
+    background-color: #3a475a;
+    color: #ffffff;
     transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    box-sizing: border-box; /* Para que el padding no afecte el ancho total */
 }
 
 .form-group input[type="text"]:focus,
@@ -101,29 +102,29 @@
 .form-group input[type="password"]:focus,
 .form-group input[type="number"]:focus,
 .form-group select:focus,
-.form-group input[type="textarea"]:focus {
-    border-color: #61dafb; /* Borde de enfoque azul */
+.form-group textarea:focus {
+    border-color: #61dafb;
     outline: none;
-    box-shadow: 0 0 0 3px rgba(97, 218, 251, 0.3); /* Sombra de enfoque */
+    box-shadow: 0 0 0 3px rgba(97, 218, 251, 0.3);
 }
 
 /* Estilos para el input de tipo file */
 .form-group input[type="file"] {
     width: 100%;
-    padding: 12px 0; /* Ajuste de padding */
-    color: #e0e0e0; /* Color del texto del input file */
-    /* Estilo del botón de seleccionar archivo para que sea más uniforme */
-    appearance: none; /* Quita el estilo por defecto del navegador */
-    background-color: #4a5a70; /* Color de fondo del botón */
-    border: 1px solid #61dafb; /* Borde azul */
+    padding: 12px 0;
+    color: #e0e0e0;
+    appearance: none;
+    background-color: #4a5a70;
+    border: 1px solid #61dafb;
     border-radius: 8px;
     cursor: pointer;
     font-size: 1em;
     padding: 10px 15px;
     transition: background-color 0.3s ease, border-color 0.3s ease;
+    box-sizing: border-box;
 }
 .form-group input[type="file"]::-webkit-file-upload-button {
-    background-color: #61dafb; /* Color del botón de selección */
+    background-color: #61dafb;
     color: white;
     padding: 8px 15px;
     border: none;
@@ -134,28 +135,15 @@
 }
 
 .form-group input[type="file"]::-webkit-file-upload-button:hover {
-    background-color: #4aadc4; /* Tono de azul más oscuro */
+    background-color: #4aadc4;
 }
 
-/* Vista previa de imagen de perfil y logo de empresa */
+/* Vistas previas de imágenes */
 .profile-image-preview {
     max-width: 140px;
     max-height: 140px;
-    border-radius: 50%; /* Mantener redondo para perfil */
+    border-radius: 50%;
     object-fit: cover;
-    margin-top: 20px;
-    margin-left: auto; /* Centrar la imagen */
-    margin-right: auto; /* Centrar la imagen */
-    display: block; /* Para que margin: auto funcione */
-    border: 3px solid #61dafb; /* Borde más visible */
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-}
-
-.company-logo-preview {
-    max-width: 140px; /* Tamaño similar */
-    max-height: 140px;
-    border-radius: 10px; /* Para logos, un poco redondeado pero no circular */
-    object-fit: contain; /* Para que el logo no se recorte y se ajuste */
     margin-top: 20px;
     margin-left: auto;
     margin-right: auto;
@@ -164,13 +152,26 @@
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
 }
 
-/* Botón para eliminar imagen (si aplica) */
+.company-logo-preview {
+    max-width: 140px;
+    max-height: 140px;
+    border-radius: 10px;
+    object-fit: contain;
+    margin-top: 20px;
+    margin-left: auto;
+    margin-right: auto;
+    display: block;
+    border: 3px solid #61dafb;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+/* Botón para eliminar imagen */
 .btn-remove-image {
-    background-color: #e74c3c; /* Rojo para eliminar */
+    background-color: #e74c3c;
     color: white;
     padding: 8px 15px;
     border: none;
-    border-radius: 8px; /* Valor directo */
+    border-radius: 8px;
     cursor: pointer;
     font-size: 0.9em;
     margin-top: 10px;
@@ -178,14 +179,13 @@
 }
 
 .btn-remove-image:hover {
-    background-color: #c0392b; /* Rojo más oscuro al pasar el mouse */
+    background-color: #c0392b;
 }
-
 
 /* Mensajes de error y éxito */
 .error-message {
-    color: #ff6b6b; /* Rojo vibrante para errores */
-    background-color: rgba(255, 107, 107, 0.1); /* Fondo claro para error */
+    color: #ff6b6b;
+    background-color: rgba(255, 107, 107, 0.1);
     border: 1px solid #ff6b6b;
     padding: 10px 15px;
     border-radius: 8px;
@@ -196,8 +196,8 @@
 }
 
 .success-message {
-    color: #61db93; /* Verde para éxito */
-    background-color: rgba(97, 219, 147, 0.1); /* Fondo claro para éxito */
+    color: #61db93;
+    background-color: rgba(97, 219, 147, 0.1);
     border: 1px solid #61db93;
     padding: 10px 15px;
     border-radius: 8px;
@@ -210,42 +210,42 @@
 /* Contenedor de acciones (botones) */
 .modal-actions {
     display: flex;
-    justify-content: center; /* Centrar los botones de acción */
-    gap: 20px; /* Más espacio entre botones */
+    justify-content: center;
+    gap: 20px;
     margin-top: 35px;
     padding-top: 15px;
-    border-top: 1px solid #4a5a70; /* Línea divisoria */
+    border-top: 1px solid #4a5a70;
 }
 
 .modal-actions .btn {
-    padding: 14px 30px; /* Más padding para botones */
+    padding: 14px 30px;
     border: none;
-    border-radius: 10px; /* Más redondeado */
+    border-radius: 10px;
     cursor: pointer;
-    font-size: 1.1em; /* Texto más grande */
-    font-weight: 700; /* Más audaz */
+    font-size: 1.1em;
+    font-weight: 700;
     transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
     letter-spacing: 0.5px;
 }
 
 .modal-actions .btn-primary {
-    background-color: #61dafb; /* Azul brillante como primario */
-    color: #20232a; /* Texto oscuro para contraste */
+    background-color: #61dafb;
+    color: #20232a;
 }
 
 .modal-actions .btn-primary:hover:not(:disabled) {
-    background-color: #4aadc4; /* Tono de azul más oscuro al pasar el ratón */
-    transform: translateY(-3px); /* Efecto de elevación */
+    background-color: #4aadc4;
+    transform: translateY(-3px);
     box-shadow: 0 6px 15px rgba(97, 218, 251, 0.4);
 }
 
 .modal-actions .btn-secondary {
-    background-color: #4a5a70; /* Gris azulado para secundario */
+    background-color: #4a5a70;
     color: #e0e0e0;
 }
 
 .modal-actions .btn-secondary:hover:not(:disabled) {
-    background-color: #3a475a; /* Tono de gris azulado más oscuro */
+    background-color: #3a475a;
     transform: translateY(-3px);
     box-shadow: 0 6px 15px rgba(74, 90, 112, 0.4);
 }
@@ -264,34 +264,37 @@
     right: 15px;
     background: none;
     border: none;
-    font-size: 2.2em; /* Más grande */
-    color: #e0e0e0; /* Color claro */
+    font-size: 2.2em;
+    color: #e0e0e0;
     cursor: pointer;
     padding: 5px 10px;
-    border-radius: 50%; /* Circular */
+    border-radius: 50%;
     transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
-    line-height: 1; /* Asegura que la 'x' esté centrada */
+    line-height: 1;
 }
 
 .close-button:hover {
-    background-color: #ff6b6b; /* Rojo al pasar el mouse */
-    color: white; /* Texto blanco al pasar el mouse */
-    transform: rotate(90deg); /* Animación de rotación */
+    background-color: #ff6b6b;
+    color: white;
+    transform: rotate(90deg);
 }
 
+/* ======================================================================== */
+/* --- ESTILOS DE BOTONES EXTERNOS AL MODAL --- */
+/* ======================================================================== */
 
 /* Estilos para el botón de "Editar Perfil" en la tarjeta principal (Profile.jsx) */
 .profile-card .profile-actions {
     display: flex;
     justify-content: center;
     padding-top: 25px;
-    border-top: 1px solid #4a5a70; /* Borde que coincide con el tema oscuro */
+    border-top: 1px solid #4a5a70;
     margin-top: 25px;
 }
 
 .edit-profile-btn {
-    background-color: #61dafb; /* Mismo azul que los botones primarios del modal */
-    color: #20232a; /* Texto oscuro */
+    background-color: #61dafb;
+    color: #20232a;
     border: none;
     padding: 12px 25px;
     border-radius: 8px;
@@ -310,8 +313,8 @@
 }
 
 /* Estilo para el botón "Editar" de la información laboral (Empresa) */
-.occupation-info-card .edit-btn { /* Apunta específicamente a la tarjeta de información laboral */
-    background-color: #f39c12; /* Naranja para los botones de editar secundarios */
+.occupation-info-card .edit-btn {
+    background-color: #f39c12;
     color: white;
     border: none;
     padding: 10px 18px;
@@ -323,16 +326,20 @@
 }
 
 .occupation-info-card .edit-btn:hover {
-    background-color: #e08e00; /* Naranja más oscuro */
+    background-color: #e08e00;
     transform: translateY(-2px);
 }
 
+/* ======================================================================== */
+/* --- MEDIA QUERIES PARA RESPONSIVIDAD --- */
+/* ======================================================================== */
 
-/* Media Queries para responsividad */
+/* Estilos para tabletas y pantallas de hasta 768px */
 @media (max-width: 768px) {
     .modal-content {
         width: 95%;
         padding: 20px;
+        max-width: 95%; /* Aseguramos que el ancho se ajuste mejor */
     }
 
     .modal-content h2 {
@@ -360,12 +367,13 @@
     }
 
     .modal-actions .btn {
-        width: 100%; /* Ocupa el ancho completo */
-        min-width: unset; /* Elimina el ancho mínimo para que se ajuste */
+        width: 100%;
+        min-width: unset;
         padding: 10px;
     }
 }
 
+/* Estilos para móviles pequeños hasta 480px */
 @media (max-width: 480px) {
     .modal-content {
         padding: 15px;
@@ -379,9 +387,27 @@
         font-size: 1em;
     }
 
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+        padding: 8px;
+        font-size: 0.9em;
+    }
+
     .profile-image-preview,
     .company-logo-preview {
         max-width: 80px;
         max-height: 80px;
+    }
+
+    /* Reducimos el tamaño de los botones de acción para que se ajusten bien */
+    .modal-actions .btn {
+        font-size: 0.9em;
+        padding: 8px;
+    }
+
+    .btn-remove-image {
+        font-size: 0.8em;
+        padding: 6px 12px;
     }
 }

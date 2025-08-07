@@ -1,10 +1,11 @@
-/* src/styles/modal.css */
+/* src/styles/modal.css - Estilos mejorados para el modal responsive */
 
-/* Variables de color (asegúrate de que estas coincidan con tu :root en dashboard.css) */
-/* Si ya tienes estas definidas globalmente, no necesitas repetirlas aquí */
+/* ======================================================================== */
+/* --- VARIABLES Y ESTILOS GENERALES --- */
+/* ======================================================================== */
+/* Variables de color y tipografía (si no están ya definidas globalmente) */
 :root {
     --primary-dark: #2c3e50;
-    --primary-light: #34495e;
     --secondary-accent: #1abc9c;
     --text-dark: #2f3640;
     --text-light: #ecf0f1;
@@ -14,44 +15,48 @@
     --shadow-light: rgba(0, 0, 0, 0.08);
     --error-color: #e74c3c;
     --info-color: #3498db;
-    --warning-color: #f39c12;
-    --success-color: #28a745; /* Añade un color de éxito si no lo tienes */
+    --success-color: #28a745;
     --font-family-base: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    --border-radius-base: 8px; /* Variable para radio de borde, si no la tienes */
+    --border-radius-base: 8px;
 }
 
-
-/* Overlay para oscurecer el fondo */
+/* ======================================================================== */
+/* --- OVERLAY DEL MODAL --- */
+/* ======================================================================== */
 .modal-overlay {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0, 0, 0, 0.6); /* Fondo semi-transparente oscuro */
+    background-color: rgba(0, 0, 0, 0.6);
     display: flex;
     justify-content: center;
     align-items: center;
-    z-index: 1000; /* Asegura que esté por encima de todo lo demás */
-    backdrop-filter: blur(5px); /* Efecto de desenfoque en el fondo */
-    animation: fadeIn 0.3s ease-out; /* Animación de entrada */
+    z-index: 1000;
+    backdrop-filter: blur(5px);
+    animation: fadeIn 0.3s ease-out;
 }
 
-/* Contenedor principal del modal */
+/* ======================================================================== */
+/* --- CONTENIDO PRINCIPAL DEL MODAL --- */
+/* ======================================================================== */
 .modal-content {
-    background-color: var(--card-background); /* Fondo blanco */
-    border-radius: var(--border-radius-base); /* Bordes redondeados */
+    background-color: var(--card-background);
+    border-radius: var(--border-radius-base);
     padding: 30px;
     width: 90%;
-    max-width: 600px; /* Ancho máximo para el modal */
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25); /* Sombra más pronunciada */
+    max-width: 600px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
     position: relative;
-    animation: slideIn 0.3s ease-out; /* Animación de entrada */
+    animation: slideIn 0.3s ease-out;
     display: flex;
     flex-direction: column;
 }
 
-/* Título del modal */
+/* ======================================================================== */
+/* --- TÍTULO Y BOTÓN DE CIERRE --- */
+/* ======================================================================== */
 .modal-content h2 {
     color: var(--primary-dark);
     font-size: 2em;
@@ -59,33 +64,34 @@
     margin-bottom: 25px;
     text-align: center;
     font-weight: 700;
-    border-bottom: 2px solid var(--border-color-light); /* Línea divisoria */
+    border-bottom: 2px solid var(--border-color-light);
     padding-bottom: 15px;
 }
 
-/* Botón de cerrar (la "X") */
 .close-button {
     position: absolute;
     top: 15px;
     right: 15px;
     background: none;
     border: none;
-    font-size: 2em; /* Más grande */
-    color: var(--text-dark); /* Color oscuro */
+    font-size: 2em;
+    color: var(--text-dark);
     cursor: pointer;
     padding: 5px 10px;
-    border-radius: 50%; /* Circular */
+    border-radius: 50%;
     transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
-    line-height: 1; /* Asegura que la 'x' esté centrada */
+    line-height: 1;
 }
 
 .close-button:hover {
-    background-color: var(--error-color); /* Rojo al pasar el mouse */
-    color: white; /* Texto blanco al pasar el mouse */
-    transform: rotate(90deg); /* Animación de rotación */
+    background-color: var(--error-color);
+    color: white;
+    transform: rotate(90deg);
 }
 
-/* Grupos de formulario */
+/* ======================================================================== */
+/* --- ELEMENTOS DEL FORMULARIO --- */
+/* ======================================================================== */
 .form-group {
     margin-bottom: 20px;
 }
@@ -101,36 +107,34 @@
 .form-group input[type="text"],
 .form-group input[type="email"],
 .form-group input[type="file"] {
-    width: calc(100% - 20px); /* Ocupa casi todo el ancho, dejando padding */
+    width: calc(100% - 22px); /* Ajuste para compensar el padding */
     padding: 12px 10px;
     border: 1px solid var(--border-color-light);
     border-radius: var(--border-radius-base);
     font-size: 1em;
     color: var(--text-dark);
-    background-color: var(--background-body); /* Fondo ligeramente gris para inputs */
+    background-color: var(--background-body);
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .form-group input[type="text"]:focus,
 .form-group input[type="email"]:focus,
 .form-group input[type="file"]:focus {
-    border-color: var(--secondary-accent); /* Borde verde al enfocar */
-    box-shadow: 0 0 0 3px rgba(26, 188, 156, 0.2); /* Sombra de enfoque suave */
-    outline: none; /* Elimina el contorno predeterminado del navegador */
+    border-color: var(--secondary-accent);
+    box-shadow: 0 0 0 3px rgba(26, 188, 156, 0.2);
+    outline: none;
 }
 
-/* Estilo para la vista previa de la imagen */
 .profile-image-preview {
-    display: block; /* Para que ocupe su propia línea */
+    display: block;
     margin-top: 15px;
     border: 3px solid var(--secondary-accent);
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-    object-fit: cover; /* Recorta la imagen para que encaje */
+    object-fit: cover;
 }
 
-/* Botón para eliminar imagen actual (si lo usas) */
 .btn-remove-image {
-    background-color: var(--error-color); /* Rojo para eliminar */
+    background-color: var(--error-color);
     color: white;
     border: none;
     padding: 8px 15px;
@@ -142,40 +146,41 @@
 }
 
 .btn-remove-image:hover {
-    background-color: #c0392b; /* Rojo más oscuro al pasar el mouse */
+    background-color: #c0392b;
 }
 
-/* Mensajes de error y éxito */
-.error-message {
-    color: var(--error-color);
-    background-color: rgba(231, 76, 60, 0.1); /* Fondo claro para error */
-    border: 1px solid var(--error-color);
+/* Mensajes de estado */
+.error-message,
+.success-message {
     padding: 10px;
     border-radius: var(--border-radius-base);
     margin-bottom: 20px;
     font-size: 0.9em;
     text-align: center;
+}
+
+.error-message {
+    color: var(--error-color);
+    background-color: rgba(231, 76, 60, 0.1);
+    border: 1px solid var(--error-color);
 }
 
 .success-message {
-    color: var(--success-color); /* Verde para éxito */
-    background-color: rgba(40, 167, 69, 0.1); /* Fondo claro para éxito */
+    color: var(--success-color);
+    background-color: rgba(40, 167, 69, 0.1);
     border: 1px solid var(--success-color);
-    padding: 10px;
-    border-radius: var(--border-radius-base);
-    margin-bottom: 20px;
-    font-size: 0.9em;
-    text-align: center;
 }
 
-/* Contenedor de acciones (botones) */
+/* ======================================================================== */
+/* --- BOTONES DE ACCIÓN --- */
+/* ======================================================================== */
 .modal-actions {
     display: flex;
-    justify-content: flex-end; /* Alinea los botones a la derecha */
-    gap: 15px; /* Espacio entre los botones */
-    margin-top: 20px; /* Espacio superior */
+    justify-content: flex-end;
+    gap: 15px;
+    margin-top: 20px;
     padding-top: 20px;
-    border-top: 1px solid var(--border-color-light); /* Línea divisoria */
+    border-top: 1px solid var(--border-color-light);
 }
 
 .modal-actions .btn {
@@ -186,27 +191,27 @@
     font-size: 1.05em;
     font-weight: 600;
     transition: all 0.2s ease;
-    min-width: 120px; /* Ancho mínimo para los botones */
+    min-width: 120px;
 }
 
 .modal-actions .btn-primary {
-    background-color: var(--secondary-accent); /* Verde principal */
+    background-color: var(--secondary-accent);
     color: white;
 }
 
 .modal-actions .btn-primary:hover:not(:disabled) {
-    background-color: var(--primary-dark); /* Azul oscuro al pasar el mouse */
-    transform: translateY(-2px); /* Pequeño efecto de elevación */
+    background-color: var(--primary-dark);
+    transform: translateY(-2px);
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
 }
 
 .modal-actions .btn-secondary {
-    background-color: var(--border-color-light); /* Gris claro */
-    color: var(--text-dark); /* Texto oscuro */
+    background-color: var(--border-color-light);
+    color: var(--text-dark);
 }
 
 .modal-actions .btn-secondary:hover:not(:disabled) {
-    background-color: #d0d5db; /* Gris un poco más oscuro al pasar el mouse */
+    background-color: #d0d5db;
     transform: translateY(-2px);
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
 }
@@ -216,7 +221,9 @@
     cursor: not-allowed;
 }
 
-/* Animaciones */
+/* ======================================================================== */
+/* --- ANIMACIONES --- */
+/* ======================================================================== */
 @keyframes fadeIn {
     from { opacity: 0; }
     to { opacity: 1; }
@@ -233,57 +240,66 @@
     }
 }
 
-/* Media Queries para responsividad */
+/* ======================================================================== */
+/* --- MEDIA QUERIES PARA RESPONSIVIDAD --- */
+/* ======================================================================== */
+
+/* Estilos para tabletas y pantallas de hasta 768px */
 @media (max-width: 768px) {
     .modal-content {
         width: 95%;
         padding: 20px;
     }
-
     .modal-content h2 {
         font-size: 1.8em;
         margin-bottom: 20px;
         padding-bottom: 10px;
     }
-
     .close-button {
         font-size: 1.8em;
         top: 10px;
         right: 10px;
     }
-
     .form-group input {
         padding: 10px;
         font-size: 0.95em;
     }
-
     .modal-actions {
-        flex-direction: column; /* Apila los botones en pantallas pequeñas */
+        flex-direction: column; /* Apila los botones verticalmente */
         gap: 10px;
     }
-
     .modal-actions .btn {
         width: 100%; /* Ocupa el ancho completo */
-        min-width: unset; /* Elimina el ancho mínimo para que se ajuste */
+        min-width: unset;
         padding: 10px;
+        font-size: 1em;
     }
 }
 
+/* Estilos para móviles pequeños hasta 480px */
 @media (max-width: 480px) {
     .modal-content {
         padding: 15px;
     }
-
     .modal-content h2 {
         font-size: 1.6em;
+        margin-bottom: 15px;
     }
-
+    .close-button {
+        font-size: 1.6em;
+    }
     .form-group label {
-        font-size: 1em;
+        font-size: 0.95em;
     }
-
+    .form-group input {
+        font-size: 0.9em;
+    }
     .profile-image-preview {
         max-width: 80px;
         max-height: 80px;
+    }
+    .modal-actions .btn {
+        font-size: 0.95em;
+        padding: 8px;
     }
 }
