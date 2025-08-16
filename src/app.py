@@ -3,7 +3,7 @@ This module takes care of starting the API Server, Loading the DB and Adding the
 """
 import os
 from flask import Flask, request, jsonify, url_for, send_from_directory
-from flask_migrate import Migrate
+from flask_migrate import Migrate, upgrade
 from flask_swagger import swagger
 from api.utils import APIException, generate_sitemap
 from api.models import db
@@ -19,10 +19,10 @@ from datetime import timedelta
 import cloudinary
 import cloudinary.uploader
 import cloudinary.api
-from dotenv import load_dotenv # <--- Para cargar variables de entorno desde .env
+from dotenv import load_dotenv  # <--- Para cargar variables de entorno desde .env
 
 # *** IMPORTACIÓN NECESARIA PARA CORS ***
-from flask_cors import CORS # <--- AÑADE ESTA LÍNEA
+from flask_cors import CORS  # <--- AÑADE ESTA LÍNEA
 
 # *** NUEVAS IMPORTACIONES PARA CORREO Y TOKEN ***
 from flask_mail import Mail
@@ -45,31 +45,26 @@ app.config["JWT_SECRET_KEY"] = os.getenv("FLASK_APP_KEY")
 app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(hours=24)
 
 # *** CONFIGURACIÓN DE CORREO Y SERIALIZADOR ***
-# ⚠️ ADVERTENCIA DE SEGURIDAD: Usas una clave secreta débil. Para producción,
-# usa una clave larga y aleatoria.
 app.config['SECRET_KEY'] = 'CREAR1997'
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_PORT'] = 587
 app.config['MAIL_USE_TLS'] = True
 app.config['MAIL_USERNAME'] = 'sgsstflow@gmail.com'
 app.config['MAIL_PASSWORD'] = 'ofut rtrw kiqk lzpr'
-# ----------------------------------------------
-
 
 # *** INICIALIZACIÓN DE EXTENSIONES ***
 jwt = JWTManager(app)
-mail = Mail(app) # <--- Inicialización de Flask-Mail
+mail = Mail(app)  # <--- Inicialización de Flask-Mail
 
 # *** CONFIGURACIÓN DE CLOUDINARY ***
 cloudinary.config(
-  cloud_name = os.getenv('CLOUDINARY_CLOUD_NAME'),
-  api_key = os.getenv('CLOUDINARY_API_KEY'),
-  api_secret = os.getenv('CLOUDINARY_API_SECRET'),
-  secure = True
+    cloud_name=os.getenv('CLOUDINARY_CLOUD_NAME'),
+    api_key=os.getenv('CLOUDINARY_API_KEY'),
+    api_secret=os.getenv('CLOUDINARY_API_SECRET'),
+    secure=True
 )
 
-
-# database condiguration
+# *** CONFIGURACIÓN DE BASE DE DATOS ***
 db_url = os.getenv("DATABASE_URL")
 if db_url is not None:
     app.config['SQLALCHEMY_DATABASE_URI'] = db_url.replace(
@@ -81,12 +76,19 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 MIGRATE = Migrate(app, db, compare_type=True)
 db.init_app(app)
 
+# 🔹 Ejecutar migraciones automáticamente al iniciar (para Render plan gratis)
+with app.app_context():
+    try:
+        upgrade()
+        print("✅ Migraciones aplicadas correctamente")
+    except Exception as e:
+        print(f"⚠️ Error al aplicar migraciones: {e}")
+
 # add the admin
 setup_admin(app)
 
 # add the commands
 setup_commands(app)
-
 
 # Add all endpoints form the API with a "api" prefix
 app.register_blueprint(api, url_prefix='/api')
