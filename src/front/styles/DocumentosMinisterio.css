@@ -1,0 +1,229 @@
+/* Estilos generales de la página */
+.documentos-ministerio-page {
+  font-family: 'Inter', sans-serif;
+  background-color: #f0f2f5;
+  color: #333;
+  min-height: 100vh;
+  padding: 2rem;
+}
+
+/* Encabezado y botones principales */
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  padding: 1rem;
+  background-color: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.page-header h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  margin: 0;
+  color: #1a202c;
+}
+
+.btn-primary-header {
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #ffffff;
+  background-color: #4a5568;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-primary-header:hover {
+  background-color: #2d3748;
+  transform: translateY(-2px);
+}
+
+/* Contenedor de lista de documentos y categorías */
+.document-list-container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* Estado de la página vacía */
+.empty-state {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 60vh;
+  text-align: center;
+  color: #718096;
+  font-size: 1.2rem;
+  flex-direction: column;
+}
+
+.empty-state button {
+  margin-top: 1rem;
+}
+
+.categories-list {
+  display: grid;
+  gap: 2rem;
+}
+
+/* Sección de la categoría */
+.category-section {
+  background-color: #ffffff;
+  padding: 2rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.category-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.category-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #2d3748;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.category-description {
+  color: #718096;
+  font-style: italic;
+  margin-top: -0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.category-actions {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+/* Cuadrícula de documentos */
+.document-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 1.5rem;
+  margin-top: 1rem;
+}
+
+.document-card {
+  background-color: #f7fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.document-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+}
+
+.card-icon {
+  font-size: 2.5rem;
+  color: #e53e3e;
+  margin-bottom: 1rem;
+}
+
+.document-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0 0 0.5rem 0;
+  color: #2d3748;
+}
+
+.document-date {
+  font-size: 0.85rem;
+  color: #718096;
+}
+
+.card-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  justify-content: flex-end;
+}
+
+/* Estilos de botones */
+.btn-secondary,
+.btn-danger {
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.btn-secondary {
+  background-color: #e2e8f0;
+  color: #2d3748;
+}
+
+.btn-secondary:hover {
+  background-color: #cbd5e0;
+}
+
+.btn-danger,
+.btn-danger-icon {
+  background-color: #e53e3e;
+  color: #ffffff;
+}
+
+.btn-danger:hover,
+.btn-danger-icon:hover {
+  background-color: #c6c5c5;
+}
+
+.btn-danger-icon {
+  background-color: transparent;
+  color: #e53e3e;
+  border: none;
+  font-size: 1rem;
+  padding: 0.5rem;
+  cursor: pointer;
+  transition: color 0.3s ease;
+}
+
+/* Mensajes de estado */
+.loading-message,
+.error-message,
+.empty-category {
+  text-align: center;
+  font-style: italic;
+  color: #718096;
+  margin-top: 2rem;
+}
+
+.error-message {
+  color: #e53e3e;
+}
+
+/* Adaptación a dispositivos móviles */
+@media (max-width: 768px) {
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+}

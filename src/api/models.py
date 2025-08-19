@@ -95,6 +95,9 @@ class Usuario(db.Model):
     envios_formulario: Mapped[List["EnvioFormulario"]] = relationship("EnvioFormulario", back_populates="usuario")
     notificaciones: Mapped[List["Notificacion"]] = relationship("Notificacion", back_populates="usuario_destinatario")
 
+    documentos_subidos: Mapped[List["DocumentosMinisterio"]] = relationship("DocumentosMinisterio", back_populates="usuario_que_subio")
+
+
     def serialize(self):
         empresa_data = None
         if self.empresa:
@@ -409,4 +412,63 @@ class Notificacion(db.Model):
             "estado": self.estado,
             "frecuencia_notificacion": self.frecuencia_notificacion,
             "horas_especificas_envio": self.horas_especificas_envio
+        }
+
+# Modelo de la tabla de Documentos del Ministerio
+class DocumentoCategoria(db.Model):
+    __tablename__ = 'documento_categorias'
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    nombre: Mapped[str] = mapped_column(String(255), nullable=False, unique=True)
+    descripcion: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    fecha_creacion: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    
+    # Relación uno a muchos con la tabla de documentos
+    documentos: Mapped[List["DocumentosMinisterio"]] = relationship("DocumentosMinisterio", back_populates="categoria")
+
+    def __repr__(self):
+        return f'<DocumentoCategoria {self.nombre}>'
+
+    def serialize(self):
+        return {
+            "id": self.id,
+            "nombre": self.nombre,
+            "descripcion": self.descripcion,
+            "fecha_creacion": self.fecha_creacion.isoformat() if self.fecha_creacion else None,
+            "documentos": [doc.serialize() for doc in self.documentos] # Serializamos los documentos de la categoría
+        }
+
+
+# =========================================================================
+# MODELO DE DOCUMENTOS MODIFICADO
+# =========================================================================
+class DocumentosMinisterio(db.Model):
+    __tablename__ = 'documentos_ministerio'
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    nombre: Mapped[str] = mapped_column(String(255), nullable=False)
+    descripcion: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    url_archivo: Mapped[str] = mapped_column(String(500), nullable=False)
+    fecha_subida: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    user_id: Mapped[int] = mapped_column(Integer, ForeignKey('usuarios.id_usuario'), nullable=False)
+
+    # NUEVA CLAVE FORÁNEA: vincula el documento a una categoría
+    categoria_id: Mapped[int] = mapped_column(Integer, ForeignKey('documento_categorias.id'), nullable=False)
+
+    # Relaciones
+    usuario_que_subio: Mapped["Usuario"] = relationship("Usuario", back_populates="documentos_subidos")
+    categoria: Mapped["DocumentoCategoria"] = relationship("DocumentoCategoria", back_populates="documentos")
+
+
+    def __repr__(self):
+        return f'<DocumentoMinisterio {self.nombre}>'
+
+    def serialize(self):
+        return {
+            "id": self.id,
+            "nombre": self.nombre,
+            "descripcion": self.descripcion,
+            "url_archivo": self.url_archivo,
+            "fecha_subida": self.fecha_subida.isoformat() if self.fecha_subida else None,
+            "user_id": self.user_id,
+            "categoria_id": self.categoria_id
         }

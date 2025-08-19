@@ -28,7 +28,7 @@ import { UserManagement } from "./components/UserManagement";
 import { ForgotPassword } from "./components/ForgotPassword";
 import { RestablecerPassword } from "./components/RestablecerPassword";
 
-
+import { DocumentosMinisterio } from "./components/DocumentosMinisterio";
 
 export const router = createBrowserRouter(
     createRoutesFromElements(
@@ -62,6 +62,7 @@ export const router = createBrowserRouter(
             <Route path="/answer-form/:formId" element={<AnswerFormPage />} /> {/* Página para contestar un formulario específico */}
             <Route path="/analytics" element={<Analytics />} />
             <Route path="/user-management" element={<UserManagement />} />
+            <Route path="/documentos-ministerio" element={<DocumentosMinisterio />} />
             {/* Si tienes otras rutas protegidas, añádelas aquí */}
         </Route>
       </>

@@ -2,7 +2,7 @@
 
 # ... (tus otras importaciones existentes)
 from flask import Flask, request, jsonify, url_for, Blueprint, redirect, current_app
-from api.models import db, Usuario, Empresa, Espacio, SubEspacio, Objeto, Formulario, Pregunta, TipoRespuesta, EnvioFormulario, Respuesta, Observacion, Notificacion, formulario_espacio, formulario_subespacio, formulario_objeto, formulario_tipo_respuesta
+from api.models import db, Usuario, Empresa, Espacio, SubEspacio, Objeto, Formulario, Pregunta, TipoRespuesta, EnvioFormulario, Respuesta, Observacion, Notificacion, formulario_espacio, formulario_subespacio, formulario_objeto, formulario_tipo_respuesta, DocumentosMinisterio, DocumentoCategoria
 from api.utils import generate_sitemap, APIException
 from flask_cors import CORS
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -4413,3 +4413,195 @@ def get_responses_for_analytics(form_id):
     except Exception as e:
         print(f"Error al obtener datos de análisis: {e}")
         return jsonify({"error": f"Error interno del servidor: {str(e)}"}), 500
+
+# Función auxiliar para extraer el public_id de la URL de Cloudinary
+def get_public_id_from_url(url):
+    """Extrae el public_id de una URL de Cloudinary."""
+    # La URL completa es algo como: https://res.cloudinary.com/.../raw/upload/v12345678/mi_archivo.pdf
+    # El public_id es 'mi_archivo'
+    if '/upload/' in url:
+        return url.split('/')[-1].split('.')[0]
+    return None
+
+# --- Rutas para la gestión de categorías ---
+
+@api.route('/documentos-categorias', methods=['POST'])
+@role_required(['owner', 'admin'])
+def create_documento_categoria():
+    """
+    Endpoint para crear una nueva categoría de documento.
+    """
+    data = request.get_json()
+    nombre = data.get('nombre')
+    descripcion = data.get('descripcion')
+
+    if not nombre or nombre.strip() == "":
+        return jsonify({"error": "El nombre de la categoría es obligatorio."}), 400
+
+    existing_category = DocumentoCategoria.query.filter_by(nombre=nombre).first()
+    if existing_category:
+        return jsonify({"error": "Ya existe una categoría con este nombre."}), 409
+
+    try:
+        nueva_categoria = DocumentoCategoria(
+            nombre=nombre,
+            descripcion=descripcion
+        )
+        db.session.add(nueva_categoria)
+        db.session.commit()
+        return jsonify({
+            "message": "Categoría creada exitosamente.",
+            "categoria": nueva_categoria.serialize()
+        }), 201
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error al crear la categoría: {str(e)}")
+        return jsonify({"error": "Error interno del servidor."}), 500
+
+
+@api.route('/documentos-categorias/<int:categoria_id>', methods=['DELETE'])
+@role_required(['owner', 'admin'])
+def delete_documento_categoria(categoria_id):
+    """
+    Borra una categoría y todos los documentos asociados a ella,
+    incluyendo los archivos de Cloudinary.
+    """
+    try:
+        categoria = DocumentoCategoria.query.get(categoria_id)
+
+        if not categoria:
+            return jsonify({"error": "Categoría no encontrada."}), 404
+
+        # Eliminar los archivos de Cloudinary y los registros de los documentos
+        for documento in categoria.documentos:
+            try:
+                # Extraer el public_id del archivo para Cloudinary
+                public_id = get_public_id_from_url(documento.url_archivo)
+                if public_id:
+                    # 'raw' es el tipo de recurso que usamos para los PDF
+                    cloudinary.uploader.destroy(public_id, resource_type="raw")
+                
+                db.session.delete(documento)
+            except Exception as e:
+                # Si hay un error con Cloudinary, lo registramos pero continuamos
+                print(f"Error al eliminar el archivo de Cloudinary para el documento {documento.id}: {str(e)}")
+                # A pesar del error en Cloudinary, borramos el registro de la DB
+                db.session.delete(documento)
+
+        db.session.commit() # Confirmar la eliminación de los documentos
+
+        # Finalmente, eliminar la categoría de la base de datos
+        db.session.delete(categoria)
+        db.session.commit()
+        
+        return jsonify({"message": f"Categoría '{categoria.nombre}' y todos sus documentos eliminados exitosamente."}), 200
+
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error al eliminar la categoría y sus documentos: {str(e)}")
+        return jsonify({"error": f"Error interno del servidor al eliminar la categoría: {str(e)}"}), 500
+
+# --- Rutas para la gestión de documentos del ministerio (actualizadas) ---
+
+@api.route('/documentos-ministerio', methods=['POST'])
+@role_required(['owner', 'admin'])
+def upload_documento_ministerio():
+    """
+    Sube un documento PDF a Cloudinary y crea una entrada en la base de datos,
+    asociándolo a una categoría.
+    """
+    current_user_id = get_jwt_identity()
+
+    documento_pdf = request.files.get('documento_pdf')
+    titulo = request.form.get('titulo')
+    categoria_id = request.form.get('categoria_id')
+
+    if not documento_pdf:
+        return jsonify({"error": "No se proporcionó ningún archivo."}), 400
+    if not titulo or titulo.strip() == "":
+        return jsonify({"error": "El título del documento es obligatorio."}), 400
+    if not categoria_id:
+        return jsonify({"error": "La categoría del documento es obligatoria."}), 400
+
+    try:
+        categoria = DocumentoCategoria.query.get(int(categoria_id))
+        if not categoria:
+            return jsonify({"error": "La categoría seleccionada no existe."}), 404
+
+        if documento_pdf.content_type != 'application/pdf':
+            return jsonify({"error": "Solo se permiten archivos PDF."}), 400
+
+        # Subir el documento a Cloudinary
+        upload_result = cloudinary.uploader.upload(documento_pdf, resource_type="raw")
+
+        # Crear un nuevo registro en la base de datos
+        nuevo_documento = DocumentosMinisterio(
+            nombre=titulo,
+            url_archivo=upload_result['secure_url'],
+            fecha_subida=datetime.utcnow(),
+            user_id=int(current_user_id),
+            categoria_id=int(categoria_id)
+        )
+
+        db.session.add(nuevo_documento)
+        db.session.commit()
+
+        return jsonify({
+            "message": "Documento subido y card creada exitosamente.",
+            "documento": nuevo_documento.serialize()
+        }), 201
+
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error al subir el documento: {str(e)}")
+        return jsonify({"error": f"Error interno del servidor al subir el documento: {str(e)}"}), 500
+
+
+@api.route('/documentos-ministerio', methods=['GET'])
+@jwt_required()
+def get_all_documentos_ministerio_with_categories():
+    """
+    Devuelve la lista de todas las categorías, con sus documentos anidados.
+    """
+    try:
+        categorias = DocumentoCategoria.query.all()
+        lista_categorias = [cat.serialize() for cat in categorias]
+
+        return jsonify({
+            "categorias": lista_categorias
+        }), 200
+    except Exception as e:
+        print(f"Error al obtener las categorías y documentos: {str(e)}")
+        return jsonify({"error": "Error interno del servidor."}), 500
+
+
+@api.route('/documentos-ministerio/<int:documento_id>', methods=['DELETE'])
+@role_required(['owner', 'admin'])
+def delete_documento_ministerio(documento_id):
+    """
+    Borra un documento específico de la base de datos y de Cloudinary.
+    """
+    try:
+        documento = DocumentosMinisterio.query.get(documento_id)
+
+        if not documento:
+            return jsonify({"error": "Documento no encontrado."}), 404
+
+        # Eliminar el archivo de Cloudinary
+        public_id = get_public_id_from_url(documento.url_archivo)
+        if public_id:
+            try:
+                cloudinary.uploader.destroy(public_id, resource_type="raw")
+            except Exception as e:
+                print(f"Advertencia: No se pudo eliminar el archivo de Cloudinary. {str(e)}")
+
+        # Eliminar el registro de la base de datos
+        db.session.delete(documento)
+        db.session.commit()
+
+        return jsonify({"message": "Documento eliminado exitosamente."}), 200
+
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error al eliminar el documento: {str(e)}")
+        return jsonify({"error": f"Error interno del servidor al eliminar el documento: {str(e)}"}), 500

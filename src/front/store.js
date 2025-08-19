@@ -1,9 +1,9 @@
-// src/store/flux.js (o tu archivo de store principal)
+// src/store/flux.js
 
 export const initialStore = () => {
   return {
-    message: null, // Cambiado para ser un objeto { type: 'success' | 'error', text: '...' }
-    todos: [ // Mantengo esto por si lo sigues usando, si no, puedes eliminarlo
+    message: null, 
+    todos: [ 
       {
         id: 1,
         title: "Make the bed",
@@ -16,34 +16,34 @@ export const initialStore = () => {
       }
     ],
     // *** PROPIEDADES PARA EL ESTADO DEL USUARIO Y AUTENTICACIÓN ***
-    user: null, // Aquí se guardará el objeto completo del usuario logeado
-              // Incluirá campos como 'firma_digital_url' si el backend los envía.
-    isLoggedIn: false, // Un booleano para indicar si el usuario está autenticado
-    requiresPasswordChange: false, // Para saber si el usuario necesita cambiar su contraseña inicial
-    userRole: null, // Para acceso rápido al rol del usuario logeado
+    user: null, 
+    isLoggedIn: false, 
+    requiresPasswordChange: false, 
+    userRole: null, 
 
     // *** PROPIEDADES PARA EMPRESAS (si las gestionas en el store directamente) ***
-    // Si el owner lista empresas, podrías tener un array aquí
-    empresas: [], // Lista de empresas (principalmente para el owner)
-    currentEmpresa: null, // Empresa actualmente seleccionada/editada
+    empresas: [],
+    currentEmpresa: null,
 
     // *** PROPIEDADES PARA ESPACIOS, SUBESPACIOS Y OBJETOS ***
-    espacios: [], // Lista de todos los espacios de la empresa del usuario (o todos para owner)
-    subEspacios: [], // Lista de todos los sub-espacios de la empresa del usuario (o todos para owner)
-    objetos: [], // Lista de todos los objetos de la empresa del usuario (o todos para owner)
+    espacios: [],
+    subEspacios: [],
+    objetos: [],
 
     // *** PROPIEDADES PARA FORMULARIOS, PREGUNTAS Y ENVÍOS ***
-    formularios: [], // Lista de todos los formularios disponibles (filtrados por empresa/plantilla)
-                    // Los objetos de formulario aquí incluirán los nuevos campos:
-                    // es_plantilla, es_plantilla_global, compartir_con_empresas_ids,
-                    // notificaciones_activas, automatizacion_activa
-    currentForm: null, // El formulario actualmente seleccionado/editado, incluyendo sus preguntas y relaciones
-                       // También contendrá los nuevos campos de plantilla/automatización.
-    preguntas: [], // Preguntas de un formulario específico (útil para listas)
-    tiposRespuesta: [], // Lista de todos los tipos de respuesta disponibles (ej: texto, numérico, booleano, firma, dibujo, seleccion_recursos)
-    enviosFormulario: [], // Lista de todos los envíos de formulario (respuestas)
-    currentEnvio: null, // El envío de formulario actualmente seleccionado para ver sus detalles
-                        // Las respuestas dentro de este objeto contendrán 'valor_firma_url' como una lista de URLs.
+    formularios: [],
+    currentForm: null,
+    preguntas: [],
+    tiposRespuesta: [],
+    enviosFormulario: [],
+    currentEnvio: null,
+
+    // =========================================================================
+    // *** PROPIEDADES PARA DOCUMENTOS DEL MINISTERIO (NUEVO) ***
+    // =========================================================================
+    documentosCategorias: [], // Un array de categorías, cada una con un array de documentos.
+    isLoadingDocumentos: false, // Booleano para gestionar el estado de carga de los documentos.
+    errorDocumentos: null, // Para guardar mensajes de error relacionados con la carga/subida de documentos.
   }
 }
 
@@ -55,7 +55,7 @@ export default function storeReducer(store, action = {}) {
         message: action.payload
       };
 
-    case 'ADD_TASK': // Mantengo esta acción si la sigues usando
+    case 'ADD_TASK': 
       const { id, color } = action.payload
       return {
         ...store,
@@ -64,8 +64,6 @@ export default function storeReducer(store, action = {}) {
 
     // *** ACCIONES PARA MANEJO DE AUTENTICACIÓN ***
     case 'SET_USER':
-      // El 'payload' será el objeto 'usuario' completo que viene de tu backend.
-      // Este objeto ya incluirá 'firma_digital_url' y otros campos nuevos.
       return {
         ...store,
         user: action.payload,
@@ -81,8 +79,7 @@ export default function storeReducer(store, action = {}) {
         isLoggedIn: false,
         requiresPasswordChange: false,
         userRole: null,
-        // Limpiamos todos los datos sensibles o específicos del usuario al cerrar sesión
-        empresas: [], // Si se cargan por usuario
+        empresas: [],
         espacios: [],
         subEspacios: [],
         objetos: [],
@@ -92,6 +89,9 @@ export default function storeReducer(store, action = {}) {
         tiposRespuesta: [],
         enviosFormulario: [],
         currentEnvio: null,
+        documentosCategorias: [], 
+        isLoadingDocumentos: false,
+        errorDocumentos: null,
         message: { type: 'success', text: 'Sesión cerrada exitosamente.' }
       };
 
@@ -99,11 +99,9 @@ export default function storeReducer(store, action = {}) {
       return {
         ...store,
         requiresPasswordChange: action.payload,
-        // También actualiza el campo en el objeto de usuario si existe
         user: store.user ? { ...store.user, cambio_password_requerido: action.payload } : store.user
       };
     
-    // NUEVA ACCIÓN: Para actualizar la URL de la firma digital del usuario
     case 'SET_USER_SIGNATURE_URL':
       return {
         ...store,
@@ -144,83 +142,80 @@ export default function storeReducer(store, action = {}) {
         currentEmpresa: null
       };
 
-
     // *** ACCIONES PARA ESPACIOS ***
     case 'SET_ESPACIOS':
       return {
         ...store,
-        espacios: action.payload // payload: array de objetos espacio
+        espacios: action.payload
       };
     case 'ADD_ESPACIO':
       return {
         ...store,
-        espacios: [...store.espacios, action.payload] // payload: nuevo objeto espacio
+        espacios: [...store.espacios, action.payload]
       };
     case 'UPDATE_ESPACIO':
       return {
         ...store,
         espacios: store.espacios.map(esp =>
           esp.id_espacio === action.payload.id_espacio ? action.payload : esp
-        ) // payload: objeto espacio actualizado
+        )
       };
     case 'DELETE_ESPACIO':
       return {
         ...store,
-        espacios: store.espacios.filter(esp => esp.id_espacio !== action.payload) // payload: id_espacio a eliminar
+        espacios: store.espacios.filter(esp => esp.id_espacio !== action.payload)
       };
 
     // *** ACCIONES PARA SUBESPACIOS ***
     case 'SET_SUBESPACIOS':
       return {
         ...store,
-        subEspacios: action.payload // payload: array de objetos sub-espacio
+        subEspacios: action.payload
       };
     case 'ADD_SUBESPACIO':
       return {
         ...store,
-        subEspacios: [...store.subEspacios, action.payload] // payload: nuevo objeto sub-espacio
+        subEspacios: [...store.subEspacios, action.payload]
       };
     case 'UPDATE_SUBESPACIO':
       return {
         ...store,
         subEspacios: store.subEspacios.map(sub =>
           sub.id_subespacio === action.payload.id_subespacio ? action.payload : sub
-        ) // payload: objeto sub-espacio actualizado
+        )
       };
     case 'DELETE_SUBESPACIO':
       return {
         ...store,
-        subEspacios: store.subEspacios.filter(sub => sub.id_subespacio !== action.payload) // payload: id_subespacio a eliminar
+        subEspacios: store.subEspacios.filter(sub => sub.id_subespacio !== action.payload)
       };
 
     // *** ACCIONES PARA OBJETOS ***
     case 'SET_OBJETOS':
       return {
         ...store,
-        objetos: action.payload // payload: array de objetos
+        objetos: action.payload
       };
     case 'ADD_OBJETO':
       return {
         ...store,
-        objetos: [...store.objetos, action.payload] // payload: nuevo objeto
+        objetos: [...store.objetos, action.payload]
       };
     case 'UPDATE_OBJETO':
       return {
         ...store,
         objetos: store.objetos.map(obj =>
           obj.id_objeto === action.payload.id_objeto ? action.payload : obj
-        ) // payload: objeto actualizado
+        )
       };
     case 'DELETE_OBJETO':
       return {
         ...store,
-        objetos: store.objetos.filter(obj => obj.id_objeto !== action.payload) // payload: id_objeto a eliminar
+        objetos: store.objetos.filter(obj => obj.id_objeto !== action.payload)
       };
 
     // *** ACCIONES PARA FORMULARIOS ***
     case 'SET_FORMULARIOS':
-      // Los objetos de formulario en action.payload ya contendrán los nuevos campos
-      // (es_plantilla, es_plantilla_global, compartir_con_empresas_ids, notificaciones_activas, automatizacion_activa)
       return {
         ...store,
         formularios: action.payload
@@ -243,7 +238,6 @@ export default function storeReducer(store, action = {}) {
         formularios: store.formularios.filter(form => form.id_formulario !== action.payload)
       };
     case 'SET_CURRENT_FORM':
-      // El payload debe ser el objeto formulario completo con sus relaciones y nuevos campos
       return {
         ...store,
         currentForm: action.payload
@@ -263,12 +257,11 @@ export default function storeReducer(store, action = {}) {
     case 'ADD_PREGUNTA':
       return {
         ...store,
-        // Si tienes currentForm, también podrías querer actualizar sus preguntas
         currentForm: store.currentForm ? {
           ...store.currentForm,
           preguntas: [...store.currentForm.preguntas, action.payload].sort((a,b) => a.orden - b.orden)
         } : store.currentForm,
-        preguntas: [...store.preguntas, action.payload].sort((a,b) => a.orden - b.orden) // Mantener ordenado
+        preguntas: [...store.preguntas, action.payload].sort((a,b) => a.orden - b.orden)
       };
     case 'UPDATE_PREGUNTA':
       return {
@@ -307,8 +300,6 @@ export default function storeReducer(store, action = {}) {
         enviosFormulario: action.payload
       };
     case 'ADD_ENVIO_FORMULARIO':
-      // El objeto 'envio' en action.payload ya contendrá las respuestas,
-      // y dentro de ellas, 'valor_firma_url' será una lista de URLs si aplica.
       return {
         ...store,
         enviosFormulario: [...store.enviosFormulario, action.payload]
@@ -326,8 +317,6 @@ export default function storeReducer(store, action = {}) {
         enviosFormulario: store.enviosFormulario.filter(env => env.id_envio !== action.payload)
       };
     case 'SET_CURRENT_ENVIO':
-      // El payload debe ser el objeto envío completo con sus respuestas,
-      // incluyendo 'valor_firma_url' como lista de URLs en las respuestas.
       return {
         ...store,
         currentEnvio: action.payload
@@ -338,6 +327,79 @@ export default function storeReducer(store, action = {}) {
         currentEnvio: null
       };
 
+    // =========================================================================
+    // *** ACCIONES ACTUALIZADAS PARA DOCUMENTOS DEL MINISTERIO ***
+    // =========================================================================
+    case 'SET_CATEGORIAS_DOCUMENTOS':
+        // Esta acción establece todas las categorías y sus documentos anidados al iniciar.
+        // El payload debe ser el array de categorías completo recibido del backend.
+        return {
+            ...store,
+            documentosCategorias: action.payload,
+            isLoadingDocumentos: false,
+            errorDocumentos: null,
+        };
+
+    case 'ADD_NUEVA_CATEGORIA':
+        // Esta acción añade una nueva categoría al estado.
+        // El payload debe ser el objeto de categoría completo que devuelve el backend.
+        return {
+            ...store,
+            documentosCategorias: [...store.documentosCategorias, action.payload],
+            isLoadingDocumentos: false,
+        };
+
+    case 'DELETE_CATEGORIA':
+        // Esta acción elimina una categoría y sus documentos del estado.
+        // El payload debe ser el ID de la categoría a eliminar.
+        return {
+            ...store,
+            documentosCategorias: store.documentosCategorias.filter(
+                cat => cat.id !== action.payload
+            ),
+            isLoadingDocumentos: false,
+        };
+
+    case 'ADD_DOCUMENTO_TO_CATEGORIA':
+        // Esta acción añade un nuevo documento a una categoría existente.
+        // El payload debe ser un objeto con el ID de la categoría y el objeto del documento.
+        // { categoriaId: 1, documento: { id: 101, nombre: '...', url_archivo: '...' } }
+        return {
+            ...store,
+            documentosCategorias: store.documentosCategorias.map(cat =>
+                cat.id === action.payload.categoriaId
+                    ? { ...cat, documentos: [...(cat.documentos || []), action.payload.documento] }
+                    : cat
+            ),
+            isLoadingDocumentos: false,
+            errorDocumentos: null,
+        };
+
+    case 'DELETE_DOCUMENTO':
+        // Esta acción elimina un documento de una categoría específica.
+        // El payload debe ser el ID del documento a eliminar.
+        return {
+            ...store,
+            documentosCategorias: store.documentosCategorias.map(cat => ({
+                ...cat,
+                documentos: cat.documentos.filter(doc => doc.id !== action.payload),
+            })),
+            isLoadingDocumentos: false,
+        };
+
+    case 'SET_LOADING_DOCUMENTOS':
+        return {
+            ...store,
+            isLoadingDocumentos: action.payload,
+        };
+
+    case 'SET_ERROR_DOCUMENTOS':
+        return {
+            ...store,
+            errorDocumentos: action.payload,
+            isLoadingDocumentos: false,
+        };
+    
     default:
       console.warn(`Unknown action type: ${action.type}`);
       return store;
