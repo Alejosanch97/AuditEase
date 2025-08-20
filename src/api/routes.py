@@ -4426,7 +4426,7 @@ def get_public_id_from_url(url):
 # --- Rutas para la gestión de categorías ---
 
 @api.route('/documentos-categorias', methods=['POST'])
-@role_required(['owner', 'admin'])
+@role_required(['owner', 'admin_empresa'])
 def create_documento_categoria():
     """
     Endpoint para crear una nueva categoría de documento.
@@ -4460,7 +4460,7 @@ def create_documento_categoria():
 
 
 @api.route('/documentos-categorias/<int:categoria_id>', methods=['DELETE'])
-@role_required(['owner', 'admin'])
+@role_required(['owner', 'admin_empresa'])
 def delete_documento_categoria(categoria_id):
     """
     Borra una categoría y todos los documentos asociados a ella,
@@ -4504,7 +4504,7 @@ def delete_documento_categoria(categoria_id):
 # --- Rutas para la gestión de documentos del ministerio (actualizadas) ---
 
 @api.route('/documentos-ministerio', methods=['POST'])
-@role_required(['owner', 'admin'])
+@role_required(['owner', 'admin_empresa'])
 def upload_documento_ministerio():
     """
     Sube un documento PDF a Cloudinary y crea una entrada en la base de datos,
@@ -4576,7 +4576,7 @@ def get_all_documentos_ministerio_with_categories():
 
 
 @api.route('/documentos-ministerio/<int:documento_id>', methods=['DELETE'])
-@role_required(['owner', 'admin'])
+@role_required(['owner', 'admin_empresa'])
 def delete_documento_ministerio(documento_id):
     """
     Borra un documento específico de la base de datos y de Cloudinary.

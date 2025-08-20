@@ -19,7 +19,7 @@ export const DocumentosMinisterio = () => {
 
     const documentosCategorias = store.documentosCategorias || []; 
     const userRole = store.user?.rol;
-    const canManageDocs = userRole === 'owner' || userRole === 'admin';
+    const canManageDocs = userRole === 'owner' || userRole === 'admin_empresa';
 
     // Función para obtener las categorías de documentos y sus documentos
     const fetchDocumentsAndCategories = async () => {
