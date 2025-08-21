@@ -4605,3 +4605,57 @@ def delete_documento_ministerio(documento_id):
         db.session.rollback()
         print(f"Error al eliminar el documento: {str(e)}")
         return jsonify({"error": f"Error interno del servidor al eliminar el documento: {str(e)}"}), 500
+
+
+
+
+# --- NUEVA RUTA PARA OBTENER ENVIOS POR ID DE FORMULARIO ---
+@api.route('/formularios/<int:form_id>/envios', methods=['GET'])
+@jwt_required()
+def get_envios_by_form(form_id):
+    try:
+        current_user_id = get_jwt_identity()
+        usuario = Usuario.query.get(int(current_user_id))
+        if not usuario:
+            return jsonify({"error": "Usuario no encontrado."}), 404
+
+        formulario = Formulario.query.get(form_id)
+        if not formulario:
+            return jsonify({"error": "Formulario no encontrado."}), 404
+
+        # Control de acceso: el usuario debe tener permisos para ver este formulario
+        if usuario.rol != 'owner':
+            is_allowed_template = False
+            if formulario.es_plantilla:
+                if formulario.es_plantilla_global:
+                    is_allowed_template = True
+                elif usuario.id_empresa in formulario.compartir_con_empresas_ids:
+                    is_allowed_template = True
+            
+            if not is_allowed_template and formulario.id_empresa != usuario.id_empresa:
+                return jsonify({"error": "No tienes permisos para acceder a este formulario."}), 403
+
+        # Si es un usuario de formulario, solo puede ver sus propios envíos
+        if usuario.rol == 'usuario_formulario':
+            envios = EnvioFormulario.query.filter_by(id_formulario=form_id, id_usuario=usuario.id_usuario).all()
+        else:
+            # Para 'owner' y 'admin_empresa', se filtran los envíos según la empresa del usuario que diligenció el formulario
+            envios = EnvioFormulario.query.join(Usuario).filter(
+                EnvioFormulario.id_formulario == form_id,
+                Usuario.id_empresa == usuario.id_empresa
+            ).all()
+
+        envios_data = []
+        for envio in envios:
+            usuario_envio = Usuario.query.get(envio.id_usuario)
+            envios_data.append({
+                "id_envio": envio.id_envio,
+                "fecha_hora_envio": envio.fecha_hora_envio.isoformat(),
+                "nombre_usuario": usuario_envio.nombre_completo if usuario_envio else 'N/A'
+            })
+
+        return jsonify({"envios": envios_data}), 200
+
+    except Exception as e:
+        print(f"Error al obtener envíos para el formulario {form_id}: {e}")
+        return jsonify({"error": f"Error interno del servidor: {str(e)}"}), 500
