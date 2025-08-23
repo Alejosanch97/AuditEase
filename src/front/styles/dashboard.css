@@ -2391,7 +2391,167 @@ body {
     }
 }
 
+/* src/styles/UserDashboardLayout.css */
 
+/* --- SECCIÓN DE FORMULARIOS A DILIGENCIAR --- */
+.user-forms-to-fill-card {
+    grid-area: forms-to-fill;
+    /* Mantiene las propiedades del grid */
+}
 
+.user-forms-to-fill-card .card-header {
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #f4f7f6; /* Línea separadora sutil */
+}
 
+.user-forms-to-fill-card .card-header h3 {
+    font-size: 1.5em;
+    font-weight: 700;
+    color: #2c3e50;
+}
 
+.view-all-forms-btn {
+    background-color: #34495e; /* Color primario oscuro */
+    color: white;
+    padding: 10px 18px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.view-all-forms-btn:hover {
+    background-color: #2c3e50; /* Color primario aún más oscuro */
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+}
+
+/* Lista de Formularios */
+.favorite-forms-list {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.favorite-form-item {
+    background-color: #fcfcfc;
+    border: 1px solid #e0e6ec;
+    border-radius: 12px;
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    transition: transform 0.3s ease, box-shadow 0.3s ease, background-color 0.3s ease;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.favorite-form-item:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+    background-color: #f7f9fb;
+}
+
+.favorite-form-item::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 6px;
+    height: 100%;
+    background-color: #1abc9c; /* Color de acento */
+    transition: width 0.3s ease;
+}
+
+.favorite-form-item:hover::before {
+    width: 10px;
+}
+
+/* Icono del formulario */
+.form-icon {
+    font-size: 2em;
+    color: #3498db;
+    flex-shrink: 0;
+}
+
+/* Contenido del formulario */
+.form-info {
+    flex-grow: 1;
+    min-width: 0;
+}
+
+.form-info h4 {
+    font-size: 1.2em;
+    color: #2c3e50;
+    margin: 0 0 5px 0;
+    font-weight: 600;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+.form-info p {
+    font-size: 0.9em;
+    color: #7f8c8d;
+    margin: 0;
+    line-height: 1.4;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+/* Botón "Diligenciar" */
+.fill-form-btn {
+    background-color: #3498db;
+    color: white;
+    border: none;
+    padding: 10px 18px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.9em;
+    font-weight: 600;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 4px 10px rgba(52, 152, 219, 0.3);
+}
+
+.fill-form-btn:hover {
+    background-color: #2980b9;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 15px rgba(52, 152, 219, 0.4);
+}
+
+.fill-form-btn i {
+    font-size: 1em;
+}
+
+.no-favorites-message {
+    text-align: center;
+    color: #95a5a6;
+    font-style: italic;
+    padding: 20px;
+    font-size: 1em;
+    background-color: #f9fbfd;
+    border-radius: 8px;
+}
+
+.no-favorites-message a {
+    color: #3498db;
+    text-decoration: underline;
+    font-weight: 600;
+    transition: color 0.2s ease;
+}
+
+.no-favorites-message a:hover {
+    color: #2980b9;
+}
