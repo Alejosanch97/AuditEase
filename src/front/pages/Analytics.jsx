@@ -234,21 +234,104 @@ export const Analytics = () => {
   }, [selectedEnvioId, fetchEnvioDetail]);
 
   // --- Render Functions ---
-
   const renderChart = () => {
-    // ... (Tu lógica de renderizado de gráficos y tablas de texto/imagen original)
     if (loading) { return <p className="analytics-loading-message">Cargando datos del gráfico...</p>; }
     if (error) { return <p className="analytics-error-message">Error: {error}</p>; }
     if (!chartData || chartData.length === 0) {
       if (message) { return <p className="analytics-info-message">{message}</p>; }
       return <p className="analytics-info-message">No hay datos para mostrar el gráfico.</p>;
     }
+
     switch (chartType) {
-      case 'pie': return (<ResponsiveContainer width="100%" height={300}><PieChart><Pie data={chartData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} fill="#8884d8" label>{chartData.map((entry, index) => (<Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />))}</Pie><Tooltip /><Legend /></PieChart></ResponsiveContainer>);
-      case 'bar': return (<ResponsiveContainer width="100%" height={300}><BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}><CartesianGrid strokeDasharray="3 3" /><XAxis dataKey="name" /><YAxis /><Tooltip /><Legend /><Bar dataKey="value" fill="#8884d8" /></BarChart></ResponsiveContainer>);
-      case 'table_text': return (<div className="analytics-table-container"><h3>Respuestas de Texto</h3><table className="analytics-table"><thead><tr><th>#</th><th>Respuesta</th></tr></thead><tbody>{chartData.map((entry, index) => (<tr key={entry.id || index}><td>{index + 1}</td><td>{entry.value || 'Sin respuesta'}</td></tr>))}</tbody></table></div>);
-      case 'table_image': return (<div className="analytics-table-container"><h3>Firmas y Dibujos</h3><table className="analytics-table"><thead><tr><th>#</th><th>Imagen</th></tr></thead><tbody>{chartData.map((entry, index) => (<tr key={entry.id || index}><td>{index + 1}</td><td>{entry.value ? (<img src={entry.value} alt={`Respuesta ${entry.id}`} className="analytics-image-response" />) : (<span>Sin imagen</span>)}</td></tr>))}</tbody></table></div>);
-      case 'none': default: return <p className="analytics-info-message">{message || "Selecciona un tipo de pregunta adecuado para ver el gráfico."}</p>;
+      case 'pie':
+        return (
+          <ResponsiveContainer width="100%" height={300}>
+            <PieChart>
+              <Pie data={chartData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} fill="#8884d8" label>
+                {chartData.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                ))}
+              </Pie>
+              <Tooltip />
+              <Legend />
+            </PieChart>
+          </ResponsiveContainer>
+        );
+      case 'bar':
+        return (
+          <ResponsiveContainer width="100%" height={chartData.length > 5 ? 400 : 300}>
+            <BarChart
+              data={chartData}
+              margin={{ top: 20, right: 30, left: 20, bottom: 80 }} // Ajustamos el margen inferior para las etiquetas rotadas
+            >
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis
+                dataKey="name"
+                angle={-45} // Rotamos las etiquetas 45 grados
+                textAnchor="end" // Anclamos el texto al final para que no se salga
+                interval={0} // Mostramos todas las etiquetas
+                height={80} // Damos más espacio al eje X
+              />
+              <YAxis />
+              <Tooltip />
+              <Legend />
+              <Bar dataKey="value" fill="#8884d8" />
+            </BarChart>
+          </ResponsiveContainer>
+        );
+      case 'table_text':
+        return (
+          <div className="analytics-table-container">
+            <h3>Respuestas de Texto</h3>
+            <table className="analytics-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Respuesta</th>
+                </tr>
+              </thead>
+              <tbody>
+                {chartData.map((entry, index) => (
+                  <tr key={entry.id || index}>
+                    <td>{index + 1}</td>
+                    <td>{entry.value || 'Sin respuesta'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        );
+      case 'table_image':
+        return (
+          <div className="analytics-table-container">
+            <h3>Firmas y Dibujos</h3>
+            <table className="analytics-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Imagen</th>
+                </tr>
+              </thead>
+              <tbody>
+                {chartData.map((entry, index) => (
+                  <tr key={entry.id || index}>
+                    <td>{index + 1}</td>
+                    <td>
+                      {entry.value ? (
+                        <img src={entry.value} alt={`Respuesta ${entry.id}`} className="analytics-image-response" />
+                      ) : (
+                        <span>Sin imagen</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        );
+      case 'none':
+      default:
+        return <p className="analytics-info-message">{message || "Selecciona un tipo de pregunta adecuado para ver el gráfico."}</p>;
     }
   };
 

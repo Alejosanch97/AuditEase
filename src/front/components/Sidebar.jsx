@@ -60,7 +60,7 @@ export const Sidebar = ({ currentUser, handleLogout }) => {
           </li>
           
           <li className={location.pathname === '/analytics' ? 'active' : ''}>
-            <Link to="/analytics"><i className="fas fa-chart-line"></i> Generar Graficas</Link>
+            <Link to="/analytics"><i className="fas fa-chart-line"></i> Graficas y Datos</Link>
           </li>
 
           {(currentUser.rol === 'owner' || currentUser.rol === 'admin_empresa') && (
