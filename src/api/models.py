@@ -230,6 +230,8 @@ class Formulario(db.Model):
     scheduled_automation_time: Mapped[Optional[time]] = mapped_column(Time, nullable=True) # Hora programada (solo hora)
     last_automated_run_date: Mapped[Optional[date]] = mapped_column(Date, nullable=True) # Última fecha de ejecución de la automatización
 
+    # NUEVO CAMPO: Cantidad de envíos a generar automáticamente
+    automation_submissions_count: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
 
     empresa: Mapped["Empresa"] = relationship("Empresa", back_populates="formularios")
     preguntas: Mapped[List["Pregunta"]] = relationship("Pregunta", back_populates="formulario")
@@ -263,6 +265,7 @@ class Formulario(db.Model):
             "automatizacion_activa": self.automatizacion_activa, # Incluir en la serialización
             "scheduled_automation_time": self.scheduled_automation_time.strftime('%H:%M') if self.scheduled_automation_time else None, # Formato HH:MM
             "last_automated_run_date": self.last_automated_run_date.isoformat() if self.last_automated_run_date else None, # Formato YYYY-MM-DD
+            "automation_submissions_count": self.automation_submissions_count, # Incluir el nuevo campo en la serialización
             "tipos_respuesta_disponibles": tipos_respuesta_data
         }
 

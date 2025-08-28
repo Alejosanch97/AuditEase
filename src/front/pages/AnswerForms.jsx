@@ -1,4 +1,3 @@
-// src/pages/AnswerForms.jsx
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import useGlobalReducer from '../hooks/useGlobalReducer';
@@ -26,10 +25,9 @@ export const AnswerForms = () => {
   const [allCompanies, setAllCompanies] = useState([]);
 
   const [manualSubmissionsCounts, setManualSubmissionsCounts] = useState({});
-  const [scheduledAutomationTimes, setScheduledAutomationTimes] = useState({});
-  const [userSubmissionsInPeriodCounts, setUserSubmissionsInPeriodCounts] = useState({});
+  // Eliminamos el estado de la hora de automatización ya que no se necesita
+  const [automationSubmissionsCounts, setAutomationSubmissionsCounts] = useState({});
   const [lastAutomationRunDates, setLastAutomationRunDates] = useState({});
-
 
   const updateLocalFavoriteState = useCallback(() => {
     if (currentUser && currentUser.favoritos) {
@@ -87,10 +85,18 @@ export const AnswerForms = () => {
     }
   };
 
-  const handleSetAutomationTime = async (formId, timeString) => {
+  // Función actualizada para establecer solo la cantidad de envíos de automatización
+  const handleSetAutomationCount = async (formId) => {
     const token = localStorage.getItem('access_token');
     if (!token || !userRole || (userRole !== 'owner' && userRole !== 'admin_empresa')) {
       dispatch({ type: 'SET_MESSAGE', payload: { type: 'error', text: 'No tienes permisos para programar la automatización.' } });
+      return;
+    }
+    
+    const submissionsCount = automationSubmissionsCounts[formId];
+
+    if (!submissionsCount || submissionsCount <= 0) {
+      dispatch({ type: 'SET_MESSAGE', payload: { type: 'error', text: 'Por favor, ingrese una cantidad válida de envíos.' } });
       return;
     }
 
@@ -101,12 +107,22 @@ export const AnswerForms = () => {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ scheduled_time: timeString })
+        body: JSON.stringify({ 
+          automation_submissions_count: parseInt(submissionsCount, 10)
+        })
       });
 
       const data = await response.json();
       if (response.ok) {
-        setScheduledAutomationTimes(prev => ({ ...prev, [formId]: timeString }));
+        // Actualizar el estado local con los valores que el backend confirmó
+        setAutomationSubmissionsCounts(prev => ({ ...prev, [formId]: data.automation_submissions_count }));
+        
+        // Actualizar el store global para que el cambio persista
+        dispatch({ type: 'UPDATE_FORMULARIO', payload: {
+          ...store.formularios.find(f => f.id_formulario === formId),
+          automation_submissions_count: data.automation_submissions_count
+        }});
+
         dispatch({ type: 'SET_MESSAGE', payload: { type: 'success', text: data.message } });
       } else {
         dispatch({ type: 'SET_MESSAGE', payload: { type: 'error', text: `Error al programar automatización: ${data.error}` } });
@@ -117,6 +133,38 @@ export const AnswerForms = () => {
     }
   };
 
+  // NUEVA FUNCIONALIDAD: Función para activar la automatización manualmente (solo para pruebas)
+  // FIX: Se corrige la URL para que coincida con la ruta del backend.
+  // La ruta del backend es '/formularios/ejecutar-automatizacion' y no requiere un ID de formulario.
+  const triggerAutomationRun = async () => {
+    const token = localStorage.getItem('access_token');
+    if (!token) {
+        dispatch({ type: 'SET_MESSAGE', payload: { type: 'error', text: 'No autenticado para activar la automatización.' } });
+        return;
+    }
+    dispatch({ type: 'SET_MESSAGE', payload: { type: 'info', text: 'Iniciando automatización...' } });
+    try {
+      // Se corrige la URL de la llamada para que apunte al endpoint correcto en tu backend.
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/formularios/ejecutar-automatizacion`, {
+          method: 'POST',
+          headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+          }
+      });
+      const data = await response.json();
+      if (response.ok) {
+          dispatch({ type: 'SET_MESSAGE', payload: { type: 'success', text: data.message } });
+          // Opcional: Recargar los datos para ver el estado actualizado
+          fetchData();
+      } else {
+          dispatch({ type: 'SET_MESSAGE', payload: { type: 'error', text: `Error al activar automatización: ${data.error}` } });
+      }
+    } catch (error) {
+        console.error('Error de conexión al activar la automatización:', error);
+        dispatch({ type: 'SET_MESSAGE', payload: { type: 'error', text: 'Error de conexión.' } });
+    }
+  };
 
   const fetchData = useCallback(async () => {
     setLoadingForms(true);
@@ -137,9 +185,8 @@ export const AnswerForms = () => {
 
       if (formsResponse.ok) {
         const initialManualCounts = {};
-        const initialUserSubmissionsInPeriodCounts = {};
-        const initialScheduledTimes = {};
         const initialLastRunDates = {};
+        const initialAutomationCounts = {};
 
         const formsWithExtraData = await Promise.all(formsData.formularios.map(async (form) => {
           let manualCount = 0;
@@ -158,38 +205,19 @@ export const AnswerForms = () => {
           }
           initialManualCounts[form.id_formulario] = manualCount;
 
-          let userSubmissionsInPeriod = 0;
-          try {
-            const userSubmissionsRes = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/formularios/${form.id_formulario}/user_submissions_in_period_count`, {
-              headers: { 'Authorization': `Bearer ${token}` }
-            });
-            const userSubmissionsData = await userSubmissionsRes.json();
-            if (userSubmissionsRes.ok) {
-              userSubmissionsInPeriod = userSubmissionsData.count || 0;
-            } else {
-              console.warn(`Could not fetch user submissions in period for form ${form.id_formulario}: ${userSubmissionsData.error}`);
-            }
-          } catch (err) {
-            console.error(`Error fetching user submissions in period for form ${form.id_formulario}:`, err);
-          }
-          initialUserSubmissionsInPeriodCounts[form.id_formulario] = userSubmissionsInPeriod;
-
-          initialScheduledTimes[form.id_formulario] = form.scheduled_automation_time ? form.scheduled_automation_time.substring(0, 5) : '15:00';
+          initialAutomationCounts[form.id_formulario] = form.automation_submissions_count || 1;
           initialLastRunDates[form.id_formulario] = form.last_automated_run_date;
 
           return {
             ...form,
             manual_submissions_count: manualCount,
-            user_submissions_in_period_count: userSubmissionsInPeriod,
           };
         }));
         
         setForms(formsWithExtraData);
         setManualSubmissionsCounts(initialManualCounts);
-        setUserSubmissionsInPeriodCounts(initialUserSubmissionsInPeriodCounts);
-        setScheduledAutomationTimes(initialScheduledTimes);
         setLastAutomationRunDates(initialLastRunDates);
-
+        setAutomationSubmissionsCounts(initialAutomationCounts);
 
       } else {
         setErrorForms(formsData.error);
@@ -253,78 +281,36 @@ export const AnswerForms = () => {
     }
     return true;
   });
-
-  const getAutomationHoverMessage = useCallback((form) => {
+  
+  // Lógica de mensajes y estados de automatización actualizada
+  const getAutomationStatusAndMessage = useCallback((form) => {
     const manualCount = manualSubmissionsCounts[form.id_formulario] || 0;
-    const currentSubmissionsInPeriod = userSubmissionsInPeriodCounts[form.id_formulario] || 0;
-    const maxSubmissions = form.max_submissions_per_period;
-    const scheduledTime = scheduledAutomationTimes[form.id_formulario];
+    const automationCount = automationSubmissionsCounts[form.id_formulario] || 1;
     const lastRunDate = lastAutomationRunDates[form.id_formulario];
 
     const today = new Date();
     const todayDateString = today.toISOString().split('T')[0];
-    const lastRunDateObj = lastRunDate ? new Date(lastRunDate + 'T00:00:00Z') : null;
-    const lastRunDateString = lastRunDateObj ? lastRunDateObj.toISOString().split('T')[0] : null;
+    const lastRunDateString = lastRunDate ? new Date(lastRunDate).toISOString().split('T')[0] : null;
 
+    // Si la automatización está inactiva
     if (!form.automatizacion_activa) {
-      return "Automatización inactiva para este formulario.";
+        return { message: "Automatización inactiva.", status: '' };
     }
 
+    // Si la cantidad de envíos manuales es insuficiente
     if (manualCount < 5) {
-      return `Aún no tienes ${5 - manualCount} respuestas manuales para habilitar la automatización inteligente.`;
+        return { message: `Aún no hay ${5 - manualCount} respuestas manuales para automatizar.`, status: 'af-automation-pending' };
     }
 
-    if (maxSubmissions > 0 && currentSubmissionsInPeriod >= maxSubmissions) {
-        return `Límite de diligencias alcanzado (${maxSubmissions} cada ${form.submission_period_days} día(s)). Automatización completada para este período.`;
+    // Si la automatización se ejecutó hoy
+    if (lastRunDateString === todayDateString) {
+        return { message: `Ya se ha(n) enviado ${automationCount} respuesta(s) automática(s) hoy.`, status: 'af-automation-completed' };
     }
 
-    const [hours, minutes] = (scheduledTime || '15:00').split(':').map(Number);
-    const scheduledDateTime = new Date();
-    scheduledDateTime.setHours(hours, minutes, 0, 0);
-    const nowLocal = new Date();
-
-    if (nowLocal.getTime() >= scheduledDateTime.getTime() && lastRunDateString !== todayDateString) {
-      return `Automatización Live: Se ejecutará pronto o ya se ejecutó hoy a las ${scheduledTime}.`;
-    } else if (lastRunDateString === todayDateString) {
-        return `Automatización ejecutada hoy a las ${scheduledTime}.`;
-    } else {
-      return `Automatización Live: Programada para las ${scheduledTime}.`;
-    }
-    
-  }, [manualSubmissionsCounts, userSubmissionsInPeriodCounts, scheduledAutomationTimes, lastAutomationRunDates]);
-
-  const getAutomationStatusClass = useCallback((form, manualCount, currentSubmissionsInPeriod, scheduledTime, lastRunDate) => {
-    const maxSubmissions = form.max_submissions_per_period;
-    const today = new Date();
-    const todayDateString = today.toISOString().split('T')[0];
-    const lastRunDateObj = lastRunDate ? new Date(lastRunDate + 'T00:00:00Z') : null;
-    const lastRunDateString = lastRunDateObj ? lastRunDateObj.toISOString().split('T')[0] : null;
-
-    if (!form.automatizacion_activa) {
-      return '';
-    }
-
-    if (manualCount < 5) {
-      return 'af-automation-pending';
-    }
-
-    if (maxSubmissions > 0 && currentSubmissionsInPeriod >= maxSubmissions) {
-      return 'af-automation-completed';
-    }
-
-    const [hours, minutes] = (scheduledTime || '15:00').split(':').map(Number);
-    const scheduledDateTime = new Date();
-    scheduledDateTime.setHours(hours, minutes, 0, 0);
-    const nowLocal = new Date();
-
-    if (nowLocal.getTime() >= scheduledDateTime.getTime() && lastRunDateString !== todayDateString) {
-      return 'af-automation-live';
-    } else if (lastRunDateString === todayDateString) {
-      return 'af-automation-completed';
-    } else {
-      return 'af-automation-live';
-    }
-  }, []);
+    // Si hay tareas pendientes de automatización
+    // La lógica de APScheduler manejará la ejecución real, aquí solo mostramos el estado
+    return { message: `Tareas de automatización pendientes. Se enviarán pronto.`, status: 'af-automation-live' };
+  }, [manualSubmissionsCounts, automationSubmissionsCounts, lastAutomationRunDates]);
 
   if (!currentUser) {
     return (
@@ -387,80 +373,90 @@ export const AnswerForms = () => {
               <p className="af-error-message">Error: {errorForms}</p>
             ) : filteredForms.length > 0 ? (
               <div className="af-forms-grid">
-                {filteredForms.map(form => (
-                  <div key={form.id_formulario} className="af-form-card">
-                    <div className="af-form-card-header">
-                      <h4 className="af-form-card-title">{form.nombre_formulario}</h4>
-                      <div className="af-card-header-actions">
-                        <button
-                          className={`af-favorite-btn ${favoriteForms.has(String(form.id_formulario)) ? 'favorited' : ''}`}
-                          onClick={() => toggleFavorite(form.id_formulario, !favoriteForms.has(String(form.id_formulario)))}
-                          disabled={!isLoggedIn} 
-                          title={favoriteForms.has(String(form.id_formulario)) ? 'Quitar de Favoritos' : 'Añadir a Favoritos'}
-                        >
-                          <i className={`fas fa-star ${favoriteForms.has(String(form.id_formulario)) ? 'af-favorited-icon' : ''}`}></i>
+                {filteredForms.map(form => {
+                  const { message, status } = getAutomationStatusAndMessage(form);
+                  return (
+                    <div key={form.id_formulario} className="af-form-card">
+                      <div className="af-form-card-header">
+                        <h4 className="af-form-card-title">{form.nombre_formulario}</h4>
+                        <div className="af-card-header-actions">
+                          <button
+                            className={`af-favorite-btn ${favoriteForms.has(String(form.id_formulario)) ? 'favorited' : ''}`}
+                            onClick={() => toggleFavorite(form.id_formulario, !favoriteForms.has(String(form.id_formulario)))}
+                            disabled={!isLoggedIn} 
+                            title={favoriteForms.has(String(form.id_formulario)) ? 'Quitar de Favoritos' : 'Añadir a Favoritos'}
+                          >
+                            <i className={`fas fa-star ${favoriteForms.has(String(form.id_formulario)) ? 'af-favorited-icon' : ''}`}></i>
+                          </button>
+                        </div>
+                      </div>
+                      <p className="af-form-card-description">{form.descripcion || 'Sin descripción.'}</p>
+                      <div className="af-form-card-details">
+                        <p><strong>Frecuencia:</strong> {form.max_submissions_per_period} cada {form.submission_period_days} día(s)</p>
+                        <p><strong>Empresa:</strong> {allCompanies.find(c => c.id_empresa === form.id_empresa)?.nombre_empresa || 'N/A'}</p>
+                        {form.espacios_nombres && form.espacios_nombres.length > 0 && (
+                          <p><strong>Espacios:</strong> {form.espacios_nombres.join(', ')}</p>
+                        )}
+                        {form.sub_espacios_nombres && form.sub_espacios_nombres.length > 0 && (
+                          <p><strong>Sub-Espacios:</strong> {form.sub_espacios_nombres.join(', ')}</p>
+                        )}
+                        {form.objetos_nombres && form.objetos_nombres.length > 0 && (
+                          <p><strong>Objetos:</strong> {form.objetos_nombres.join(', ')}</p>
+                        )}
+                      </div>
+                      <div className="af-form-card-actions">
+                        <button className="af-btn-answer-form" onClick={() => navigate(`/answer-form/${form.id_formulario}`)}>
+                          <i className="fas fa-file-signature"></i> Responder Formulario
                         </button>
                       </div>
-                    </div>
-                    <p className="af-form-card-description">{form.descripcion || 'Sin descripción.'}</p>
-                    <div className="af-form-card-details">
-                      <p><strong>Frecuencia:</strong> {form.max_submissions_per_period} cada {form.submission_period_days} día(s)</p>
-                      <p><strong>Empresa:</strong> {allCompanies.find(c => c.id_empresa === form.id_empresa)?.nombre_empresa || 'N/A'}</p>
-                      {form.espacios_nombres && form.espacios_nombres.length > 0 && (
-                        <p><strong>Espacios:</strong> {form.espacios_nombres.join(', ')}</p>
+                      
+                      {/* Sección de Automatización */}
+                      {(userRole === 'owner' || userRole === 'admin_empresa') && (
+                          <div className="af-automation-section">
+                              {form.automatizacion_activa ? (
+                                  <>
+                                      <div className="af-automation-status-display">
+                                          <button
+                                              className={`af-automation-status-btn ${status}`}
+                                              title={message}
+                                              // Se elimina el ID del formulario ya que el endpoint ejecuta la automatización
+                                              // para todos los formularios.
+                                              onClick={() => triggerAutomationRun()}
+                                          >
+                                              <i className="fas fa-robot"></i>
+                                          </button>
+                                          <span className="af-automation-info-text">
+                                              {message}
+                                          </span>
+                                      </div>
+                                      <div className="af-automation-schedule-control">
+                                          <input
+                                              type="number"
+                                              className="af-automation-count-input"
+                                              value={automationSubmissionsCounts[form.id_formulario] || ''}
+                                              onChange={(e) => setAutomationSubmissionsCounts(prev => ({ ...prev, [form.id_formulario]: e.target.value }))}
+                                              placeholder="Cantidad"
+                                              min="1"
+                                          />
+                                          <button
+                                              className="af-btn af-btn-set-schedule"
+                                              onClick={() => handleSetAutomationCount(form.id_formulario)}
+                                              title="Establecer cantidad de envíos de automatización"
+                                          >
+                                              <i className="fas fa-save"></i>
+                                          </button>
+                                      </div>
+                                  </>
+                              ) : (
+                                  <span className="af-automation-inactive-label" title="Automatización inactiva para este formulario.">
+                                      <i className="fas fa-robot"></i> Automatización Inactiva
+                                  </span>
+                              )}
+                          </div>
                       )}
-                      {form.sub_espacios_nombres && form.sub_espacios_nombres.length > 0 && (
-                        <p><strong>Sub-Espacios:</strong> {form.sub_espacios_nombres.join(', ')}</p>
-                      )}
-                      {form.objetos_nombres && form.objetos_nombres.length > 0 && (
-                        <p><strong>Objetos:</strong> {form.objetos_nombres.join(', ')}</p>
-                      )}
                     </div>
-                    <div className="af-form-card-actions">
-                      <button className="af-btn-answer-form" onClick={() => navigate(`/answer-form/${form.id_formulario}`)}>
-                        <i className="fas fa-file-signature"></i> Responder Formulario
-                      </button>
-                    </div>
-
-                    {/* Sección de Automatización */}
-                    {(userRole === 'owner' || userRole === 'admin_empresa') && (
-                        <div className="af-automation-section">
-                            {form.automatizacion_activa ? (
-                                <>
-                                    <div className="af-automation-status-display">
-                                        <button
-                                            className={`af-automation-status-btn ${getAutomationStatusClass(form, manualSubmissionsCounts[form.id_formulario] || 0, userSubmissionsInPeriodCounts[form.id_formulario] || 0, scheduledAutomationTimes[form.id_formulario], lastAutomationRunDates[form.id_formulario])}`}
-                                            title={getAutomationHoverMessage(form)}
-                                        >
-                                            <i className="fas fa-robot"></i>
-                                        </button>
-                                        {/* ELIMINADO: span.af-automation-status-text */}
-                                    </div>
-                                    <div className="af-automation-schedule-control">
-                                        <input
-                                            type="time"
-                                            className="af-automation-time-input"
-                                            value={scheduledAutomationTimes[form.id_formulario] || '15:00'}
-                                            onChange={(e) => setScheduledAutomationTimes(prev => ({ ...prev, [form.id_formulario]: e.target.value }))}
-                                        />
-                                        <button
-                                            className="af-btn af-btn-set-schedule"
-                                            onClick={() => handleSetAutomationTime(form.id_formulario, scheduledAutomationTimes[form.id_formulario] || '15:00')}
-                                            title="Establecer hora de automatización"
-                                        >
-                                            <i className="fas fa-clock"></i>
-                                        </button>
-                                    </div>
-                                </>
-                            ) : (
-                                <span className="af-automation-inactive-label" title="Automatización inactiva para este formulario.">
-                                    <i className="fas fa-robot"></i> Automatización Inactiva
-                                </span>
-                            )}
-                        </div>
-                    )}
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             ) : (
               <p className="af-no-forms-message">No hay formularios disponibles que coincidan con los filtros.</p>

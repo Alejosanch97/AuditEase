@@ -159,7 +159,8 @@ export const Analytics = () => {
     setErrorTable(null);
     const token = localStorage.getItem('access_token');
     try {
-      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/formularios/${formId}/envios`, {
+      // Modificación aquí para agregar el parámetro de límite
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/formularios/${formId}/envios?limit=9`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await response.json();

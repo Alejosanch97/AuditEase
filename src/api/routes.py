@@ -3905,185 +3905,188 @@ def toggle_formulario_automatizacion(form_id):
 
 
 # NUEVA RUTA: Para ejecutar la automatización de llenado de formularios
+# NUEVA RUTA: Para ejecutar la automatización de llenado de formularios
 @api.route('/formularios/ejecutar-automatizacion', methods=['POST'])
-@role_required(['owner', 'admin_empresa']) # Solo roles con permisos para activar la automatización
+@jwt_required()
 def ejecutar_automatizacion_formularios():
     """
-    Ejecuta la lógica de automatización para formularios con 'automatizacion_activa' en True,
-    considerando la hora programada y la última fecha de ejecución.
-    Simula un cron job.
+    Ejecuta el proceso de automatización para todos los formularios activos.
+    Este endpoint es llamado por la interfaz de usuario para una ejecución manual de prueba.
     """
     try:
         current_user_id = get_jwt_identity()
-        usuario_ejecutor = Usuario.query.get(int(current_user_id))
+        usuario_actual = Usuario.query.get(int(current_user_id))
 
-        # Filtrar formularios que tienen automatización activa
-        if usuario_ejecutor.rol == 'owner':
-            formularios_a_automatizar = Formulario.query.filter_by(automatizacion_activa=True).all()
-        else: # admin_empresa
-            formularios_a_automatizar = Formulario.query.filter_by(
-                automatizacion_activa=True, 
-                id_empresa=usuario_ejecutor.id_empresa
-            ).all()
+        if not usuario_actual:
+            return jsonify({"error": "Usuario no encontrado."}), 404
 
-        resultados_automatizacion = []
-        # Obtener la hora y fecha actuales en UTC
-        now_utc = datetime.utcnow()
-        today_utc_date = now_utc.date()
-        current_time_utc = now_utc.time()
+        print("Iniciando ejecución de automatización...")
+        
+        # Filtramos los formularios que tienen la automatización activa
+        formularios_a_automatizar = Formulario.query.filter_by(automatizacion_activa=True).all()
+        
+        formularios_procesados = []
 
         for formulario in formularios_a_automatizar:
-            # Solo procesar si tiene automatización activa Y una hora programada
-            if not formulario.automatizacion_activa:
-                resultados_automatizacion.append(f"Formulario '{formulario.nombre_formulario}' (ID: {formulario.id_formulario}) tiene automatización inactiva.")
+            # Lógica para verificar si se debe ejecutar la automatización hoy
+            today = date.today()
+            if formulario.last_automated_run_date and formulario.last_automated_run_date == today:
+                print(f"La automatización para el formulario {formulario.nombre_formulario} ya se ejecutó hoy. Saltando.")
                 continue
+
+            # Obtener el conteo de envíos manuales
+            # CORREGIDO: Se usa el campo 'completado_automaticamente' del modelo EnvioFormulario
+            manual_submissions_count = EnvioFormulario.query.join(Usuario).\
+                filter(EnvioFormulario.id_formulario == formulario.id_formulario,
+                       EnvioFormulario.completado_automaticamente == False,
+                       Usuario.id_empresa == usuario_actual.id_empresa).count()
             
-            if not formulario.scheduled_automation_time:
-                resultados_automatizacion.append(f"Formulario '{formulario.nombre_formulario}' (ID: {formulario.id_formulario}) tiene automatización activa pero no tiene una hora programada. Se omitirá.")
+            # Verificar si se cumplen las condiciones para la automatización (ej. 5 envíos manuales)
+            if manual_submissions_count < 5:
+                print(f"El formulario '{formulario.nombre_formulario}' no tiene suficientes envíos manuales para automatizar ({manual_submissions_count}/5).")
                 continue
+
+            # Calcular el promedio o la moda de los datos existentes
+            valores_calculados = calcular_valores_automatizados(formulario.id_formulario, usuario_actual.id_empresa)
+
+            if not valores_calculados:
+                print(f"No se pudieron calcular valores para el formulario '{formulario.nombre_formulario}'. Saltando.")
+                continue
+
+            # Crear un nuevo envío de formulario (EnvioFormulario)
+            nuevo_envio = EnvioFormulario(
+                id_formulario=formulario.id_formulario,
+                id_usuario=usuario_actual.id_usuario,
+                fecha_hora_envio=datetime.utcnow(),
+                # CORREGIDO: Se establece el valor del campo 'completado_automaticamente'
+                completado_automaticamente=True
+            )
+            db.session.add(nuevo_envio)
+            db.session.flush() # Esto asigna un id_envio al nuevo objeto
+
+            # Crear las respuestas basadas en los valores calculados
+            for id_pregunta, valor_calculado in valores_calculados.items():
+                nueva_respuesta = Respuesta(
+                    id_envio=nuevo_envio.id_envio,
+                    id_pregunta=id_pregunta,
+                    valor_texto=valor_calculado.get('valor_texto'),
+                    valor_numerico=valor_calculado.get('valor_numerico'),
+                    valor_booleano=valor_calculado.get('valor_booleano'),
+                    valores_multiples_json=valor_calculado.get('valores_multiples_json')
+                )
+                db.session.add(nueva_respuesta)
+
+            # Actualizar la fecha de la última ejecución
+            formulario.last_automated_run_date = today
+            db.session.add(formulario)
+            db.session.commit()
             
-            # Verificar si la hora programada ya pasó HOY y si no se ha ejecutado HOY
-            # Comparamos solo la hora, y luego la fecha de la última ejecución
-            if current_time_utc >= formulario.scheduled_automation_time and \
-               (formulario.last_automated_run_date is None or formulario.last_automated_run_date < today_utc_date):
-                
-                # Encontrar usuarios que deben diligenciar este formulario
-                usuarios_para_diligenciar = Usuario.query.filter_by(
-                    id_empresa=formulario.id_empresa,
-                    rol='usuario_formulario',
-                    activo=True
-                ).all()
+            formularios_procesados.append(formulario.nombre_formulario)
+            print(f"Automatización exitosa para el formulario '{formulario.nombre_formulario}'.")
 
-                for target_usuario in usuarios_para_diligenciar:
-                    # Obtener el inicio del período dinámicamente para este formulario
-                    period_start = datetime.utcnow() - timedelta(days=formulario.submission_period_days) if formulario.submission_period_days > 0 else None
+        if not formularios_procesados:
+            return jsonify({"message": "No hay formularios listos para ser automatizados."}), 200
 
-                    # Conteo de envíos en el período definido para el usuario
-                    query_envios = EnvioFormulario.query.filter(
-                        EnvioFormulario.id_formulario == formulario.id_formulario,
-                        EnvioFormulario.id_usuario == target_usuario.id_usuario
-                    )
-                    if period_start: # Solo aplicar filtro de fecha si hay un período definido
-                        query_envios = query_envios.filter(EnvioFormulario.fecha_hora_envio >= period_start)
-                    
-                    current_submissions_in_period = query_envios.count()
-
-                    # Si el formulario tiene un límite de envíos por período (max_submissions_per_period > 0)
-                    # Y no se ha alcanzado ese límite.
-                    if formulario.max_submissions_per_period > 0 and \
-                       current_submissions_in_period < formulario.max_submissions_per_period:
-                        
-                        num_diligencias_faltantes = formulario.max_submissions_per_period - current_submissions_in_period
-                        
-                        for _ in range(num_diligencias_faltantes):
-                            # Lógica para generar respuestas automáticas (igual que antes)
-                            respuestas_automaticas = []
-                            for pregunta in formulario.preguntas:
-                                # Obtener respuestas históricas para esta pregunta
-                                respuestas_historicas = Respuesta.query.join(EnvioFormulario).filter(
-                                    EnvioFormulario.id_formulario == formulario.id_formulario,
-                                    Respuesta.id_pregunta == pregunta.id_pregunta,
-                                    EnvioFormulario.completado_automaticamente == False # Considerar solo respuestas manuales
-                                ).order_by(EnvioFormulario.fecha_hora_envio.desc()).limit(5).all() # Últimos 5 envíos
-
-                                valor_auto = None
-                                if pregunta.tipo_respuesta.nombre_tipo == 'numerico':
-                                    numeric_values = [r.valor_numerico for r in respuestas_historicas if r.valor_numerico is not None]
-                                    if numeric_values:
-                                        valor_auto = sum(numeric_values) / len(numeric_values)
-                                elif pregunta.tipo_respuesta.nombre_tipo == 'booleano':
-                                    boolean_values = [r.valor_booleano for r in respuestas_historicas if r.valor_booleano is not None]
-                                    if boolean_values:
-                                        true_count = boolean_values.count(True)
-                                        false_count = boolean_values.count(False)
-                                        valor_auto = true_count >= false_count
-                                elif pregunta.tipo_respuesta.nombre_tipo == 'texto':
-                                    text_values = [r.valor_texto for r in respuestas_historicas if r.valor_texto is not None]
-                                    if text_values:
-                                        most_common = Counter(text_values).most_common(1)
-                                        if most_common and most_common[0][1] >= 2:
-                                            valor_auto = most_common[0][0]
-                                elif pregunta.tipo_respuesta.nombre_tipo in ['seleccion_unica', 'seleccion_multiple', 'seleccion_recursos']:
-                                    selection_values = []
-                                    for r in respuestas_historicas:
-                                        if r.valores_multiples_json and isinstance(r.valores_multiples_json, list):
-                                            selection_values.extend(r.valores_multiples_json)
-                                        elif r.valores_multiples_json and isinstance(r.valores_multiples_json, str):
-                                            try:
-                                                selection_values.extend(json.loads(r.valores_multiples_json))
-                                            except:
-                                                pass
-                                        elif r.valor_texto:
-                                            selection_values.append(r.valor_texto)
-
-                                    if selection_values:
-                                        most_common = Counter(selection_values).most_common(1)
-                                        if most_common and most_common[0][1] >= 2:
-                                            if pregunta.tipo_respuesta.nombre_tipo == 'seleccion_multiple':
-                                                valor_auto = [item for item, count in Counter(selection_values).items() if count >= 2]
-                                                if not valor_auto:
-                                                    valor_auto = [most_common[0][0]]
-                                            else:
-                                                valor_auto = most_common[0][0]
-                                elif pregunta.tipo_respuesta.nombre_tipo in ['firma', 'dibujo']:
-                                    valor_auto = None
-
-                                respuestas_automaticas.append(Respuesta(
-                                    id_pregunta=pregunta.id_pregunta,
-                                    valor_texto=valor_auto if pregunta.tipo_respuesta.nombre_tipo == 'texto' else None,
-                                    valor_booleano=valor_auto if pregunta.tipo_respuesta.nombre_tipo == 'booleano' else None,
-                                    valor_numerico=valor_auto if pregunta.tipo_respuesta.nombre_tipo == 'numerico' else None,
-                                    valores_multiples_json=valor_auto if pregunta.tipo_respuesta.nombre_tipo in ['seleccion_unica', 'seleccion_multiple', 'seleccion_recursos'] else None,
-                                    valor_firma_url=valor_auto if pregunta.tipo_respuesta.nombre_tipo in ['firma', 'dibujo'] else None
-                                ))
-
-                            # Crear el envío automático
-                            nuevo_envio_auto = EnvioFormulario(
-                                id_formulario=formulario.id_formulario,
-                                id_usuario=target_usuario.id_usuario,
-                                fecha_hora_envio=datetime.utcnow(),
-                                completado_automaticamente=True,
-                                espacios_cubiertos_ids=[e.id_espacio for e in formulario.espacios],
-                                subespacios_cubiertos_ids=[s.id_subespacio for s in formulario.sub_espacios],
-                                objetos_cubiertos_ids=[o.id_objeto for o in formulario.objetos]
-                            )
-                            db.session.add(nuevo_envio_auto)
-                            db.session.flush()
-
-                            for res_auto in respuestas_automaticas:
-                                res_auto.id_envio = nuevo_envio_auto.id_envio
-                                db.session.add(res_auto)
-                            
-                            db.session.commit()
-                            resultados_automatizacion.append(f"Formulario '{formulario.nombre_formulario}' automatizado para usuario '{target_usuario.nombre_completo}'.")
-                            
-                    else:
-                        resultados_automatizacion.append(f"Formulario '{formulario.nombre_formulario}' ya alcanzó el límite de {formulario.max_submissions_per_period} diligencias en los últimos {formulario.submission_period_days} día(s) para el usuario '{target_usuario.nombre_completo}'.")
-                
-                # Marcar el formulario como ejecutado para hoy (solo si se intentó ejecutar para al menos un usuario)
-                formulario.last_automated_run_date = today_utc_date
-                db.session.commit() # Commit para guardar la fecha de última ejecución
-                resultados_automatizacion.append(f"Automatización para formulario '{formulario.nombre_formulario}' marcada como ejecutada para hoy.")
-
-            else:
-                status_msg = ""
-                if not formulario.automatizacion_activa:
-                    status_msg = "automatización inactiva"
-                elif formulario.scheduled_automation_time is None:
-                    status_msg = "no tiene hora programada"
-                elif current_time_utc < formulario.scheduled_automation_time:
-                    status_msg = f"hora programada ({formulario.scheduled_automation_time.strftime('%H:%M')}) aún no ha llegado"
-                elif formulario.last_automated_run_date == today_utc_date:
-                    status_msg = "ya se ejecutó hoy"
-                resultados_automatizacion.append(f"Formulario '{formulario.nombre_formulario}' (ID: {formulario.id_formulario}) no se automatizó: {status_msg}.")
-
-        return jsonify({"message": "Proceso de automatización completado.", "resultados": resultados_automatizacion}), 200
+        return jsonify({
+            "message": "Automatización ejecutada exitosamente.",
+            "formularios_automatizados": formularios_procesados
+        }), 200
 
     except Exception as e:
         db.session.rollback()
-        print(f"Error en la ejecución de la automatización: {e}")
-        return jsonify({"error": f"Error interno del servidor al ejecutar la automatización: {str(e)}"}), 500
+        print(f"Error al ejecutar la automatización: {str(e)}")
+        return jsonify({"error": f"Error interno del servidor: {str(e)}"}), 500
 
+def calcular_valores_automatizados(form_id, empresa_id):
+    """
+    Calcula los valores (moda o promedio) para las respuestas de un formulario.
+    """
+    from collections import Counter
+    
+    valores_por_pregunta = {}
+    
+    # Obtener todas las preguntas del formulario
+    preguntas = Pregunta.query.filter_by(id_formulario=form_id).all()
+    
+    for pregunta in preguntas:
+        # Obtener todas las respuestas manuales para esta pregunta
+        # CORREGIDO: Ahora se obtienen los últimos 3 envíos manuales
+        respuestas_manuales = Respuesta.query.join(EnvioFormulario).\
+            filter(Respuesta.id_pregunta == pregunta.id_pregunta,
+                   EnvioFormulario.completado_automaticamente == False,
+                   EnvioFormulario.id_formulario == form_id).\
+            join(Usuario).filter(Usuario.id_empresa == empresa_id).\
+            order_by(EnvioFormulario.fecha_hora_envio.desc()).limit(3).all()
+            
+        if not respuestas_manuales:
+            continue
+
+        tipo_respuesta = pregunta.tipo_respuesta.nombre_tipo
+        valor_calculado = {}
+
+        if tipo_respuesta == 'numerico':
+            valores_numericos = [r.valor_numerico for r in respuestas_manuales if r.valor_numerico is not None]
+            if valores_numericos:
+                promedio = sum(valores_numericos) / len(valores_numericos)
+                valor_calculado = {'valor_numerico': promedio}
+        elif tipo_respuesta in ['seleccion_unica', 'booleano', 'texto_corto']:
+            valores_texto = [r.valor_texto for r in respuestas_manuales if r.valor_texto is not None]
+            if valores_texto:
+                moda = Counter(valores_texto).most_common(1)[0][0]
+                valor_calculado = {'valor_texto': moda}
+        elif tipo_respuesta == 'seleccion_multiple':
+            valores_multiples = []
+            for r in respuestas_manuales:
+                if r.valores_multiples_json:
+                    try:
+                        selected_options = json.loads(r.valores_multiples_json)
+                        valores_multiples.extend(selected_options)
+                    except json.JSONDecodeError:
+                        continue
+            if valores_multiples:
+                moda_multiple = Counter(valores_multiples).most_common(1)[0][0]
+                valor_calculado = {'valores_multiples_json': json.dumps([moda_multiple])}
+        elif tipo_respuesta == 'seleccion_recursos':
+            # CORREGIDO: Se recolectan todos los recursos únicos de los últimos 3 envíos
+            recursos_unicos = set()
+            for r in respuestas_manuales:
+                if r.valores_multiples_json:
+                    try:
+                        selected_options = json.loads(r.valores_multiples_json)
+                        if isinstance(selected_options, list):
+                            recursos_unicos.update(selected_options)
+                        else:
+                            recursos_unicos.add(selected_options)
+                    except json.JSONDecodeError:
+                        continue
+            
+            if recursos_unicos:
+                valor_calculado = {'valores_multiples_json': json.dumps(list(recursos_unicos))}
+
+        elif tipo_respuesta in ['firma', 'dibujo']:
+            # Obtener el valor de la última respuesta
+            ultima_respuesta = Respuesta.query.join(EnvioFormulario).\
+                filter(Respuesta.id_pregunta == pregunta.id_pregunta,
+                       # CORREGIDO: Se usa el campo 'completado_automaticamente' del modelo EnvioFormulario
+                       EnvioFormulario.completado_automaticamente == False,
+                       EnvioFormulario.id_formulario == form_id).\
+                join(Usuario).filter(Usuario.id_empresa == empresa_id).\
+                order_by(EnvioFormulario.fecha_hora_envio.desc()).first()
+            
+            if ultima_respuesta and ultima_respuesta.valor_texto:
+                valor_calculado = {'valor_texto': ultima_respuesta.valor_texto}
+        
+        # Tipos de respuesta que se dejan vacíos
+        elif tipo_respuesta in ['texto', 'texto_largo', 'fecha', 'hora']:
+            pass
+
+        if valor_calculado:
+            valores_por_pregunta[pregunta.id_pregunta] = valor_calculado
+            
+    return valores_por_pregunta
+
+
+    
 # NUEVA RUTA: Para obtener el conteo de envíos manuales de un usuario para un formulario
 @api.route('/formularios/<int:form_id>/manual_submissions_count', methods=['GET'])
 @jwt_required()
@@ -4125,6 +4128,7 @@ def get_manual_submissions_count(form_id):
 
 
 # NUEVA RUTA: Para establecer la hora de automatización programada de un formulario
+# NUEVA RUTA: Para establecer la hora y cantidad de envíos de automatización programada de un formulario
 @api.route('/formularios/<int:form_id>/set_automation_schedule', methods=['PUT'])
 @role_required(['owner', 'admin_empresa'])
 def set_formulario_automation_schedule(form_id):
@@ -4132,36 +4136,51 @@ def set_formulario_automation_schedule(form_id):
         current_user_id = get_jwt_identity()
         usuario = Usuario.query.get(int(current_user_id))
         data = request.get_json()
-        
-        if not data or 'scheduled_time' not in data:
-            return jsonify({"error": "Hora de automatización requerida."}), 400
+
+        # No es necesario que existan datos, pero si los hay, deben ser un diccionario
+        if not data:
+            return jsonify({"error": "No se recibieron datos para actualizar."}), 400
 
         formulario = Formulario.query.get(form_id)
         if not formulario:
             return jsonify({"error": "Formulario no encontrado."}), 404
 
-        # Control de acceso (similar a toggle-automatizacion)
+        # Control de acceso
         if usuario.rol != 'owner' and formulario.id_empresa != usuario.id_empresa:
             return jsonify({"error": "No tienes permisos para modificar la programación de este formulario."}), 403
         
         if usuario.rol == 'owner' and formulario.id_empresa != usuario.id_empresa:
             return jsonify({"error": "Como owner, solo puedes modificar la programación para formularios de tu empresa principal."}), 403
 
-        scheduled_time_str = data['scheduled_time'] # Formato "HH:MM"
-        # Convertir string "HH:MM" a objeto datetime.time
-        scheduled_time_obj = datetime.strptime(scheduled_time_str, '%H:%M').time()
+        # Opcional: recibir la hora
+        scheduled_time_str = data.get('scheduled_time')
+        if scheduled_time_str is not None:
+            try:
+                # Convertir string "HH:MM" a objeto datetime.time
+                scheduled_time_obj = datetime.strptime(scheduled_time_str, '%H:%M').time()
+                formulario.scheduled_automation_time = scheduled_time_obj
+            except ValueError:
+                return jsonify({"error": "Formato de hora inválido. Use HH:MM."}), 400
 
-        formulario.scheduled_automation_time = scheduled_time_obj
+        # NUEVO: Recibir y validar la cantidad de envíos automáticos
+        automation_submissions_count = data.get('automation_submissions_count')
+        if automation_submissions_count is not None:
+            if not isinstance(automation_submissions_count, int) or automation_submissions_count <= 0:
+                return jsonify({"error": "La cantidad de envíos automáticos debe ser un número entero positivo."}), 400
+            formulario.automation_submissions_count = automation_submissions_count
+        
+        # Guardar los cambios en la base de datos
         db.session.commit()
 
-        return jsonify({"message": f"Hora de automatización para '{formulario.nombre_formulario}' establecida a las {scheduled_time_str}.", "scheduled_automation_time": scheduled_time_str}), 200
+        return jsonify({
+            "message": f"Configuración de automatización para '{formulario.nombre_formulario}' actualizada exitosamente.",
+            "scheduled_automation_time": formulario.scheduled_automation_time.strftime('%H:%M') if formulario.scheduled_automation_time else None,
+            "automation_submissions_count": formulario.automation_submissions_count
+        }), 200
 
-    except ValueError:
-        db.session.rollback()
-        return jsonify({"error": "Formato de hora inválido. Use HH:MM."}), 400
     except Exception as e:
         db.session.rollback()
-        print(f"Error al establecer la hora de automatización: {e}")
+        print(f"Error al establecer la configuración de automatización: {e}")
         return jsonify({"error": f"Error interno del servidor: {str(e)}"}), 500
 
 # NUEVA RUTA: Para obtener una lista de formularios para análisis (solo ID y nombre)
@@ -4623,6 +4642,12 @@ def get_envios_by_form(form_id):
         if not formulario:
             return jsonify({"error": "Formulario no encontrado."}), 404
 
+        # Obtener el parámetro 'limit' de la URL, si no existe, usar un valor por defecto
+        # En este caso, el valor por defecto es None para obtener todos los envíos si no se especifica.
+        # Si se usa en el frontend, el valor debería ser 9.
+        limit_str = request.args.get('limit')
+        limit = int(limit_str) if limit_str and limit_str.isdigit() else None
+        
         # Control de acceso: el usuario debe tener permisos para ver este formulario
         if usuario.rol != 'owner':
             is_allowed_template = False
@@ -4635,15 +4660,24 @@ def get_envios_by_form(form_id):
             if not is_allowed_template and formulario.id_empresa != usuario.id_empresa:
                 return jsonify({"error": "No tienes permisos para acceder a este formulario."}), 403
 
+        query = EnvioFormulario.query
+
         # Si es un usuario de formulario, solo puede ver sus propios envíos
         if usuario.rol == 'usuario_formulario':
-            envios = EnvioFormulario.query.filter_by(id_formulario=form_id, id_usuario=usuario.id_usuario).all()
+            query = query.filter_by(id_formulario=form_id, id_usuario=usuario.id_usuario)
         else:
             # Para 'owner' y 'admin_empresa', se filtran los envíos según la empresa del usuario que diligenció el formulario
-            envios = EnvioFormulario.query.join(Usuario).filter(
+            query = query.join(Usuario).filter(
                 EnvioFormulario.id_formulario == form_id,
                 Usuario.id_empresa == usuario.id_empresa
-            ).all()
+            )
+
+        # Ordenar por fecha_hora_envio de forma descendente y aplicar el límite
+        query = query.order_by(db.desc(EnvioFormulario.fecha_hora_envio))
+        if limit is not None:
+            query = query.limit(limit)
+
+        envios = query.all()
 
         envios_data = []
         for envio in envios:

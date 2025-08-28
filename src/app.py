@@ -28,6 +28,9 @@ from flask_cors import CORS  # <--- AÑADE ESTA LÍNEA
 from flask_mail import Mail
 from itsdangerous import URLSafeTimedSerializer
 
+# *** IMPORTACIÓN NECESARIA PARA FLASK-APSCHEDULER ***
+from flask_apscheduler import APScheduler # <- IMPORTACIÓN CLAVE
+
 # Cargar variables de entorno desde el archivo .env
 load_dotenv()
 
@@ -51,6 +54,15 @@ app.config['MAIL_PORT'] = 587
 app.config['MAIL_USE_TLS'] = True
 app.config['MAIL_USERNAME'] = 'sgsstflow@gmail.com'
 app.config['MAIL_PASSWORD'] = 'ofut rtrw kiqk lzpr'
+
+# *** CONFIGURACIÓN Y TAREAS DEL SCHEDULER ***
+class SchedulerConfig:
+    SCHEDULER_API_ENABLED = True
+    # Revisa cada 5 minutos si hay formularios a automatizar
+    SCHEDULER_JOB_INTERVAL = 300 # en segundos (5 minutos)
+
+app.config.from_object(SchedulerConfig())
+scheduler = APScheduler()
 
 # *** INICIALIZACIÓN DE EXTENSIONES ***
 jwt = JWTManager(app)
@@ -114,7 +126,43 @@ def serve_any_other_file(path):
     response.cache_control.max_age = 0  # avoid cache memory
     return response
 
+# Esta función se ejecutará por el scheduler
+# Debe estar fuera del if __name__ == '__main__': para que el scheduler la encuentre
+# y necesita un `with app.app_context()` si accede a la base de datos
+def ejecutar_tareas_de_automatizacion():
+    with app.app_context():
+        print("✅ Scheduler: Ejecutando tarea de automatización...")
+        # Llama a la lógica de tu API para ejecutar la automatización.
+        # Asume que la función está en api.routes.
+        # Si tu función se llama 'ejecutar_automatizacion_formularios', la llamas así.
+        try:
+            from api.routes import ejecutar_automatizacion_formularios
+            result = ejecutar_automatizacion_formularios()
+            print(f"✅ Scheduler: Tarea de automatización completada. Resultado: {result.json}")
+        except Exception as e:
+            print(f"⚠️ Scheduler: Error en la tarea de automatización: {e}")
+
+
 # this only runs if `$ python src/main.py` is executed
 if __name__ == '__main__':
     PORT = int(os.environ.get('PORT', 3001))
+    
+    # === Inicia el scheduler solo en el entorno de producción ===
+    # En desarrollo, esto puede causar que la tarea se ejecute dos veces
+    # si el reloader de Flask está activo.
+    if not app.debug or os.environ.get('WERKZEUG_RUN_MAIN') == 'true':
+        scheduler.init_app(app)
+        scheduler.start()
+        
+        # Agrega la tarea al scheduler.
+        # Usamos `interval` para que revise cada 5 minutos.
+        # Tu lógica interna de la API decidirá si es la hora correcta para ejecutar.
+        scheduler.add_job(
+            id='ejecutar_automatizacion_formularios_job',
+            func=ejecutar_tareas_de_automatizacion,
+            trigger='interval',
+            minutes=5
+        )
+
     app.run(host='0.0.0.0', port=PORT, debug=True)
+
