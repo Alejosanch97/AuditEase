@@ -132,12 +132,12 @@ export const UsersProfile = () => {
     }, [currentUser, fetchAllCompanyUsers]);
 
     const activeFormUsers = useMemo(() => {
-        return allCompanyUsers.filter(user => user.activo && user.rol === 'usuario_formulario');
-    }, [allCompanyUsers]);
+    return allCompanyUsers.filter(user => user.activo && user.id_usuario !== currentUser.id_usuario);
+    }, [allCompanyUsers, currentUser]);
 
     const inactiveFormUsers = useMemo(() => {
-        return allCompanyUsers.filter(user => !user.activo && user.rol === 'usuario_formulario');
-    }, [allCompanyUsers]);
+    return allCompanyUsers.filter(user => !user.activo && user.id_usuario !== currentUser.id_usuario);
+    }, [allCompanyUsers, currentUser]);
 
     const handleOpenEditUserModal = () => {
         setShowEditUserModal(true);
@@ -661,11 +661,11 @@ export const UsersProfile = () => {
                 />
             )}
             {showEditCompanyUserModal && userToEdit && (
-                <EditUserByAdminModal
-                    user={userToEdit}
-                    onClose={handleCloseEditCompanyUserModal}
-                    onUpdateSuccess={handleUserUpdateSuccess}
-                />
+            <EditUserByAdminModal
+            userToEdit={userToEdit} 
+            onClose={handleCloseEditCompanyUserModal}
+            onUpdateSuccess={handleUserUpdateSuccess}
+            />
             )}
             {showConfirmationModal && (
                 <ConfirmationModal 

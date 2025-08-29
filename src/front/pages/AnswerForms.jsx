@@ -411,7 +411,7 @@ export const AnswerForms = () => {
                       </div>
                       
                       {/* Sección de Automatización */}
-                      {(userRole === 'owner' || userRole === 'admin_empresa') && (
+                      {(userRole === 'owner' || userRole === 'admin_empresa' || userRole === 'usuario_formulario') && (
                           <div className="af-automation-section">
                               {form.automatizacion_activa ? (
                                   <>

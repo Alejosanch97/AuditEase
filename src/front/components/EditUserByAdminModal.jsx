@@ -73,73 +73,76 @@ export const EditUserByAdminModal = ({ userToEdit, onClose, onUpdateSuccess }) =
     };
 
     return (
-        <div className="modal-overlay">
-            <div className="modal-content">
-                <div className="modal-header">
-                    <h3>Editar Usuario: {userToEdit?.nombre_completo}</h3>
-                    <button className="close-btn" onClick={onClose}>&times;</button>
-                </div>
-                <div className="modal-body">
-                    {error && <div className="alert alert-danger">{error}</div>}
-                    <form onSubmit={handleSubmit}>
-                        <div className="form-group">
-                            <label htmlFor="nombre_completo">Nombre Completo</label>
-                            <input
-                                type="text"
-                                id="nombre_completo"
-                                value={nombre_completo}
-                                onChange={(e) => setNombreCompleto(e.target.value)}
-                                required
-                            />
-                        </div>
-                        <div className="form-group">
-                            <label htmlFor="email">Email</label>
-                            <input
-                                type="email"
-                                id="email"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                required
-                            />
-                        </div>
-                        <div className="form-group">
-                            <label htmlFor="cargo">Cargo</label>
-                            <input
-                                type="text"
-                                id="cargo"
-                                value={cargo}
-                                onChange={(e) => setCargo(e.target.value)}
-                            />
-                        </div>
-                        <div className="form-group">
-                            <label htmlFor="telefono_personal">Teléfono Personal</label>
-                            <input
-                                type="tel"
-                                id="telefono_personal"
-                                value={telefono_personal}
-                                onChange={(e) => setTelefonoPersonal(e.target.value)}
-                            />
-                        </div>
-                         <div className="form-group">
-                            <label htmlFor="rol">Rol</label>
-                            <select
-                                id="rol"
-                                value={rol}
-                                onChange={(e) => setRol(e.target.value)}
-                                required
-                            >
-                                <option value="usuario_formulario">Usuario</option>
-                                <option value="admin_empresa">Admin Empresa</option>
-                            </select>
-                        </div>
-                        <div className="modal-actions">
-                            <button type="button" className="btn btn-secondary" onClick={onClose}>Cancelar</button>
-                            <button type="submit" className="btn btn-primary" disabled={loading}>
-                                {loading ? 'Actualizando...' : 'Guardar Cambios'}
-                            </button>
-                        </div>
-                    </form>
-                </div>
+        <div className="modal-overlay" onClick={onClose}>
+            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+                <button className="close-button" onClick={onClose}>&times;</button>
+                <h2>Editar Usuario: {userToEdit?.nombre_completo}</h2>
+                <form onSubmit={handleSubmit}>
+                    {error && <p className="error-message">{error}</p>}
+                    <div className="form-group">
+                        <label htmlFor="nombre_completo">Nombre Completo:</label>
+                        <input
+                            type="text"
+                            id="nombre_completo"
+                            name="nombre_completo"
+                            value={nombre_completo}
+                            onChange={(e) => setNombreCompleto(e.target.value)}
+                            required
+                        />
+                    </div>
+                    <div className="form-group">
+                        <label htmlFor="email">Email:</label>
+                        <input
+                            type="email"
+                            id="email"
+                            name="email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            required
+                        />
+                    </div>
+                    <div className="form-group">
+                        <label htmlFor="cargo">Cargo:</label>
+                        <input
+                            type="text"
+                            id="cargo"
+                            name="cargo"
+                            value={cargo}
+                            onChange={(e) => setCargo(e.target.value)}
+                        />
+                    </div>
+                    <div className="form-group">
+                        <label htmlFor="telefono_personal">Teléfono Personal:</label>
+                        <input
+                            type="tel"
+                            id="telefono_personal"
+                            name="telefono_personal"
+                            value={telefono_personal}
+                            onChange={(e) => setTelefonoPersonal(e.target.value)}
+                        />
+                    </div>
+                     <div className="form-group">
+                        <label htmlFor="rol">Rol:</label>
+                        <select
+                            id="rol"
+                            name="rol"
+                            value={rol}
+                            onChange={(e) => setRol(e.target.value)}
+                            required
+                        >
+                            <option value="usuario_formulario">Usuario</option>
+                            <option value="admin_empresa">Admin Empresa</option>
+                        </select>
+                    </div>
+                    <div className="modal-actions">
+                        <button type="submit" className="btn btn-primary" disabled={loading}>
+                            {loading ? 'Guardando...' : 'Guardar Cambios'}
+                        </button>
+                        <button type="button" className="btn btn-secondary" onClick={onClose} disabled={loading}>
+                            Cancelar
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
     );
