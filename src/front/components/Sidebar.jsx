@@ -50,28 +50,27 @@ export const Sidebar = ({ currentUser, handleLogout }) => {
               <Link to="/manage-spaces"><i className="fas fa-map-marked-alt"></i> Gestión de Espacios</Link>
             </li>
           )}
+          {(currentUser.rol === 'owner' || currentUser.rol === 'admin_empresa') && (
           <li className={location.pathname === '/CreateForms' ? 'active' : ''}>
             <Link to="/CreateForms"><i className="fas fa-file-alt"></i> Crear Formularios</Link>
           </li>
+          )}
           {/* Para AnswerFormPage, la ruta puede ser /answer-forms o /answer-forms/:formId,
               así que verificamos si la ruta actual comienza con '/answer-forms' */}
           <li className={location.pathname.startsWith('/Answerforms') ? 'active' : ''}>
             <Link to="/Answerforms"><i className="fas fa-clipboard-check"></i> Contestar Formularios</Link>
           </li>
-          
+          {(currentUser.rol === 'owner' || currentUser.rol === 'admin_empresa') && (
           <li className={location.pathname === '/analytics' ? 'active' : ''}>
             <Link to="/analytics"><i className="fas fa-chart-line"></i> Graficas y Datos</Link>
           </li>
-
+          )}
           {(currentUser.rol === 'owner' || currentUser.rol === 'admin_empresa') && (
             <li className={location.pathname === '/documentos-ministerio' ? 'active' : ''}>
               <Link to="/documentos-ministerio"><i className="fas fa-folder-open"></i> Documentos</Link>
             </li>
           )}
           
-          <li className={location.pathname === '/help-support' ? 'active' : ''}>
-            <Link to="/"><i className="fas fa-question-circle"></i> Ayuda y Soporte</Link>
-          </li>
           <li>
             {/* El manejador de logout se pasa como prop */}
             <Link to="#" onClick={handleLogout}><i className="fas fa-sign-out-alt"></i> Cerrar Sesión</Link>
