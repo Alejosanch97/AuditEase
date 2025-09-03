@@ -1,17 +1,27 @@
+// src/components/Sidebar.jsx
 import React from 'react';
-import { Link, useLocation } from 'react-router-dom'; // Importa useLocation para saber la ruta actual
+import { Link, useLocation } from 'react-router-dom';
 
-export const Sidebar = ({ currentUser, handleLogout }) => {
-  const location = useLocation(); // Hook para obtener la ruta URL actual
+// Agrega 'isVisible' a las props del componente
+export const Sidebar = ({ currentUser, handleLogout, isVisible, onClose }) => {
+  const location = useLocation();
 
-  // Si no hay un usuario loggeado, no renderizamos la barra lateral.
-  // Esto se complementa con la lógica de autenticación en DashboardLayout.
   if (!currentUser) {
     return null;
   }
 
+  // Crea una clase CSS dinámica. Si isVisible es 'true', agrega la clase 'is-visible'.
+  // Esto permitirá que el CSS controle la visibilidad de la barra lateral.
+  const sidebarClass = `sidebar ${isVisible ? 'is-visible' : ''}`;
+
   return (
-    <aside className="sidebar">
+    // Usa la clase dinámica en el elemento <aside>
+    <aside className={sidebarClass}>
+      {/* NUEVO: Botón para cerrar el sidebar en móviles */}
+      <button className="close-sidebar-btn" onClick={onClose}>
+        <i className="fas fa-times"></i>
+      </button>
+
       <div className="sidebar-header">
         <div className="user-avatar">
           <img src={currentUser.imagen_perfil_url || "https://via.placeholder.com/40/1abc9c/ffffff?text=HV"} alt="Avatar de Usuario" />
@@ -22,7 +32,6 @@ export const Sidebar = ({ currentUser, handleLogout }) => {
       </div>
       <nav className="sidebar-nav">
         <ul>
-          {/* Usamos location.pathname para aplicar la clase 'active' dinámicamente */}
           {currentUser.rol === 'owner' && (
             <li className={location.pathname === '/profile' ? 'active' : ''}>
               <Link to="/profile"><i className="fas fa-user"></i> Mi Perfil</Link>
@@ -42,7 +51,7 @@ export const Sidebar = ({ currentUser, handleLogout }) => {
           )}
           {(currentUser.rol === 'admin_empresa') && (
           <li className={location.pathname === '/user-management' ? 'active' : ''}>
-            <Link to="/user-management"><i className="fas fa-users-cog"></i> Gestión de Usuarios</Link> {/* Nuevo icono y texto */}
+            <Link to="/user-management"><i className="fas fa-users-cog"></i> Gestión de Usuarios</Link>
           </li>
         )}
           {(currentUser.rol === 'owner' || currentUser.rol === 'admin_empresa') && (
@@ -55,14 +64,12 @@ export const Sidebar = ({ currentUser, handleLogout }) => {
             <Link to="/CreateForms"><i className="fas fa-file-alt"></i> Crear Formularios</Link>
           </li>
           )}
-          {/* Para AnswerFormPage, la ruta puede ser /answer-forms o /answer-forms/:formId,
-              así que verificamos si la ruta actual comienza con '/answer-forms' */}
           <li className={location.pathname.startsWith('/Answerforms') ? 'active' : ''}>
             <Link to="/Answerforms"><i className="fas fa-clipboard-check"></i> Contestar Formularios</Link>
           </li>
           {(currentUser.rol === 'owner' || currentUser.rol === 'admin_empresa') && (
           <li className={location.pathname === '/analytics' ? 'active' : ''}>
-            <Link to="/analytics"><i className="fas fa-chart-line"></i> Graficas y Datos</Link>
+            <Link to="/analytics"><i className="fas fa-chart-line"></i> Gráficas y Datos</Link>
           </li>
           )}
           {(currentUser.rol === 'owner' || currentUser.rol === 'admin_empresa') && (
@@ -70,9 +77,8 @@ export const Sidebar = ({ currentUser, handleLogout }) => {
               <Link to="/documentos-ministerio"><i className="fas fa-folder-open"></i> Documentos</Link>
             </li>
           )}
-          
+
           <li>
-            {/* El manejador de logout se pasa como prop */}
             <Link to="#" onClick={handleLogout}><i className="fas fa-sign-out-alt"></i> Cerrar Sesión</Link>
           </li>
         </ul>

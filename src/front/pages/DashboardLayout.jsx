@@ -2,18 +2,23 @@
 import React, { useEffect, useState } from 'react';
 import { Outlet, useNavigate } from 'react-router-dom';
 import useGlobalReducer from '../hooks/useGlobalReducer';
-import { Sidebar } from '../components/Sidebar'; // Importa el componente Sidebar
-import { Footer } from '../components/Footer'; // Mantén el Footer si lo quieres en el dashboard
-import ScrollToTop from '../components/ScrollToTop'; // Mantén ScrollToTop
+import { Sidebar } from '../components/Sidebar'; 
+import { Footer } from '../components/Footer'; 
+import ScrollToTop from '../components/ScrollToTop'; 
 
-import "../styles/dashboard.css"; // Estilos generales del dashboard
-// Asegúrate de que modal.css también esté disponible si tus modales lo usan
+import "../styles/dashboard.css"; 
 
 export const DashboardLayout = () => {
   const { store, dispatch } = useGlobalReducer();
   const navigate = useNavigate();
 
   const [loadingInitialAuth, setLoadingInitialAuth] = useState(true);
+  const [isSidebarVisible, setIsSidebarVisible] = useState(false); // NUEVO: Estado para controlar la visibilidad del sidebar
+
+  // NUEVO: Función para alternar la visibilidad del sidebar
+  const handleToggleSidebar = () => {
+    setIsSidebarVisible(!isSidebarVisible);
+  };
 
   // Efecto para verificar el token y cargar el usuario al renderizado inicial
   useEffect(() => {
@@ -48,22 +53,17 @@ export const DashboardLayout = () => {
       };
       verifyToken();
     } else if (!store.isLoggedIn && !store.user && !token) {
-      // Si no hay token y no está loggeado, redirigir inmediatamente
       setLoadingInitialAuth(false);
       navigate('/login');
     } else {
-      // El usuario ya está loggeado o el token acaba de ser verificado
       setLoadingInitialAuth(false);
     }
 
-    // --- Cargar datos globales para el store si no están presentes ---
-    // Esto es crucial para que AnswerFormPage y otros componentes tengan los datos.
     const fetchGlobalResources = async () => {
       const currentToken = localStorage.getItem('access_token');
       if (!currentToken) return;
 
       try {
-        // Solo cargar si el array correspondiente en el store está vacío
         if (store.tiposRespuesta.length === 0) {
           const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/tipos-respuesta`, { headers: { 'Authorization': `Bearer ${currentToken}` } });
           const data = await res.json();
@@ -97,12 +97,9 @@ export const DashboardLayout = () => {
       }
     };
 
-    // Solo cargar recursos globales si el usuario está loggeado y el store está listo
-    // y si no estamos en el proceso de autenticación inicial para evitar llamadas duplicadas
     if (store.isLoggedIn && store.user && !loadingInitialAuth) {
       fetchGlobalResources();
     }
-
   }, [store.isLoggedIn, store.user, navigate, dispatch, loadingInitialAuth,
       store.tiposRespuesta.length, store.espacios.length, store.subEspacios.length, store.objetos.length]);
 
@@ -123,21 +120,26 @@ export const DashboardLayout = () => {
     );
   }
 
-  // Si no está loggeado después de la verificación inicial, el useEffect ya habrá redirigido.
   if (!store.isLoggedIn || !store.user) {
-    return null; // O un spinner si prefieres, pero el usuario será redirigido.
+    return null; 
   }
 
   return (
-    <ScrollToTop> {/* ScrollToTop envuelve todo el layout del dashboard */}
+    <ScrollToTop> 
       <div className="dashboard-container">
-        {/* El componente Sidebar se renderizará aquí */}
-        <Sidebar currentUser={store.user} handleLogout={handleLogout} />
+        {/* NUEVO: Botón de menú hamburguesa para móviles. Solo será visible con CSS en pantallas pequeñas */}
+        <button className="hamburger-menu" onClick={handleToggleSidebar}>
+          <i className="fas fa-bars"></i>
+        </button>
 
-        {/* El contenido de la página específica se renderizará aquí */}
-        {/* La clase main-content se aplica al contenedor de Outlet */}
-        <main className="main-content"> {/* Cambiado de div a main por semántica */}
-          <Outlet /> {/* Aquí se renderizarán los componentes de las rutas anidadas */}
+        {/* NUEVO: Pasa el estado de visibilidad del sidebar como una prop
+          al componente Sidebar. El componente Sidebar usará esta prop
+          para aplicar una clase CSS que lo haga visible u oculto.
+        */}
+        <Sidebar currentUser={store.user} handleLogout={handleLogout} isVisible={isSidebarVisible} />
+
+        <main className="main-content"> 
+          <Outlet /> 
         </main>
       </div>
     </ScrollToTop>
