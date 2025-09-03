@@ -454,6 +454,10 @@ class DocumentosMinisterio(db.Model):
     fecha_subida: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     user_id: Mapped[int] = mapped_column(Integer, ForeignKey('usuarios.id_usuario'), nullable=False)
 
+    # NUEVO CAMPO: para distinguir entre un link y un archivo PDF
+    tipo_contenido: Mapped[str] = mapped_column(String(50), default='pdf', nullable=False)
+
+
     # NUEVA CLAVE FORÁNEA: vincula el documento a una categoría
     categoria_id: Mapped[int] = mapped_column(Integer, ForeignKey('documento_categorias.id'), nullable=False)
 
@@ -473,5 +477,6 @@ class DocumentosMinisterio(db.Model):
             "url_archivo": self.url_archivo,
             "fecha_subida": self.fecha_subida.isoformat() if self.fecha_subida else None,
             "user_id": self.user_id,
-            "categoria_id": self.categoria_id
+            "categoria_id": self.categoria_id,
+            "tipo_contenido": self.tipo_contenido
         }

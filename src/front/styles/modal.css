@@ -445,3 +445,36 @@
     max-width: 100%;
     height: auto;
 }
+
+/* Nuevos estilos para el selector de tipo de subida */
+.upload-type-selector {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 20px;
+    border-radius: 10px;
+    overflow: hidden;
+    background-color: #3a475a;
+    border: 1px solid #4a5a70;
+}
+
+.selector-button {
+    flex: 1;
+    padding: 14px 20px;
+    cursor: pointer;
+    border: none;
+    background-color: transparent;
+    font-size: 1.05em;
+    font-weight: 600;
+    color: #e0e0e0;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.selector-button:first-child {
+    border-right: 1px solid #4a5a70;
+}
+
+.selector-button.active {
+    background-color: #61dafb;
+    color: #2e3b4e;
+    font-weight: 700;
+}

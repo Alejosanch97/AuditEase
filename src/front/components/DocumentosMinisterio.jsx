@@ -31,7 +31,7 @@ export const DocumentosMinisterio = () => {
                     'Authorization': `Bearer ${token}`
                 }
             });
-            const data = await response.json();
+            const data = await await response.json();
             if (response.ok) {
                 dispatch({ type: 'SET_CATEGORIAS_DOCUMENTOS', payload: data.categorias });
             } else {
@@ -49,39 +49,8 @@ export const DocumentosMinisterio = () => {
         fetchDocumentsAndCategories();
     }, []);
 
-    // --- Manejo de la subida de documentos ---
-    const handleUploadDocument = async (titulo, file, categoriaId) => {
-        const token = localStorage.getItem('access_token');
-        const formData = new FormData();
-        formData.append('titulo', titulo);
-        formData.append('documento_pdf', file);
-        formData.append('categoria_id', categoriaId);
-
-        dispatch({ type: 'SET_LOADING_DOCUMENTOS', payload: true });
-
-        try {
-            const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/documentos-ministerio`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                },
-                body: formData
-            });
-            const data = await response.json();
-            if (response.ok) {
-                dispatch({ type: 'SET_MESSAGE', payload: { type: 'success', text: data.message } });
-                dispatch({ type: 'ADD_DOCUMENTO_TO_CATEGORIA', payload: { categoriaId: parseInt(categoriaId), documento: data.documento } });
-                setShowUploadModal(false);
-            } else {
-                throw new Error(data.error || "Error al subir el documento");
-            }
-        } catch (error) {
-            console.error("Error uploading document:", error);
-            dispatch({ type: 'SET_MESSAGE', payload: { type: 'error', text: error.message } });
-        } finally {
-            dispatch({ type: 'SET_LOADING_DOCUMENTOS', payload: false });
-        }
-    };
+    // --- REEMPLAZO: Eliminar la función handleUploadDocument ---
+    // Ya no es necesaria, porque la lógica de la API ahora está en el modal.
 
     // --- Manejo de la creación de categorías ---
     const handleCreateCategory = async (nombre, descripcion) => {
@@ -191,6 +160,14 @@ export const DocumentosMinisterio = () => {
         setShowUploadModal(true);
     };
 
+    // --- NUEVO: Manejador para el cierre del modal de subida ---
+    const handleUploadModalClose = (shouldReload = false) => {
+        setShowUploadModal(false);
+        if (shouldReload) {
+            fetchDocumentsAndCategories();
+        }
+    };
+
     return (
         <div className="documentos-ministerio-page">
             <header className="page-header">
@@ -238,16 +215,28 @@ export const DocumentosMinisterio = () => {
                                         categoria.documentos.map(doc => (
                                             <div key={doc.id} className="document-card">
                                                 <div className="card-icon">
-                                                    <i className="fas fa-file-pdf"></i>
+                                                    {/* Elige el ícono según el tipo de contenido */}
+                                                    {doc.tipo_contenido === 'link' ? (
+                                                        <i className="fas fa-link"></i>
+                                                    ) : (
+                                                        <i className="fas fa-file-pdf"></i>
+                                                    )}
                                                 </div>
                                                 <div className="card-body">
                                                     <h4 className="document-title">{doc.nombre}</h4>
                                                     <span className="document-date">Subido el: {new Date(doc.fecha_subida).toLocaleDateString()}</span>
                                                 </div>
                                                 <div className="card-actions">
-                                                    <button className="btn-secondary" onClick={() => handleViewPdf(doc)}>
-                                                        <i className="fas fa-eye"></i>
-                                                    </button>
+                                                    {/* Muestra un botón diferente según el tipo de contenido */}
+                                                    {doc.tipo_contenido === 'link' ? (
+                                                        <a href={doc.url_archivo} target="_blank" rel="noopener noreferrer" className="btn-secondary">
+                                                            <i className="fas fa-external-link-alt"></i>
+                                                        </a>
+                                                    ) : (
+                                                        <button className="btn-secondary" onClick={() => handleViewPdf(doc)}>
+                                                            <i className="fas fa-eye"></i>
+                                                        </button>
+                                                    )}
                                                     {canManageDocs && (
                                                         <button className="btn-danger" onClick={() => handleDeleteConfirmation(doc)}>
                                                             <i className="fas fa-trash-alt"></i>
@@ -273,8 +262,7 @@ export const DocumentosMinisterio = () => {
             )}
             {showUploadModal && (
                 <UploadDocumentoModal
-                    onClose={() => setShowUploadModal(false)}
-                    onUpload={handleUploadDocument}
+                    onClose={handleUploadModalClose}
                     categorias={documentosCategorias}
                     selectedCategoryId={selectedCategoryId}
                 />
@@ -288,7 +276,7 @@ export const DocumentosMinisterio = () => {
             {showConfirmationModal && (
                 <ConfirmationModal
                     title="Confirmar Eliminación"
-                    message={`¿Estás seguro de que quieres eliminar ${docToDelete ? `el documento "${docToDelete.nombre}"` : `la categoría "${categoryToDelete.nombre}" y todos sus documentos asociados`}? Esta acción es irreversible.`}
+                    message={`¿Estás seguro de que quieres eliminar ${docToDelete ? `el documento "${docToDelete.nombre}"` : `la categoría "${categoryToDelete.nombre}" y todos sus documentos asociados"}`}. Esta acción es irreversible.`}
                     onConfirm={docToDelete ? handleDeleteDocument : handleDeleteCategory}
                     onCancel={() => {
                         setShowConfirmationModal(false);

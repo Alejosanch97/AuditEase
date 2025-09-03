@@ -2201,60 +2201,36 @@ body {
 }
 
 /* ========================================================= */
-/* === SOLUCIÓN: AJUSTES PARA DISPOSITIVOS MÓVILES (<= 768px) === */
+/* === PANTALLAS DE CELULAR (<= 768px) === */
 /* ========================================================= */
 @media (max-width: 768px) {
-    /* CORRECCIÓN PRINCIPAL: Este bloque de estilos unifica la funcionalidad de menú
-        deslizable y la visibilidad de los elementos.
-    */
-
     /* Muestra el botón de menú hamburguesa */
     .hamburger-menu {
         display: block;
     }
 
-    /* Muestra el botón de cerrar */
+    /* Oculta el botón de cerrar en el sidebar si no está abierto */
     .close-sidebar-btn {
         display: block;
     }
-
-    /* Oculta y posiciona el sidebar para que se deslice desde la izquierda */
+    
     .sidebar {
-        transform: translateX(-100%); /* Oculto por defecto */
+        transform: translateX(-100%);
         position: fixed;
         top: 0;
         left: 0;
         height: 100vh;
-        width: 80%; /* Ancho más amigable para móviles */
+        width: 80%;
         max-width: 300px;
         z-index: 1000;
         transition: transform 0.3s ease-in-out, box-shadow 0.3s ease;
         box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
     }
-
-    /* Permite que el contenido del sidebar se desplace */
-    .sidebar-nav {
-        /* Se elimina el 'display: none' que causaba el problema */
-        display: block; /* Vuelve a mostrar la navegación */
-        width: 100%;
-        overflow-y: auto; /* Permite el scroll de la lista de enlaces */
+    
+    .sidebar.is-visible {
+        transform: translateX(0);
     }
 
-    /* Mantiene los estilos para la lista dentro de la navegación */
-    .sidebar-nav ul {
-        display: flex;
-        flex-direction: column;
-        padding: 0;
-    }
-    .sidebar-nav li a {
-        justify-content: center;
-        text-align: center;
-    }
-    .sidebar-nav li a i {
-        margin-right: 10px;
-    }
-
-    /* Efecto de fondo oscuro para el main-content */
     .dashboard-container.sidebar-open .main-content {
         filter: blur(2px) grayscale(50%);
         pointer-events: none;
@@ -2264,8 +2240,8 @@ body {
     .dashboard-container .main-content {
         transition: filter 0.3s ease;
     }
-    
-    /* El resto de tus estilos originales para móviles: */
+
+    /* Cambios a diseño de una columna y apilamiento */
     .dashboard-container {
         flex-direction: column;
     }
@@ -2339,10 +2315,72 @@ body {
     .task-actions {
         order: 4;
     }
+
+    /* === CORRECCIÓN PARA EL DESBORDAMIENTO DE BOTONES EN MÓVILES === */
+    .owner-companies-card .company-item,
+    .admin-users-card .user-item,
+    .inactive-companies-card .company-item,
+    .forms-to-fill-card .favorite-form-item {
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 15px;
+    }
+    
+    .owner-companies-card .company-details,
+    .admin-users-card .user-details,
+    .inactive-companies-card .company-details,
+    .forms-to-fill-card .form-info {
+        width: 100%;
+        margin-top: 15px;
+        order: 2; /* Asegura que la info esté debajo de la imagen */
+    }
+    
+    .owner-companies-card .company-list-logo,
+    .admin-users-card .user-list-picture,
+    .inactive-companies-card .company-list-logo,
+    .forms-to-fill-card .form-icon {
+        order: 1; /* La imagen o ícono va primero */
+    }
+    
+    .item-actions {
+        margin-left: 0;
+        margin-top: 15px;
+        width: 100%;
+        justify-content: space-between; /* Distribuye los botones equitativamente */
+        order: 3; /* Los botones van al final */
+    }
+    
+    .manage-item-btn,
+    .fill-form-btn {
+        flex-grow: 1;
+        flex-basis: 45%; /* Para que dos botones quepan en una fila */
+        text-align: center;
+        justify-content: center;
+    }
+
+    .forms-to-fill-card .fill-form-btn {
+        width: auto;
+    }
+
+    .forms-to-fill-card .form-info h4 {
+        white-space: normal;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-height: 2.8em;
+        line-height: 1.4em;
+    }
+    
+    .forms-to-fill-card .form-info p {
+        white-space: normal;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-height: 2.8em;
+        line-height: 1.4em;
+    }
 }
 
 /* ========================================================= */
-/* === AJUSTES ADICIONALES PARA MÓVILES MUY PEQUEÑOS (<= 480px) === */
+/* === MÓVILES MUY PEQUEÑOS (<= 480px) === */
 /* ========================================================= */
 @media (max-width: 480px) {
     .headline {

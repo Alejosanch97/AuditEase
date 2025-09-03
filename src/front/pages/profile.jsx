@@ -4,7 +4,7 @@ import useGlobalReducer from '../hooks/useGlobalReducer';
 import { ConfirmationModal } from '../components/ConfirmationModal'; // Importa el nuevo componente
 
 import { EditUserProfileModal } from '../components/EditUserProfileModal.jsx';
-import { EditCompanyProfileModal } from '../components/EditCompanyProfileModal.jsx'; // Nota: Corregí el nombre del archivo
+import { EditCompanyProfileModal } from '../components/EditCompanyProfileModal.jsx'; 
 import { EditOwnerCompanyModal } from '../components/EditOwnerCompanyModal.jsx';
 import { EditUserByOwnerModal } from '../components/EditUserByOwnerModal.jsx';
 

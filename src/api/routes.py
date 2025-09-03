@@ -4522,60 +4522,110 @@ def delete_documento_categoria(categoria_id):
 
 # --- Rutas para la gestión de documentos del ministerio (actualizadas) ---
 
-@api.route('/documentos-ministerio', methods=['POST'])
+# --- Rutas para la gestión de documentos del ministerio (actualizadas) ---
+# --- RUTA PARA SUBIR DOCUMENTOS PDF ---
+@api.route('/documentos-ministerio/upload-pdf', methods=['POST'])
 @role_required(['owner', 'admin_empresa'])
-def upload_documento_ministerio():
-    """
-    Sube un documento PDF a Cloudinary y crea una entrada en la base de datos,
-    asociándolo a una categoría.
-    """
+def upload_pdf():
+    """Sube un documento PDF."""
     current_user_id = get_jwt_identity()
 
-    documento_pdf = request.files.get('documento_pdf')
+    if 'documento_pdf' not in request.files:
+        return jsonify({"error": "No se adjuntó el archivo PDF."}), 400
+
+    documento_pdf = request.files['documento_pdf']
     titulo = request.form.get('titulo')
     categoria_id = request.form.get('categoria_id')
 
-    if not documento_pdf:
-        return jsonify({"error": "No se proporcionó ningún archivo."}), 400
+    # Validaciones
     if not titulo or titulo.strip() == "":
         return jsonify({"error": "El título del documento es obligatorio."}), 400
     if not categoria_id:
         return jsonify({"error": "La categoría del documento es obligatoria."}), 400
-
+    if documento_pdf.content_type != 'application/pdf':
+        return jsonify({"error": "Solo se permiten archivos PDF."}), 400
+    
     try:
         categoria = DocumentoCategoria.query.get(int(categoria_id))
         if not categoria:
             return jsonify({"error": "La categoría seleccionada no existe."}), 404
 
-        if documento_pdf.content_type != 'application/pdf':
-            return jsonify({"error": "Solo se permiten archivos PDF."}), 400
-
         # Subir el documento a Cloudinary
         upload_result = cloudinary.uploader.upload(documento_pdf, resource_type="raw")
+        url_documento = upload_result['secure_url']
 
-        # Crear un nuevo registro en la base de datos
+        # Crear nuevo registro en la base de datos
         nuevo_documento = DocumentosMinisterio(
             nombre=titulo,
-            url_archivo=upload_result['secure_url'],
+            url_archivo=url_documento,
             fecha_subida=datetime.utcnow(),
             user_id=int(current_user_id),
-            categoria_id=int(categoria_id)
+            categoria_id=int(categoria_id),
+            tipo_contenido='pdf'  # Tipo de contenido fijo
         )
-
         db.session.add(nuevo_documento)
         db.session.commit()
 
         return jsonify({
-            "message": "Documento subido y card creada exitosamente.",
+            "message": "PDF subido y card creada exitosamente.",
             "documento": nuevo_documento.serialize()
         }), 201
 
     except Exception as e:
         db.session.rollback()
-        print(f"Error al subir el documento: {str(e)}")
-        return jsonify({"error": f"Error interno del servidor al subir el documento: {str(e)}"}), 500
+        print(f"Error al subir el PDF: {str(e)}")
+        return jsonify({"error": f"Error interno del servidor: {str(e)}"}), 500
 
+# --- RUTA PARA SUBIR LINKS ---
+@api.route('/documentos-ministerio/upload-link', methods=['POST'])
+@role_required(['owner', 'admin_empresa'])
+def upload_link():
+    """Sube un documento como un link (URL)."""
+    current_user_id = get_jwt_identity()
 
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "No se proporcionaron datos JSON."}), 400
+
+    titulo = data.get('titulo')
+    categoria_id = data.get('categoria_id')
+    url_archivo = data.get('url_archivo')
+
+    # Validaciones
+    if not titulo or titulo.strip() == "":
+        return jsonify({"error": "El título del documento es obligatorio."}), 400
+    if not categoria_id:
+        return jsonify({"error": "La categoría del documento es obligatoria."}), 400
+    if not url_archivo or url_archivo.strip() == "":
+        return jsonify({"error": "La URL del documento es obligatoria."}), 400
+    
+    try:
+        categoria = DocumentoCategoria.query.get(int(categoria_id))
+        if not categoria:
+            return jsonify({"error": "La categoría seleccionada no existe."}), 404
+
+        # Crear nuevo registro en la base de datos
+        nuevo_documento = DocumentosMinisterio(
+            nombre=titulo,
+            url_archivo=url_archivo,
+            fecha_subida=datetime.utcnow(),
+            user_id=int(current_user_id),
+            categoria_id=int(categoria_id),
+            tipo_contenido='link'  # Tipo de contenido fijo
+        )
+        db.session.add(nuevo_documento)
+        db.session.commit()
+
+        return jsonify({
+            "message": "Link subido y card creada exitosamente.",
+            "documento": nuevo_documento.serialize()
+        }), 201
+
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error al subir el link: {str(e)}")
+        return jsonify({"error": f"Error interno del servidor: {str(e)}"}), 500
+    
 @api.route('/documentos-ministerio', methods=['GET'])
 @jwt_required()
 def get_all_documentos_ministerio_with_categories():
