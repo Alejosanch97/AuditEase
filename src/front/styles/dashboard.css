@@ -2201,34 +2201,46 @@ body {
 }
 
 /* ========================================================= */
-/* === AJUSTES PARA DISPOSITIVOS MÓVILES (<= 768px) === */
+/* === SOLUCIÓN: AJUSTES PARA DISPOSITIVOS MÓVILES (<= 768px) === */
 /* ========================================================= */
 @media (max-width: 768px) {
-    /* La barra lateral y el contenido principal se apilan verticalmente */
-    .dashboard-container {
-        flex-direction: column;
+    /* CORRECCIÓN PRINCIPAL: Este bloque de estilos unifica la funcionalidad de menú
+        deslizable y la visibilidad de los elementos.
+    */
+
+    /* Muestra el botón de menú hamburguesa */
+    .hamburger-menu {
+        display: block;
     }
+
+    /* Muestra el botón de cerrar */
+    .close-sidebar-btn {
+        display: block;
+    }
+
+    /* Oculta y posiciona el sidebar para que se deslice desde la izquierda */
     .sidebar {
-        width: 100%;
-        height: auto;
-        position: relative;
-        overflow-y: visible;
-        padding: 20px;
-        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+        transform: translateX(-100%); /* Oculto por defecto */
+        position: fixed;
+        top: 0;
+        left: 0;
+        height: 100vh;
+        width: 80%; /* Ancho más amigable para móviles */
+        max-width: 300px;
+        z-index: 1000;
+        transition: transform 0.3s ease-in-out, box-shadow 0.3s ease;
+        box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
     }
-    .sidebar-header {
-        flex-direction: row;
-        align-items: center;
-        justify-content: center;
-        padding: 0 0 20px 0;
-        margin-bottom: 20px;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-    }
-    /* Ocultamos la navegación principal y la haremos con un menú desplegable si es necesario */
+
+    /* Permite que el contenido del sidebar se desplace */
     .sidebar-nav {
-        display: none;
+        /* Se elimina el 'display: none' que causaba el problema */
+        display: block; /* Vuelve a mostrar la navegación */
         width: 100%;
+        overflow-y: auto; /* Permite el scroll de la lista de enlaces */
     }
+
+    /* Mantiene los estilos para la lista dentro de la navegación */
     .sidebar-nav ul {
         display: flex;
         flex-direction: column;
@@ -2241,10 +2253,25 @@ body {
     .sidebar-nav li a i {
         margin-right: 10px;
     }
+
+    /* Efecto de fondo oscuro para el main-content */
+    .dashboard-container.sidebar-open .main-content {
+        filter: blur(2px) grayscale(50%);
+        pointer-events: none;
+        transition: filter 0.3s ease;
+    }
+    
+    .dashboard-container .main-content {
+        transition: filter 0.3s ease;
+    }
+    
+    /* El resto de tus estilos originales para móviles: */
+    .dashboard-container {
+        flex-direction: column;
+    }
     .main-content {
         padding: 15px;
     }
-    /* El encabezado principal se apila */
     .main-header {
         flex-direction: column;
         align-items: center;
@@ -2255,50 +2282,28 @@ body {
     .header-right {
         gap: 15px;
     }
-    /* La cuadrícula se convierte en una sola columna para dispositivos móviles */
     .dashboard-grid {
         grid-template-columns: 1fr;
         gap: 15px;
         grid-template-areas:
-            "profile"
-            "calendar"
-            "admin-users"
-            "owner-companies"
-            "inactive-companies"
-            "forms-to-fill"
-            "occupation-info"
-            "basic-info"
-            "onboarding"
-            "chart-1"
-            "data-table"
-            "progress";
+            "profile" "calendar" "admin-users" "owner-companies" "inactive-companies"
+            "forms-to-fill" "occupation-info" "basic-info" "onboarding" "chart-1"
+            "data-table" "progress";
     }
-    /* Todos los ítems de la cuadrícula ocupan el ancho completo */
-    .profile-card,
-    .calendar-card,
-    .owner-companies-card,
-    .admin-users-card,
-    .inactive-companies-card,
-    .forms-to-fill-card,
-    .occupation-info-card,
-    .basic-info-card,
-    .onboarding-card,
-    .chart-card-1,
-    .data-table-card,
+    .profile-card, .calendar-card, .owner-companies-card, .admin-users-card,
+    .inactive-companies-card, .forms-to-fill-card, .occupation-info-card,
+    .basic-info-card, .onboarding-card, .chart-card-1, .data-table-card,
     .progress-overview-card {
         grid-column: 1 / -1;
     }
-    /* Ajustes para la tarjeta de perfil */
     .profile-header {
         flex-direction: column;
         align-items: center;
         text-align: center;
     }
-    /* El grupo de información se vuelve una columna */
     .info-group {
         grid-template-columns: 1fr;
     }
-    /* Los botones de acción se centran y se apilan */
     .profile-actions {
         justify-content: center;
         flex-direction: column;
@@ -2308,7 +2313,6 @@ body {
         width: 100%;
         justify-content: center;
     }
-    /* Ajustes para la tarjeta de formularios */
     .forms-to-fill-card .favorite-form-item {
         flex-direction: column;
         align-items: flex-start;
@@ -2319,12 +2323,10 @@ body {
         justify-content: center;
         margin-top: 10px;
     }
-    /* Tabla de calendario más compacta */
     .calendar-table th, .calendar-table td {
         padding: 8px 2px;
         font-size: 0.8em;
     }
-    /* Tareas de onboarding en móvil */
     .task-item {
         flex-wrap: wrap;
         gap: 10px;
@@ -2332,7 +2334,7 @@ body {
     .assigned-to, .due-date {
         text-align: left;
         width: 100%;
-        order: 3; /* Asegura que la fecha y el asignado aparezcan abajo */
+        order: 3;
     }
     .task-actions {
         order: 4;
