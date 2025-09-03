@@ -2556,14 +2556,16 @@ body {
     color: #2980b9;
 }
 
+/* src/styles/dashboard.css - Correcciones y nuevos estilos para el sidebar móvil */
+
 /* Botón de menú hamburguesa para móviles */
 .hamburger-menu {
     display: none; /* Por defecto, oculto en pantallas grandes */
     position: fixed;
     top: 20px;
     left: 20px;
-    z-index: 1001; /* Asegura que esté por encima de todo */
-    background-color: #34495e; /* Un color que contraste con el fondo */
+    z-index: 1001; /* Asegura que esté por encima del sidebar y de todo */
+    background-color: #34495e;
     color: #ecf0f1;
     border: none;
     padding: 12px 16px;
@@ -2582,48 +2584,14 @@ body {
 .close-sidebar-btn {
     display: none; /* Oculto por defecto */
     position: absolute;
-    top: 15px;
-    right: 15px;
+    top: 20px;
+    right: 20px;
     background: none;
     border: none;
-    font-size: 1.5rem;
+    font-size: 1.8rem;
     color: #ecf0f1;
     cursor: pointer;
-    z-index: 1001;
-}
-
-@media (max-width: 768px) {
-    /* Muestra el botón de menú hamburguesa */
-    .hamburger-menu {
-        display: block;
-    }
-
-    /* Oculta la barra lateral por defecto y la posiciona fija */
-    .sidebar {
-        transform: translateX(-100%);
-        position: fixed;
-        top: 0;
-        left: 0;
-        height: 100vh;
-        z-index: 1000;
-        transition: transform 0.3s ease-in-out, box-shadow 0.3s ease;
-        box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
-    }
-    
-    /* El botón de cerrar solo se muestra cuando el sidebar está visible */
-    .close-sidebar-btn {
-        display: block;
-    }
-
-    /* Agrega un fondo oscuro para el main-content cuando el sidebar está abierto */
-    .dashboard-container.sidebar-open .main-content {
-        filter: blur(2px) grayscale(50%);
-        pointer-events: none;
-        transition: filter 0.3s ease;
-    }
-    .dashboard-container .main-content {
-        transition: filter 0.3s ease;
-    }
+    z-index: 1002; /* Por encima del sidebar y de la hamburguesa */
 }
 
 /* Condición para mostrar el sidebar cuando tiene la clase 'is-visible' */
@@ -2631,15 +2599,55 @@ body {
     transform: translateX(0);
 }
 
-/* Oculta el botón de cerrar en pantallas grandes */
+/* Media Queries para la responsividad */
+@media (max-width: 768px) {
+    /* Muestra el botón de menú hamburguesa en móviles */
+    .hamburger-menu {
+        display: block;
+    }
+
+    /* Estilos del sidebar en móviles */
+    .sidebar {
+        transform: translateX(-100%); /* Oculto por defecto */
+        position: fixed;
+        top: 0;
+        left: 0;
+        height: 100vh;
+        width: 80%; /* Ancho más amigable para móviles */
+        max-width: 300px;
+        z-index: 1000;
+        transition: transform 0.3s ease-in-out, box-shadow 0.3s ease;
+        box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
+    }
+    
+    /* Muestra el botón de cerrar solo cuando la pantalla es móvil */
+    .close-sidebar-btn {
+        display: block;
+    }
+
+    /* Agrega un fondo oscuro y blur al contenido principal cuando el sidebar está abierto */
+    .dashboard-container.sidebar-open .main-content {
+        filter: blur(2px) grayscale(50%);
+        pointer-events: none; /* Desactiva clics en el contenido de atrás */
+        transition: filter 0.3s ease;
+    }
+    
+    /* Transición para el efecto de blur */
+    .dashboard-container .main-content {
+        transition: filter 0.3s ease;
+    }
+}
+
 @media (min-width: 769px) {
+    /* Oculta los botones de control para móviles en pantallas grandes */
     .close-sidebar-btn,
     .hamburger-menu {
         display: none;
     }
+    
     /* El sidebar vuelve a su estado normal */
     .sidebar {
         position: sticky;
-        transform: none;
+        transform: none; /* Restablece el transform para que sea visible */
     }
 }

@@ -13,9 +13,9 @@ export const DashboardLayout = () => {
   const navigate = useNavigate();
 
   const [loadingInitialAuth, setLoadingInitialAuth] = useState(true);
-  const [isSidebarVisible, setIsSidebarVisible] = useState(false); // NUEVO: Estado para controlar la visibilidad del sidebar
+  const [isSidebarVisible, setIsSidebarVisible] = useState(false);
 
-  // NUEVO: Función para alternar la visibilidad del sidebar
+  // Función para alternar la visibilidad del sidebar
   const handleToggleSidebar = () => {
     setIsSidebarVisible(!isSidebarVisible);
   };
@@ -103,7 +103,6 @@ export const DashboardLayout = () => {
   }, [store.isLoggedIn, store.user, navigate, dispatch, loadingInitialAuth,
       store.tiposRespuesta.length, store.espacios.length, store.subEspacios.length, store.objetos.length]);
 
-
   // Función de logout centralizada
   const handleLogout = () => {
     localStorage.removeItem('access_token');
@@ -126,17 +125,20 @@ export const DashboardLayout = () => {
 
   return (
     <ScrollToTop> 
-      <div className="dashboard-container">
-        {/* NUEVO: Botón de menú hamburguesa para móviles. Solo será visible con CSS en pantallas pequeñas */}
+      {/* NUEVO: Agrega una clase condicional al contenedor principal */}
+      <div className={`dashboard-container ${isSidebarVisible ? 'sidebar-open' : ''}`}>
+        
         <button className="hamburger-menu" onClick={handleToggleSidebar}>
           <i className="fas fa-bars"></i>
         </button>
 
-        {/* NUEVO: Pasa el estado de visibilidad del sidebar como una prop
-          al componente Sidebar. El componente Sidebar usará esta prop
-          para aplicar una clase CSS que lo haga visible u oculto.
-        */}
-        <Sidebar currentUser={store.user} handleLogout={handleLogout} isVisible={isSidebarVisible} />
+        {/* CORREGIDO: Ahora pasamos la prop 'onClose' al Sidebar */}
+        <Sidebar 
+          currentUser={store.user} 
+          handleLogout={handleLogout} 
+          isVisible={isSidebarVisible} 
+          onClose={handleToggleSidebar}
+        />
 
         <main className="main-content"> 
           <Outlet /> 
