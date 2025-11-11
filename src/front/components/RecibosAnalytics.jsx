@@ -4,6 +4,7 @@ import useGlobalReducer from '../hooks/useGlobalReducer';
 import "../styles/recibos-analytics.css";
 // ⭐ IMPORTACIONES DE COMPONENTES DE MENSAJERÍA/MODALES
 import NotificationAlert from './NotificationAlert'; // Asegúrate de exportarlo por defecto si usas esta sintaxis
+import { ConfirmationModal } from '../components/ConfirmationModal.jsx';
 
 import {
   PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer
