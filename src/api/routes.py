@@ -5147,20 +5147,18 @@ def delete_estudiante(student_id):
 
 def send_async_email(app, msg):
     """
-    Ejecuta el envío de correo dentro del contexto de la aplicación.
-    Captura y registra el TIPO de error para mejor diagnóstico en Render (ej: SMTPAuthenticationError).
+    Envía correo dentro del contexto Flask-Mail.
+    Captura errores SMTP y los imprime para Render.
     """
-    # Usar app.app_context() es CRÍTICO para que el hilo acceda a la configuración de Flask-Mail
     with app.app_context():
-        # Acceder a la extensión de mail
         mail_sender = app.extensions.get('mail')
         try:
-            # Aquí ocurre el envío BLOQUEANTE, pero dentro del hilo
-            mail_sender.send(msg) 
+            mail_sender.send(msg)
             print(f"✅ Correo ASÍNCRONO enviado con éxito a: {msg.recipients}")
         except Exception as e:
-            # CORRECCIÓN CLAVE: Mostrar el nombre del tipo de excepción para diagnosticar SMTP/Render
-            print(f"🛑 ERROR CRÍTICO DE CORREO (SMTP/RENDER): Tipo de Error: {type(e).__name__} | Mensaje: {str(e)}")
+            import traceback
+            print(f"🛑 ERROR CRÍTICO DE CORREO (SMTP/RENDER): {type(e).__name__} | {str(e)}")
+            traceback.print_exc()  # <-- esto muestra la traza completa
 
 
 # URL del logo que solicitaste.
