@@ -5148,7 +5148,7 @@ def delete_estudiante(student_id):
 def send_async_email(app, msg):
     """
     Ejecuta el envío de correo dentro del contexto de la aplicación.
-    Esto es CRÍTICO para que Flask-Mail acceda a la configuración (MAIL_USERNAME, etc.).
+    Captura y registra el TIPO de error para mejor diagnóstico en Render (ej: SMTPAuthenticationError).
     """
     # Usar app.app_context() es CRÍTICO para que el hilo acceda a la configuración de Flask-Mail
     with app.app_context():
@@ -5159,7 +5159,8 @@ def send_async_email(app, msg):
             mail_sender.send(msg) 
             print(f"✅ Correo ASÍNCRONO enviado con éxito a: {msg.recipients}")
         except Exception as e:
-            print(f"⚠️ Error al enviar correo asíncrono: {str(e)}")
+            # CORRECCIÓN CLAVE: Mostrar el nombre del tipo de excepción para diagnosticar SMTP/Render
+            print(f"🛑 ERROR CRÍTICO DE CORREO (SMTP/RENDER): Tipo de Error: {type(e).__name__} | Mensaje: {str(e)}")
 
 
 # URL del logo que solicitaste.
@@ -5399,6 +5400,7 @@ def submit_recibo():
     except Exception as e:
         db.session.rollback()
         print(f"ERROR BACKEND: Error al registrar el recibo: {e}")
+        # Se devuelve el error específico para el diagnóstico en el frontend/logs
         return jsonify({"error": f"Error interno del servidor al registrar el recibo: {str(e)}"}), 500
 
 # --- Proceso de Recibo (Edición/Actualización de Pago) ---
@@ -5422,14 +5424,12 @@ def update_recibo(recibo_id):
 
     try:
         # 1. Buscar la transacción y verificar permisos
-        # ⭐ CORRECCIÓN: Se elimina la referencia a 'activo=True'
         transaccion = TransaccionRecibo.query.filter_by(
             id_transaccion=recibo_id, 
             id_empresa=id_empresa
         ).first()
 
         if not transaccion:
-            # Mensaje de error ajustado ya que no revisamos 'activo'
             return jsonify({"error": "Recibo no encontrado o no pertenece a la empresa."}), 404
 
         # 2. Validar y ajustar el nuevo monto pagado
@@ -5447,8 +5447,7 @@ def update_recibo(recibo_id):
 
             transaccion.monto_pagado = monto_pagado_ajustado
             transaccion.saldo_pendiente = saldo_pendiente_nuevo
-            # Asegúrate de que 'fecha_ultima_actualizacion' existe en tu modelo si lo usas.
-            # Si no existe, debes eliminar la línea o agregar la columna al modelo.
+            # Si usas esta columna, asegúrate de que exista en tu modelo:
             # transaccion.fecha_ultima_actualizacion = datetime.utcnow() 
 
         # 3. Actualizar otros campos si son proporcionados
@@ -5468,6 +5467,7 @@ def update_recibo(recibo_id):
     except Exception as e:
         db.session.rollback()
         print(f"ERROR BACKEND: Error al actualizar el recibo {recibo_id}: {e}")
+        # Se devuelve el error específico para el diagnóstico en el frontend/logs
         return jsonify({"error": f"Error interno del servidor al actualizar el recibo: {str(e)}"}), 500
 
 
@@ -5489,7 +5489,7 @@ def anular_recibo(recibo_id):
         return jsonify({"error": "Empresa no asociada al usuario."}), 404
 
     try:
-        # 1. Buscar la transacción
+        # 1. Buscar la transacción (el recibo)
         transaccion = TransaccionRecibo.query.filter_by(
             id_transaccion=recibo_id, 
             id_empresa=id_empresa
@@ -5498,12 +5498,13 @@ def anular_recibo(recibo_id):
         if not transaccion:
             return jsonify({"error": "Recibo no encontrado o no pertenece a la empresa."}), 404
 
-        # 2. Eliminación Física
-        # ⭐ CORRECCIÓN: Se reemplaza la anulación lógica por la eliminación física.
-        db.session.delete(transaccion)
+        # 2. ELIMINACIÓN EXPLÍCITA DE LOS DETALLES RELACIONADOS
+        # CRÍTICO: Esto soluciona el error NotNullViolation forzando la eliminación 
+        # de los registros DetalleRecibo antes de eliminar el padre.
+        DetalleRecibo.query.filter_by(id_transaccion=recibo_id).delete()
         
-        # Si usas SQLAlchemy con cascada de eliminación, los DetalleRecibo se borrarán
-        # automáticamente. Si no, necesitarías borrarlos manualmente aquí también.
+        # 3. Eliminación Física de la Transacción Principal
+        db.session.delete(transaccion)
         
         db.session.commit()
 
@@ -5514,9 +5515,10 @@ def anular_recibo(recibo_id):
 
     except Exception as e:
         db.session.rollback()
-        print(f"ERROR BACKEND: Error al anular el recibo {recibo_id}: {e}")
-        return jsonify({"error": f"Error interno del servidor al anular el recibo: {str(e)}"}), 500
-        
+        # Captura el error para ver si persiste
+        error_message = f"Error interno del servidor al anular el recibo: {str(e)}"
+        print(f"ERROR BACKEND: Error al anular el recibo {recibo_id}: {error_message}")
+        return jsonify({"error": error_message}), 500
 
 @api.route('/recibos/analisis', methods=['GET'])
 @role_required(['owner', 'admin_empresa'])
