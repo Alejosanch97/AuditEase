@@ -5145,25 +5145,14 @@ def delete_estudiante(student_id):
 
 # --- FUNCIÓN AUXILIAR PARA EL ENVÍO ASÍNCRONO (DEBE ESTAR AL INICIO) ---
 
+# --- FUNCIÓN AUXILIAR DE CORREO (ASÍNCRONA ORIGINAL, NO USADA AQUÍ) ---
+# Se mantiene la estructura por si la necesitas más tarde, pero el código de envío NO la usará.
 def send_async_email(app, msg):
-    """
-    Ejecuta el envío de correo dentro del contexto de la aplicación.
-    Captura y registra el TIPO de error para mejor diagnóstico en Render (ej: SMTPAuthenticationError).
-    """
-    # Usar app.app_context() es CRÍTICO para que el hilo acceda a la configuración de Flask-Mail
-    with app.app_context():
-        # Acceder a la extensión de mail
-        mail_sender = app.extensions.get('mail')
-        try:
-            # Aquí ocurre el envío BLOQUEANTE, pero dentro del hilo
-            mail_sender.send(msg) 
-            print(f"✅ Correo ASÍNCRONO enviado con éxito a: {msg.recipients}")
-        except Exception as e:
-            # CORRECCIÓN CLAVE: Mostrar el nombre del tipo de excepción para diagnosticar SMTP/Render
-            print(f"🛑 ERROR CRÍTICO DE CORREO (SMTP/RENDER): Tipo de Error: {type(e).__name__} | Mensaje: {str(e)}")
+    """ Función de respaldo asíncrona (NO USADA EN ESTE DIAGNÓSTICO). """
+    print("⚠️ ADVERTENCIA: Se llamó a la función send_async_email, pero la ruta usa envío SÍNCRONO para DEBUG.")
+    # El código de la ruta principal ejecuta el envío de forma directa y síncrona.
 
-
-# URL del logo que solicitaste.
+# URL del logo
 LOGO_URL = "https://i.pinimg.com/736x/44/12/e9/4412e9bdd73724a178b18295e4ba921e.jpg"
 
 
@@ -5171,8 +5160,7 @@ LOGO_URL = "https://i.pinimg.com/736x/44/12/e9/4412e9bdd73724a178b18295e4ba921e.
 @jwt_required()
 def submit_recibo():
     """
-    Registra una nueva TransaccionRecibo (venta/abono) y sus detalles.
-    Añade el envío de un correo de recibo de forma ASÍNCRONA si el tipo de pago es 'Total'.
+    Registra una nueva TransaccionRecibo y utiliza el envío de correo SINCRONO para forzar el registro de errores.
     """
     data = request.get_json()
     detalles_data = data.get('detalles', [])
@@ -5186,10 +5174,13 @@ def submit_recibo():
         return jsonify({"error": "Monto pagado debe ser un número válido."}), 400
 
     current_user_id = get_jwt_identity()
-    # Asume que esta función y modelos están disponibles globalmente o importados
     id_empresa = get_current_user_company_id(current_user_id) 
     current_user = Usuario.query.get(current_user_id)
     empresa_instance = Empresa.query.get(id_empresa)
+    
+    if not empresa_instance:
+        return jsonify({"error": "Empresa no encontrada."}), 404
+
     empresa_nombre = empresa_instance.nombre_empresa
 
     
@@ -5203,7 +5194,6 @@ def submit_recibo():
         
         # 1. Pre-cálculo y Validación
         for item in detalles_data:
-            
             concepto_id = item.get('concepto_id')
             student_id = item.get('student_id')
             cantidad = item.get('cantidad', 1)
@@ -5220,12 +5210,15 @@ def submit_recibo():
             subtotal = valor_base * cantidad
             total_recibo += subtotal 
             
-            # Reutilizamos las instancias para el paso 2
             item['concepto_instance'] = concepto
             item['estudiante_instance'] = estudiante
             item['valor_base'] = valor_base
             item['subtotal'] = subtotal
             
+            if estudiante.correo_responsable:
+                recipient_emails.add(estudiante.correo_responsable)
+
+
         # 2. Cálculo del Saldo Pendiente
         monto_pagado_ajustado = min(monto_pagado, total_recibo)
         saldo_pendiente = total_recibo - monto_pagado_ajustado
@@ -5237,9 +5230,9 @@ def submit_recibo():
             fecha_transaccion=datetime.utcnow(),
             observaciones=observaciones,
             tipo_pago=tipo_pago,
-            total_recibo=total_recibo,         # Costo Total del recibo
-            monto_pagado=monto_pagado_ajustado, # Monto pagado en esta transacción
-            saldo_pendiente=saldo_pendiente    # Saldo restante
+            total_recibo=total_recibo,         
+            monto_pagado=monto_pagado_ajustado, 
+            saldo_pendiente=saldo_pendiente    
         )
         db.session.add(nueva_transaccion)
         db.session.flush()
@@ -5249,9 +5242,7 @@ def submit_recibo():
             concepto = item['concepto_instance']
             estudiante = item['estudiante_instance']
             valor_base = item['valor_base']
-            subtotal = item['subtotal']
             
-            # Asumiendo que Estudiante.grado es un objeto con un atributo nombre_grado
             if not getattr(estudiante, 'grado', None):
                 db.session.rollback()
                 return jsonify({"error": "Estudiante sin grado asociado."}), 400
@@ -5265,32 +5256,27 @@ def submit_recibo():
             )
             db.session.add(nuevo_detalle)
 
-            # Preparar datos para Email (Se recoge en el mismo loop)
             items_email.append({
                 "concepto": concepto.nombre_concepto,
                 "estudiante": estudiante.nombre_completo,
                 "grado": estudiante.grado.nombre_grado,
                 "valor_unitario": valor_base,
                 "cantidad": item.get('cantidad', 1),
-                "subtotal": subtotal,
+                "subtotal": item['subtotal'],
             })
-            
-            # Recoger correos únicos de responsables
-            if estudiante.correo_responsable:
-                recipient_emails.add(estudiante.correo_responsable)
 
 
         # 5. Commit de la Transacción
-        # La transacción queda guardada en la base de datos aquí.
         db.session.commit()
 
-        # 6. Lógica Condicional para Envío de Correo (solo si es Pago Total)
+        # 6. Lógica Condicional para Envío de Correo (SÍNCRONA)
         if tipo_pago == 'Total' and recipient_emails:
+            # --- ENVÍO SINCRONO PARA DIAGNÓSTICO ---
             try:
                 recibo_id = nueva_transaccion.id_transaccion
                 fecha_str = nueva_transaccion.fecha_transaccion.strftime('%d/%m/%Y %H:%M:%S')
                 
-                # Generar las filas de la tabla de detalles
+                # --- Generación de Contenido HTML (Sin Cambios) ---
                 tabla_filas = ""
                 for item in items_email:
                     tabla_filas += f"""
@@ -5303,16 +5289,13 @@ def submit_recibo():
                     </tr>
                     """
 
-                # Estructura HTML del correo con el logo y estilos
                 html_content = f"""
                 <html>
                 <body style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #f4f4f4; margin: 0; padding: 0;">
                     <div style="max-width: 600px; margin: 20px auto; background: white; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.05); overflow: hidden;">
                         
                         <div style="text-align: center; padding: 20px 0; background-color: #f8f8f8; border-bottom: 3px solid #007bff;">
-                            <img src="{LOGO_URL}" 
-                                 alt="{empresa_nombre} Logo" 
-                                 style="max-width: 150px; height: auto; display: block; margin: 0 auto; border-radius: 5px;">
+                            <img src="{LOGO_URL}" alt="{empresa_nombre} Logo" style="max-width: 150px; height: auto; display: block; margin: 0 auto; border-radius: 5px;">
                             <h1 style="color: #333; font-size: 24px; margin-top: 10px;">Recibo de Pago Total</h1>
                             <p style="color: #666; font-size: 14px;">{empresa_nombre}</p>
                         </div>
@@ -5359,49 +5342,49 @@ def submit_recibo():
                 </html>
                 """
                 
-                # Crear el objeto Message
+                # 2. Crear el objeto Message
+                mail_instance = current_app.extensions.get('mail')
+                if not mail_instance:
+                    # Este error captura si Flask-Mail no se inicializó en app.py
+                    print("🛑 ERROR CRÍTICO (NO INICIALIZADO): La extensión 'mail' no está disponible en current_app.")
+                    raise RuntimeError("La extensión Flask-Mail no se inicializó correctamente en app.py.")
+
                 msg = Message(
                     f"Recibo de Pago Total #{recibo_id} - {empresa_nombre}",
                     sender=(empresa_nombre, current_app.config['MAIL_USERNAME']), 
                     recipients=list(recipient_emails)
                 )
-                
-                # Asignar el contenido HTML
                 msg.html = html_content 
-                
-                # Versión de texto plano de respaldo
                 msg.body = f"Recibo de Pago Total #{recibo_id}.\nTotal Pagado: ${total_recibo:.2f}.\nConsulta la versión HTML para los detalles completos."
-
-                # --- EL CAMBIO CLAVE: INICIAR EL HILO ASÍNCRONO ---
-                # Usamos _get_current_object() para pasar una referencia segura del objeto app al hilo
-                app_context_object = current_app._get_current_object()
                 
-                Thread(
-                    target=send_async_email, 
-                    args=(app_context_object, msg)
-                ).start()
+                # 3. Envío SÍNCRONO (Bloqueante)
+                mail_instance.send(msg) 
                 
-                print(f"✅ Hilo de correo iniciado para: {recipient_emails}. Respondiendo inmediatamente al cliente.")
-                # ----------------------------------------------------
-
+                print(f"✅ Correo SÍNCRONO enviado con éxito a: {recipient_emails}. Finalizando respuesta.")
+                
+            except SMTPAuthenticationError as e:
+                # Error de credenciales (Gmail/App Password)
+                print(f"🛑 ERROR CRÍTICO DE CORREO (SMTP/RENDER) - FALLA SÍNCRONA: Tipo de Error: SMTPAuthenticationError | Mensaje: {str(e)}")
+                raise Exception("Fallo de Autenticación SMTP. Revisa MAIL_USERNAME/MAIL_PASSWORD en Render (¿Usaste App Password?).")
+            
             except Exception as e:
-                # Si falla iniciar el hilo (ej. error de configuración de current_app), 
-                # registramos el error pero NO bloqueamos la respuesta al cliente.
-                print(f"⚠️ Error al intentar iniciar hilo de correo de recibo: {str(e)}")
+                # Otros errores (Conexión, SSL/TLS, Puerto, o RuntimeError por falta de inicialización)
+                print(f"🛑 ERROR CRÍTICO DE CORREO (SMTP/RENDER) - FALLA SÍNCRONA: Tipo de Error: {type(e).__name__} | Mensaje: {str(e)}")
+                raise e
         
-        # 7. Respuesta Final (¡Esta respuesta es la que el frontend recibirá inmediatamente!)
+        # 7. Respuesta Final (Si el envío fue exitoso o no se intentó)
         return jsonify({
-            # Cambiamos el mensaje para indicar que el correo se está procesando
-            "message": "Recibo registrado exitosamente. El correo se está enviando en segundo plano.", 
+            "message": "Recibo registrado exitosamente. DEBUG SÍNCRONO: El correo fue procesado y enviado.", 
             "recibo": nueva_transaccion.serialize(),
-            "email_sent_async": tipo_pago == 'Total' and bool(recipient_emails)
+            "email_sent_sync_debug": tipo_pago == 'Total' and bool(recipient_emails)
         }), 201
 
     except Exception as e:
         db.session.rollback()
-        print(f"ERROR BACKEND: Error al registrar el recibo: {e}")
-        # Se devuelve el error específico para el diagnóstico en el frontend/logs
-        return jsonify({"error": f"Error interno del servidor al registrar el recibo: {str(e)}"}), 500
+        error_msg = f"Error al registrar el recibo: {str(e)}"
+        print(f"ERROR BACKEND: {error_msg}")
+        # Devuelve 500 para forzar el registro del error de correo en el log
+        return jsonify({"error": error_msg}), 500
 
 # --- Proceso de Recibo (Edición/Actualización de Pago) ---
 
