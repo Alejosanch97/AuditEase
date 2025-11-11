@@ -2,8 +2,7 @@
 
 # ... (tus otras importaciones existentes)
 from flask import Flask, request, jsonify, url_for, Blueprint, redirect, current_app
-from api.models import db, Usuario, Empresa, Espacio, SubEspacio, Objeto, Formulario, Pregunta, TipoRespuesta, EnvioFormulario, Respuesta, Observacion, Notificacion, formulario_espacio, formulario_subespacio, formulario_objeto, formulario_tipo_respuesta, DocumentosMinisterio, DocumentoCategoria
-from api.utils import generate_sitemap, APIException
+from api.models import db, Usuario, Empresa, Espacio, SubEspacio, Objeto, Formulario, Pregunta, TipoRespuesta, EnvioFormulario, Respuesta, Observacion, Notificacion, formulario_espacio, formulario_subespacio, formulario_objeto, formulario_tipo_respuesta, DocumentosMinisterio, DocumentoCategoria, formulario_espacio, formulario_subespacio, formulario_objeto, formulario_tipo_respuesta, Grado, Concepto, Estudiante, TransaccionRecibo, DetalleRecibo 
 from flask_cors import CORS
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity, JWTManager
@@ -4742,4 +4741,989 @@ def get_envios_by_form(form_id):
 
     except Exception as e:
         print(f"Error al obtener envíos para el formulario {form_id}: {e}")
+        return jsonify({"error": f"Error interno del servidor: {str(e)}"}), 500
+    
+# --- Proceso de NUEVA FUNCION ---------------------------------------------------    
+
+# --- Funciones Auxiliares para el Proceso de Recibos (Asumimos la existencia de los modelos) ---
+
+def get_current_user_company_id(user_id):
+    """Obtiene el ID de la empresa del usuario actual (Placeholder)."""
+    # Lógica real: usuario = Usuario.query.get(user_id); return usuario.id_empresa
+    usuario = Usuario.query.get(user_id)
+    return usuario.id_empresa if usuario else None
+
+# --- CRUD: Grados ---
+
+@api.route('/grados', methods=['POST'])
+@role_required(['owner', 'admin_empresa'])
+def create_grado():
+    """Crea un nuevo grado asociado a la empresa del usuario."""
+    data = request.get_json()
+    nombre_grado = data.get('nombre') # El usuario envía 'nombre', se mapea al atributo nombre_grado
+    
+    current_user_id = get_jwt_identity()
+    id_empresa = get_current_user_company_id(current_user_id)
+
+    if not nombre_grado or not id_empresa:
+        return jsonify({"error": "Nombre del grado y empresa son requeridos."}), 400
+
+    try:
+        nuevo_grado = Grado(
+            nombre_grado=nombre_grado,
+            id_empresa=id_empresa
+            # Orden y activo usarán los defaults del modelo
+        )
+        db.session.add(nuevo_grado)
+        db.session.commit()
+        # Nota: La serialización debe usar el campo nombre_grado del modelo
+        return jsonify({"message": "Grado creado exitosamente.", "grado": nuevo_grado.serialize()}), 201
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": f"Error al crear el grado: {str(e)}"}), 500
+
+@api.route('/grados', methods=['GET'])
+@jwt_required()
+def get_all_grados():
+    """Obtiene todos los grados asociados a la empresa del usuario."""
+    current_user_id = get_jwt_identity()
+    id_empresa = get_current_user_company_id(current_user_id)
+
+    if not id_empresa:
+        return jsonify({"error": "Empresa no asociada al usuario."}), 404
+
+    # Filtra solo los grados activos
+    grados = Grado.query.filter_by(id_empresa=id_empresa, activo=True).order_by(Grado.orden).all()
+    return jsonify({"grados": [g.serialize() for g in grados]}), 200
+
+@api.route('/grados/<int:grado_id>', methods=['PUT'])
+@role_required(['owner', 'admin_empresa'])
+def update_grado(grado_id):
+    """Actualiza un grado existente."""
+    data = request.get_json()
+    nombre_grado = data.get('nombre') # El usuario envía 'nombre', se mapea al atributo nombre_grado
+    orden = data.get('orden')
+    activo = data.get('activo')
+    
+    current_user_id = get_jwt_identity()
+    id_empresa = get_current_user_company_id(current_user_id)
+
+    try:
+        grado = Grado.query.get(grado_id)
+
+        if not grado:
+            return jsonify({"error": "Grado no encontrado."}), 404
+        
+        if grado.id_empresa != id_empresa:
+            return jsonify({"error": "No tienes permisos para editar este grado."}), 403
+
+        if nombre_grado:
+            if not nombre_grado.strip():
+                return jsonify({"error": "El nombre del grado no puede estar vacío."}), 400
+            grado.nombre_grado = nombre_grado
+        
+        if orden is not None:
+             try:
+                 grado.orden = int(orden)
+             except ValueError:
+                 return jsonify({"error": "El orden debe ser un número entero válido."}), 400
+
+        if activo is not None:
+             grado.activo = bool(activo)
+        
+        db.session.commit()
+        return jsonify({"message": "Grado actualizado exitosamente.", "grado": grado.serialize()}), 200
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": f"Error al actualizar el grado: {str(e)}"}), 500
+
+@api.route('/grados/<int:grado_id>', methods=['DELETE'])
+@role_required(['owner', 'admin_empresa'])
+def delete_grado(grado_id):
+    """
+    Desactiva o elimina un grado existente. 
+    Se prefiere desactivar si hay dependencias, o eliminar si no las hay.
+    """
+    current_user_id = get_jwt_identity()
+    id_empresa = get_current_user_company_id(current_user_id)
+
+    try:
+        grado = Grado.query.get(grado_id)
+
+        if not grado:
+            return jsonify({"error": "Grado no encontrado."}), 404
+        
+        if grado.id_empresa != id_empresa:
+            return jsonify({"error": "No tienes permisos para eliminar este grado."}), 403
+        
+        # Validación de dependencias: No se puede eliminar si hay estudiantes asociados
+        estudiantes_asociados = Estudiante.query.filter_by(id_grado=grado_id, activo=True).first()
+        if estudiantes_asociados:
+            # Si hay estudiantes activos, se recomienda solo desactivar el grado
+            grado.activo = False
+            db.session.commit()
+            return jsonify({"message": f"Grado '{grado.nombre_grado}' desactivado exitosamente (hay estudiantes activos asociados).", "grado": grado.serialize()}), 200
+
+        # Si no hay dependencias activas, se puede eliminar (o desactivar si es la política)
+        db.session.delete(grado)
+        db.session.commit()
+        return jsonify({"message": f"Grado '{grado.nombre_grado}' eliminado exitosamente."}), 200
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": f"Error al eliminar el grado: {str(e)}"}), 500
+
+
+# --- CRUD: Conceptos ---
+
+@api.route('/conceptos', methods=['POST'])
+@role_required(['owner', 'admin_empresa'])
+def create_concepto():
+    """Crea un nuevo concepto (ítem de cobro) asociado a la empresa."""
+    data = request.get_json()
+    nombre = data.get('nombre') # Nombre que envía el usuario, se mapea a nombre_concepto
+    valor = data.get('valor')   # Valor que envía el usuario, se mapea a valor_base
+    
+    current_user_id = get_jwt_identity()
+    id_empresa = get_current_user_company_id(current_user_id)
+
+    if not nombre or valor is None or not id_empresa:
+        return jsonify({"error": "Nombre, valor y empresa son requeridos."}), 400
+    
+    try:
+        nuevo_concepto = Concepto(
+            nombre_concepto=nombre,
+            valor_base=float(valor),
+            id_empresa=id_empresa,
+            # activo usa el default
+        )
+        db.session.add(nuevo_concepto)
+        db.session.commit()
+        # Nota: La serialización debe usar el campo nombre_concepto y valor_base
+        return jsonify({"message": "Concepto creado exitosamente.", "concepto": nuevo_concepto.serialize()}), 201
+    except ValueError:
+        return jsonify({"error": "El valor debe ser un número válido."}), 400
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": f"Error al crear el concepto: {str(e)}"}), 500
+
+@api.route('/conceptos', methods=['GET'])
+@jwt_required()
+def get_all_conceptos():
+    """Obtiene todos los conceptos activos asociados a la empresa del usuario."""
+    current_user_id = get_jwt_identity()
+    id_empresa = get_current_user_company_id(current_user_id)
+
+    if not id_empresa:
+        return jsonify({"error": "Empresa no asociada al usuario."}), 404
+
+    conceptos = Concepto.query.filter_by(id_empresa=id_empresa, activo=True).all()
+    return jsonify({"conceptos": [c.serialize() for c in conceptos]}), 200
+
+@api.route('/conceptos/<int:concepto_id>', methods=['PUT'])
+@role_required(['owner', 'admin_empresa'])
+def update_concepto(concepto_id):
+    """Actualiza un concepto existente."""
+    data = request.get_json()
+    nombre = data.get('nombre') # Mapea a nombre_concepto
+    valor = data.get('valor')   # Mapea a valor_base
+    activo = data.get('activo')
+    
+    current_user_id = get_jwt_identity()
+    id_empresa = get_current_user_company_id(current_user_id)
+
+    try:
+        concepto = Concepto.query.get(concepto_id)
+
+        if not concepto:
+            return jsonify({"error": "Concepto no encontrado."}), 404
+        
+        if concepto.id_empresa != id_empresa:
+            return jsonify({"error": "No tienes permisos para editar este concepto."}), 403
+
+        if nombre:
+            if not nombre.strip():
+                 return jsonify({"error": "El nombre del concepto no puede estar vacío."}), 400
+            concepto.nombre_concepto = nombre
+        
+        if valor is not None:
+            try:
+                concepto.valor_base = float(valor)
+            except ValueError:
+                return jsonify({"error": "El valor debe ser un número válido."}), 400
+
+        if activo is not None:
+            concepto.activo = bool(activo)
+        
+        db.session.commit()
+        return jsonify({"message": "Concepto actualizado exitosamente.", "concepto": concepto.serialize()}), 200
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": f"Error al actualizar el concepto: {str(e)}"}), 500
+
+@api.route('/conceptos/<int:concepto_id>', methods=['DELETE'])
+@role_required(['owner', 'admin_empresa'])
+def delete_concepto(concepto_id):
+    """
+    Desactiva o elimina un concepto existente. 
+    Se prefiere desactivar si tiene detalles de recibos asociados (histórico).
+    """
+    current_user_id = get_jwt_identity()
+    id_empresa = get_current_user_company_id(current_user_id)
+
+    try:
+        concepto = Concepto.query.get(concepto_id)
+
+        if not concepto:
+            return jsonify({"error": "Concepto no encontrado."}), 404
+        
+        if concepto.id_empresa != id_empresa:
+            return jsonify({"error": "No tienes permisos para eliminar este concepto."}), 403
+        
+        # Validación de dependencias: No se puede eliminar si ya tiene recibos asociados
+        # Usamos DetalleRecibo, el nuevo nombre de la tabla de detalles
+        detalles_asociados = DetalleRecibo.query.filter_by(id_concepto=concepto_id).first()
+        if detalles_asociados:
+            # Si hay movimientos, solo se desactiva
+            concepto.activo = False
+            db.session.commit()
+            return jsonify({"message": f"Concepto '{concepto.nombre_concepto}' desactivado exitosamente (tiene movimientos históricos).", "concepto": concepto.serialize()}), 200
+
+        # Si no hay dependencias, se elimina
+        db.session.delete(concepto)
+        db.session.commit()
+        return jsonify({"message": f"Concepto '{concepto.nombre_concepto}' eliminado exitosamente."}), 200
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": f"Error al eliminar el concepto: {str(e)}"}), 500
+
+
+# --- CRUD: Estudiantes ---
+
+@api.route('/estudiantes', methods=['POST'])
+@role_required(['owner', 'admin_empresa'])
+def create_estudiante():
+    """Crea un nuevo estudiante asociado a un grado y la empresa."""
+    data = request.get_json()
+    nombre_completo = data.get('nombre') # Mapea a nombre_completo
+    grado_id = data.get('grado_id')
+    correo_responsable = data.get('email') # Mapea a correo_responsable
+
+    current_user_id = get_jwt_identity()
+    id_empresa = get_current_user_company_id(current_user_id)
+
+    if not nombre_completo or not grado_id or not id_empresa:
+        return jsonify({"error": "Nombre, Grado ID y empresa son requeridos."}), 400
+
+    grado = Grado.query.get(grado_id)
+    if not grado or grado.id_empresa != id_empresa:
+        return jsonify({"error": "Grado no encontrado o no pertenece a tu empresa."}), 404
+    
+    try:
+        nuevo_estudiante = Estudiante(
+            nombre_completo=nombre_completo,
+            id_grado=grado_id,
+            id_empresa=id_empresa,
+            correo_responsable=correo_responsable
+        )
+        db.session.add(nuevo_estudiante)
+        db.session.commit()
+        # Nota: La serialización debe usar nombre_completo y correo_responsable
+        return jsonify({"message": "Estudiante creado exitosamente.", "estudiante": nuevo_estudiante.serialize()}), 201
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": f"Error al crear el estudiante: {str(e)}"}), 500
+
+@api.route('/estudiantes', methods=['GET'])
+@jwt_required()
+def get_all_estudiantes():
+    """Obtiene todos los estudiantes activos asociados a la empresa (con filtro opcional por grado)."""
+    current_user_id = get_jwt_identity()
+    id_empresa = get_current_user_company_id(current_user_id)
+    grado_id = request.args.get('grado_id', type=int)
+
+    if not id_empresa:
+        return jsonify({"error": "Empresa no asociada al usuario."}), 404
+
+    query = Estudiante.query.filter_by(id_empresa=id_empresa, activo=True)
+    if grado_id:
+        query = query.filter_by(id_grado=grado_id)
+
+    estudiantes = query.all()
+    return jsonify({"estudiantes": [e.serialize() for e in estudiantes]}), 200
+
+@api.route('/estudiantes/<int:student_id>', methods=['PUT'])
+@role_required(['owner', 'admin_empresa'])
+def update_estudiante(student_id):
+    """Actualiza un estudiante existente."""
+    data = request.get_json()
+    nombre = data.get('nombre') # Mapea a nombre_completo
+    grado_id = data.get('grado_id')
+    email = data.get('email')   # Mapea a correo_responsable
+    activo = data.get('activo')
+    
+    current_user_id = get_jwt_identity()
+    id_empresa = get_current_user_company_id(current_user_id)
+
+    try:
+        estudiante = Estudiante.query.get(student_id)
+
+        if not estudiante:
+            return jsonify({"error": "Estudiante no encontrado."}), 404
+        
+        if estudiante.id_empresa != id_empresa:
+            return jsonify({"error": "No tienes permisos para editar este estudiante."}), 403
+
+        if nombre:
+            if not nombre.strip():
+                 return jsonify({"error": "El nombre del estudiante no puede estar vacío."}), 400
+            estudiante.nombre_completo = nombre
+        
+        if email is not None:
+            estudiante.correo_responsable = email
+
+        if activo is not None:
+            estudiante.activo = bool(activo)
+
+        if grado_id is not None:
+            grado = Grado.query.get(grado_id)
+            if not grado or grado.id_empresa != id_empresa:
+                return jsonify({"error": "Grado no encontrado o no pertenece a tu empresa."}), 404
+            estudiante.id_grado = grado_id
+        
+        db.session.commit()
+        return jsonify({"message": "Estudiante actualizado exitosamente.", "estudiante": estudiante.serialize()}), 200
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": f"Error al actualizar el estudiante: {str(e)}"}), 500
+
+@api.route('/estudiantes/<int:student_id>', methods=['DELETE'])
+@role_required(['owner', 'admin_empresa'])
+def delete_estudiante(student_id):
+    """
+    Desactiva o elimina un estudiante existente. 
+    Se prefiere desactivar si ya tiene recibos asociados (histórico).
+    """
+    current_user_id = get_jwt_identity()
+    id_empresa = get_current_user_company_id(current_user_id)
+
+    try:
+        estudiante = Estudiante.query.get(student_id)
+
+        if not estudiante:
+            return jsonify({"error": "Estudiante no encontrado."}), 404
+        
+        if estudiante.id_empresa != id_empresa:
+            return jsonify({"error": "No tienes permisos para eliminar este estudiante."}), 403
+        
+        # Validación de dependencias: No se puede eliminar si ya tiene recibos asociados
+        # Usamos DetalleRecibo, el nuevo nombre de la tabla de detalles
+        detalles_asociados = DetalleRecibo.query.filter_by(id_estudiante=student_id).first()
+        if detalles_asociados:
+            # Si hay movimientos, solo se desactiva
+            estudiante.activo = False
+            db.session.commit()
+            return jsonify({"message": f"Estudiante '{estudiante.nombre_completo}' desactivado exitosamente (tiene movimientos históricos).", "estudiante": estudiante.serialize()}), 200
+
+
+        # Si no hay dependencias, se elimina
+        db.session.delete(estudiante)
+        db.session.commit()
+        return jsonify({"message": f"Estudiante '{estudiante.nombre_completo}' eliminado exitosamente."}), 200
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": f"Error al eliminar el estudiante: {str(e)}"}), 500
+
+
+# --- Proceso de Recibo (Venta) ---
+
+# URL del logo que solicitaste.
+LOGO_URL = "https://i.pinimg.com/736x/44/12/e9/4412e9bdd73724a178b18295e4ba921e.jpg"
+
+
+@api.route('/recibos/envio', methods=['POST'])
+@jwt_required()
+def submit_recibo():
+    """
+    Registra una nueva TransaccionRecibo (venta/abono) y sus detalles.
+    Añade el envío de un correo de recibo en formato HTML si el tipo de pago es 'Total'.
+    """
+    data = request.get_json()
+    detalles_data = data.get('detalles', [])
+    observaciones = data.get('observaciones')
+    tipo_pago = data.get('tipo_pago', 'Total') 
+    monto_pagado = data.get('monto_pagado', 0.0)
+    
+    try:
+        monto_pagado = float(monto_pagado)
+    except (TypeError, ValueError):
+        return jsonify({"error": "Monto pagado debe ser un número válido."}), 400
+
+    current_user_id = get_jwt_identity()
+    # Asume que esta función y modelos están disponibles globalmente o importados
+    id_empresa = get_current_user_company_id(current_user_id) 
+    current_user = Usuario.query.get(current_user_id)
+    empresa_instance = Empresa.query.get(id_empresa)
+    empresa_nombre = empresa_instance.nombre_empresa
+
+    
+    if not detalles_data or not id_empresa:
+        return jsonify({"error": "Detalles del recibo y empresa son requeridos."}), 400
+
+    try:
+        total_recibo = 0.0
+        items_email = []
+        recipient_emails = set()
+        
+        # 1. Pre-cálculo y Validación
+        for item in detalles_data:
+            
+            concepto_id = item.get('concepto_id')
+            student_id = item.get('student_id')
+            cantidad = item.get('cantidad', 1)
+            
+            concepto = Concepto.query.get(concepto_id)
+            estudiante = Estudiante.query.get(student_id)
+
+            if not concepto or concepto.id_empresa != id_empresa or \
+               not estudiante or estudiante.id_empresa != id_empresa:
+                db.session.rollback()
+                return jsonify({"error": "Concepto o estudiante inválido para esta empresa."}), 400
+            
+            valor_base = concepto.valor_base 
+            subtotal = valor_base * cantidad
+            total_recibo += subtotal 
+            
+            # Reutilizamos las instancias para el paso 2
+            item['concepto_instance'] = concepto
+            item['estudiante_instance'] = estudiante
+            item['valor_base'] = valor_base
+            item['subtotal'] = subtotal
+            
+        # 2. Cálculo del Saldo Pendiente
+        monto_pagado_ajustado = min(monto_pagado, total_recibo)
+        saldo_pendiente = total_recibo - monto_pagado_ajustado
+
+        # 3. Crear el Encabezado de la Transacción (TransaccionRecibo)
+        nueva_transaccion = TransaccionRecibo(
+            id_usuario_creador=int(current_user_id),
+            id_empresa=id_empresa,
+            fecha_transaccion=datetime.utcnow(),
+            observaciones=observaciones,
+            tipo_pago=tipo_pago,
+            total_recibo=total_recibo,         # Costo Total del recibo
+            monto_pagado=monto_pagado_ajustado, # Monto pagado en esta transacción
+            saldo_pendiente=saldo_pendiente    # Saldo restante
+        )
+        db.session.add(nueva_transaccion)
+        db.session.flush()
+
+        # 4. Procesar los Detalles (DetalleRecibo)
+        for item in detalles_data:
+            concepto = item['concepto_instance']
+            estudiante = item['estudiante_instance']
+            valor_base = item['valor_base']
+            subtotal = item['subtotal']
+            
+            if not estudiante.grado:
+                db.session.rollback()
+                return jsonify({"error": "Estudiante sin grado asociado."}), 400
+            
+            nuevo_detalle = DetalleRecibo( 
+                id_transaccion=nueva_transaccion.id_transaccion,
+                id_concepto=concepto.id_concepto,
+                id_estudiante=estudiante.id_estudiante,
+                cantidad=item.get('cantidad', 1),
+                valor_cobrado=valor_base,
+            )
+            db.session.add(nuevo_detalle)
+
+            # Preparar datos para Email (Se recoge en el mismo loop)
+            items_email.append({
+                "concepto": concepto.nombre_concepto,
+                "estudiante": estudiante.nombre_completo,
+                "grado": estudiante.grado.nombre_grado,
+                "valor_unitario": valor_base,
+                "cantidad": item.get('cantidad', 1),
+                "subtotal": subtotal,
+            })
+            
+            # Recoger correos únicos de responsables
+            if estudiante.correo_responsable:
+                recipient_emails.add(estudiante.correo_responsable)
+
+
+        # 5. Commit
+        db.session.commit()
+
+        # 6. Lógica Condicional para Envío de Correo (solo si es Pago Total)
+        if tipo_pago == 'Total' and recipient_emails:
+            try:
+                recibo_id = nueva_transaccion.id_transaccion
+                fecha_str = nueva_transaccion.fecha_transaccion.strftime('%d/%m/%Y %H:%M:%S')
+                
+                # Generar las filas de la tabla de detalles
+                tabla_filas = ""
+                for item in items_email:
+                    tabla_filas += f"""
+                    <tr>
+                        <td style="border: 1px solid #ddd; padding: 8px;">{item['estudiante']} ({item['grado']})</td>
+                        <td style="border: 1px solid #ddd; padding: 8px;">{item['concepto']}</td>
+                        <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">{item['cantidad']}</td>
+                        <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">${item['valor_unitario']:.2f}</td>
+                        <td style="border: 1px solid #ddd; padding: 8px; text-align: right; font-weight: bold;">${item['subtotal']:.2f}</td>
+                    </tr>
+                    """
+
+                # Estructura HTML del correo con el logo y estilos
+                html_content = f"""
+                <html>
+                <body style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #f4f4f4; margin: 0; padding: 0;">
+                    <div style="max-width: 600px; margin: 20px auto; background: white; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.05); overflow: hidden;">
+                        
+                        <div style="text-align: center; padding: 20px 0; background-color: #f8f8f8; border-bottom: 3px solid #007bff;">
+                            <img src="{LOGO_URL}" 
+                                 alt="{empresa_nombre} Logo" 
+                                 style="max-width: 150px; height: auto; display: block; margin: 0 auto; border-radius: 5px;">
+                            <h1 style="color: #333; font-size: 24px; margin-top: 10px;">Recibo de Pago Total</h1>
+                            <p style="color: #666; font-size: 14px;">{empresa_nombre}</p>
+                        </div>
+                        
+                        <div style="padding: 20px;">
+                            <p style="font-size: 16px; color: #333;">Hola estimado(a) responsable,</p>
+                            <p style="color: #555;">Confirmamos el **pago total** del siguiente recibo registrado por **{current_user.nombre_completo}**.</p>
+                            
+                            <div style="background-color: #e9ecef; padding: 10px; border-radius: 4px; margin-bottom: 20px;">
+                                <p style="margin: 0; color: #333;"><strong>Transacción No:</strong> {recibo_id}</p>
+                                <p style="margin: 5px 0 0 0; color: #333;"><strong>Fecha:</strong> {fecha_str}</p>
+                            </div>
+
+                            <h3 style="color: #333; border-bottom: 1px solid #ddd; padding-bottom: 5px;">Detalles de Conceptos</h3>
+                            <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+                                <thead style="background-color: #007bff; color: white;">
+                                    <tr>
+                                        <th style="border: 1px solid #007bff; padding: 8px; text-align: left;">Estudiante / Grado</th>
+                                        <th style="border: 1px solid #007bff; padding: 8px; text-align: left;">Concepto</th>
+                                        <th style="border: 1px solid #007bff; padding: 8px; text-align: right;">Cant.</th>
+                                        <th style="border: 1px solid #007bff; padding: 8px; text-align: right;">V. Unitario</th>
+                                        <th style="border: 1px solid #007bff; padding: 8px; text-align: right;">Subtotal</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {tabla_filas}
+                                    <tr>
+                                        <td colspan="4" style="border: 1px solid #ddd; padding: 10px; text-align: right; font-weight: bold; background-color: #f0f0f0;">TOTAL PAGADO:</td>
+                                        <td style="border: 1px solid #ddd; padding: 10px; text-align: right; font-weight: bold; background-color: #f0f0f0; color: #28a745; font-size: 18px;">${total_recibo:.2f}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                            
+                            <p style="color: #555;">**Observaciones:** {observaciones if observaciones else 'N/A'}</p>
+                        </div>
+                        
+                        <div style="background-color: #f8f8f8; padding: 15px; text-align: center; border-top: 1px solid #eee;">
+                            <p style="font-size: 12px; color: #999; margin: 0;">Este es un recibo generado automáticamente. Gracias por tu pronto pago.</p>
+                            <p style="font-size: 12px; color: #999; margin: 5px 0 0 0;">Por favor, no respondas a este correo.</p>
+                        </div>
+
+                    </div>
+                </body>
+                </html>
+                """
+                
+                # Acceder a la instancia de mail
+                mail_sender = current_app.extensions.get('mail')
+                msg = Message(
+                    f"Recibo de Pago Total #{recibo_id} - {empresa_nombre}",
+                    sender=(empresa_nombre, current_app.config['MAIL_USERNAME']), 
+                    recipients=list(recipient_emails)
+                )
+                
+                # Asignar el contenido HTML
+                msg.html = html_content 
+                
+                # Versión de texto plano de respaldo
+                msg.body = f"Recibo de Pago Total #{recibo_id}.\nTotal Pagado: ${total_recibo:.2f}.\nConsulta la versión HTML para los detalles completos."
+
+                mail_sender.send(msg)
+                
+                print(f"✅ Correo de recibo total (HTML) enviado a: {recipient_emails}")
+
+            except Exception as e:
+                print(f"⚠️ Error al enviar correo de recibo: {str(e)}")
+        
+        # 7. Respuesta Final
+        return jsonify({
+            "message": "Recibo registrado exitosamente.", 
+            "recibo": nueva_transaccion.serialize(),
+            "email_sent": tipo_pago == 'Total' and bool(recipient_emails)
+        }), 201
+
+    except Exception as e:
+        db.session.rollback()
+        print(f"ERROR BACKEND: Error al registrar el recibo: {e}")
+        return jsonify({"error": f"Error interno del servidor al registrar el recibo: {str(e)}"}), 500
+
+# --- Proceso de Recibo (Edición/Actualización de Pago) ---
+
+@api.route('/recibos/<int:recibo_id>', methods=['PUT'])
+@role_required(['owner', 'admin_empresa']) # Solo usuarios con permiso pueden editar
+def update_recibo(recibo_id):
+    """
+    Actualiza el monto pagado, tipo de pago u observaciones de un TransaccionRecibo existente.
+    """
+    data = request.get_json()
+    observaciones = data.get('observaciones')
+    tipo_pago = data.get('tipo_pago') 
+    monto_pagado_nuevo = data.get('monto_pagado')
+    
+    current_user_id = get_jwt_identity()
+    id_empresa = get_current_user_company_id(current_user_id)
+
+    if not id_empresa:
+        return jsonify({"error": "Empresa no asociada al usuario."}), 404
+
+    try:
+        # 1. Buscar la transacción y verificar permisos
+        # ⭐ CORRECCIÓN: Se elimina la referencia a 'activo=True'
+        transaccion = TransaccionRecibo.query.filter_by(
+            id_transaccion=recibo_id, 
+            id_empresa=id_empresa
+        ).first()
+
+        if not transaccion:
+            # Mensaje de error ajustado ya que no revisamos 'activo'
+            return jsonify({"error": "Recibo no encontrado o no pertenece a la empresa."}), 404
+
+        # 2. Validar y ajustar el nuevo monto pagado
+        if monto_pagado_nuevo is not None:
+            try:
+                monto_pagado_nuevo = float(monto_pagado_nuevo)
+            except (TypeError, ValueError):
+                return jsonify({"error": "Monto pagado debe ser un número válido."}), 400
+            
+            # El monto pagado nuevo no puede exceder el total del recibo
+            monto_pagado_ajustado = min(monto_pagado_nuevo, transaccion.total_recibo)
+            
+            # Recalcular saldo pendiente
+            saldo_pendiente_nuevo = transaccion.total_recibo - monto_pagado_ajustado
+
+            transaccion.monto_pagado = monto_pagado_ajustado
+            transaccion.saldo_pendiente = saldo_pendiente_nuevo
+            # Asegúrate de que 'fecha_ultima_actualizacion' existe en tu modelo si lo usas.
+            # Si no existe, debes eliminar la línea o agregar la columna al modelo.
+            # transaccion.fecha_ultima_actualizacion = datetime.utcnow() 
+
+        # 3. Actualizar otros campos si son proporcionados
+        if observaciones is not None:
+            transaccion.observaciones = observaciones
+        
+        if tipo_pago is not None:
+            transaccion.tipo_pago = tipo_pago
+            
+        db.session.commit()
+
+        return jsonify({
+            "message": "Recibo actualizado exitosamente.", 
+            "recibo": transaccion.serialize()
+        }), 200
+
+    except Exception as e:
+        db.session.rollback()
+        print(f"ERROR BACKEND: Error al actualizar el recibo {recibo_id}: {e}")
+        return jsonify({"error": f"Error interno del servidor al actualizar el recibo: {str(e)}"}), 500
+
+
+# ------------------------------------------------------------------
+# --- Proceso de Recibo (ANULACIÓN FÍSICA / HARD DELETE) ---
+# ------------------------------------------------------------------
+
+@api.route('/recibos/anular/<int:recibo_id>', methods=['DELETE'])
+@role_required(['owner', 'admin_empresa']) # Solo usuarios con permiso pueden anular
+def anular_recibo(recibo_id):
+    """
+    Realiza la ELIMINACIÓN FÍSICA (HARD DELETE) del TransaccionRecibo.
+    (Opción elegida al no usar el campo 'activo').
+    """
+    current_user_id = get_jwt_identity()
+    id_empresa = get_current_user_company_id(current_user_id)
+
+    if not id_empresa:
+        return jsonify({"error": "Empresa no asociada al usuario."}), 404
+
+    try:
+        # 1. Buscar la transacción
+        transaccion = TransaccionRecibo.query.filter_by(
+            id_transaccion=recibo_id, 
+            id_empresa=id_empresa
+        ).first()
+
+        if not transaccion:
+            return jsonify({"error": "Recibo no encontrado o no pertenece a la empresa."}), 404
+
+        # 2. Eliminación Física
+        # ⭐ CORRECCIÓN: Se reemplaza la anulación lógica por la eliminación física.
+        db.session.delete(transaccion)
+        
+        # Si usas SQLAlchemy con cascada de eliminación, los DetalleRecibo se borrarán
+        # automáticamente. Si no, necesitarías borrarlos manualmente aquí también.
+        
+        db.session.commit()
+
+        return jsonify({
+            "message": f"Recibo {recibo_id} eliminado (anulado) exitosamente.",
+            "id_recibo_anulado": recibo_id
+        }), 200
+
+    except Exception as e:
+        db.session.rollback()
+        print(f"ERROR BACKEND: Error al anular el recibo {recibo_id}: {e}")
+        return jsonify({"error": f"Error interno del servidor al anular el recibo: {str(e)}"}), 500
+        
+
+@api.route('/recibos/analisis', methods=['GET'])
+@role_required(['owner', 'admin_empresa'])
+def get_recibos_analytics():
+    """
+    Genera un análisis de ventas (recibos) filtrado por rango de fechas y agrupado por concepto.
+    Añadido cálculo del monto total pagado.
+    """
+    current_user_id = get_jwt_identity()
+    id_empresa = get_current_user_company_id(current_user_id)
+    
+    start_date_str = request.args.get('start_date')
+    end_date_str = request.args.get('end_date')
+    
+    if not id_empresa:
+        return jsonify({"error": "Empresa no asociada al usuario."}), 404
+        
+    try:
+        # Consulta base
+        query = DetalleRecibo.query.join(TransaccionRecibo).\
+            join(Concepto).filter(TransaccionRecibo.id_empresa == id_empresa)
+            
+        if start_date_str:
+            start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
+            query = query.filter(TransaccionRecibo.fecha_transaccion >= start_date)
+        
+        if end_date_str:
+            end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
+            query = query.filter(TransaccionRecibo.fecha_transaccion < (end_date + timedelta(days=1)))
+
+        # Agrupar por Concepto (ID y Nombre)
+        # Se necesita un JOIN adicional a TransaccionRecibo para obtener monto_pagado.
+        # Al agrupar por detalle, el monto pagado se repite, por lo que lo agregaremos de forma independiente.
+        
+        # Primero, el análisis por costo (total_vendido)
+        costo_query = query.with_entities(
+            DetalleRecibo.id_concepto,
+            Concepto.nombre_concepto,
+            func.sum(DetalleRecibo.valor_cobrado * DetalleRecibo.cantidad).label('total_vendido'),
+            func.count(DetalleRecibo.id_detalle).label('cantidad_transacciones')
+        ).group_by(DetalleRecibo.id_concepto, Concepto.nombre_concepto).all()
+
+        # Segundo, para el monto pagado (que es por transacción, no por detalle)
+        # Para evitar sumar el monto_pagado múltiples veces por cada detalle, agrupamos por TransaccionRecibo.
+        # Esta métrica es más difícil de agregar por concepto. La omitiremos del agrupamiento por concepto
+        # para evitar complejizar el SQL, y solo mostraremos el costo total.
+        # Si se desea el monto total pagado en el periodo, se consulta por separado:
+        
+        # Consulta para Total Pagado en el Periodo
+        total_pagado_query = db.session.query(
+            func.sum(TransaccionRecibo.monto_pagado).label('total_pagado_periodo')
+        ).filter(TransaccionRecibo.id_empresa == id_empresa)
+        
+        if start_date_str:
+             total_pagado_query = total_pagado_query.filter(TransaccionRecibo.fecha_transaccion >= start_date)
+        if end_date_str:
+            total_pagado_query = total_pagado_query.filter(TransaccionRecibo.fecha_transaccion < (end_date + timedelta(days=1)))
+
+        total_pagado_result = total_pagado_query.scalar()
+        total_pagado_periodo = float(total_pagado_result) if total_pagado_result else 0.0
+
+        results = []
+        for id_concepto, nombre_concepto, total_vendido, cantidad_transacciones in costo_query:
+            results.append({
+                "id_concepto": id_concepto,
+                "concepto": nombre_concepto,
+                "total_vendido": float(total_vendido),
+                "cantidad_transacciones": int(cantidad_transacciones)
+            })
+
+        return jsonify({
+            "analisis": results,
+            "total_pagado_periodo": total_pagado_periodo # Nuevo resumen del total pagado
+        }), 200
+
+    except ValueError:
+        return jsonify({"error": "Formato de fecha inválido. Use YYYY-MM-DD."}), 400
+    except Exception as e:
+        print(f"ERROR BACKEND: Error al generar análisis de recibos: {e}")
+        return jsonify({"error": f"Error interno del servidor al generar análisis: {str(e)}"}), 500
+
+@api.route('/recibos/analisis/detalle', methods=['GET'])
+@role_required(['owner', 'admin_empresa'])
+def get_recibos_detalle_por_concepto():
+    """
+    Devuelve la lista detallada de recibos (nombre del estudiante, grado, total, etc.) 
+    para un concepto específico dentro de un rango de fechas.
+    Añadido 'monto_pagado' y 'saldo_pendiente' al detalle.
+    """
+    current_user_id = get_jwt_identity()
+    id_empresa = get_current_user_company_id(current_user_id)
+    
+    concepto_id = request.args.get('concepto_id', type=int)
+    start_date_str = request.args.get('start_date')
+    end_date_str = request.args.get('end_date')
+
+    if not concepto_id or not id_empresa:
+        return jsonify({"error": "Concepto ID y empresa son requeridos."}), 400
+
+    try:
+        # Se unen las tablas DetalleRecibo, TransaccionRecibo, Estudiante y Grado
+        query = DetalleRecibo.query.join(TransaccionRecibo).\
+            join(Estudiante, DetalleRecibo.id_estudiante == Estudiante.id_estudiante).\
+            join(Grado, Estudiante.id_grado == Grado.id_grado).\
+            join(Usuario, TransaccionRecibo.id_usuario_creador == Usuario.id_usuario).\
+            filter(TransaccionRecibo.id_empresa == id_empresa, DetalleRecibo.id_concepto == concepto_id) 
+            
+        if start_date_str:
+            start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
+            query = query.filter(TransaccionRecibo.fecha_transaccion >= start_date)
+        
+        if end_date_str:
+            end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
+            query = query.filter(TransaccionRecibo.fecha_transaccion < (end_date + timedelta(days=1)))
+
+        detalles = query.all()
+        
+        results = []
+        for detalle in detalles:
+            results.append({
+                "id_recibo": detalle.id_transaccion,
+                "fecha_recibo": detalle.transaccion.fecha_transaccion.isoformat(),
+                "estudiante": detalle.estudiante.nombre_completo,
+                "grado": detalle.estudiante.grado.nombre_grado,
+                "valor_cobrado_unitario": detalle.valor_cobrado,
+                "cantidad": detalle.cantidad,
+                "subtotal_costo": detalle.valor_cobrado * detalle.cantidad, # Costo de la línea de detalle
+                "costo_total_recibo": detalle.transaccion.total_recibo, # Costo Total de la Transacción
+                "monto_pagado": detalle.transaccion.monto_pagado,       # Monto Pagado (Abono o Total)
+                "saldo_pendiente": detalle.transaccion.saldo_pendiente, # Saldo Pendiente
+                "tipo_pago": detalle.transaccion.tipo_pago,
+                "usuario_registro": detalle.transaccion.usuario_creador.nombre_completo
+            })
+
+        return jsonify({"detalles": results}), 200
+
+    except ValueError:
+        return jsonify({"error": "Formato de fecha inválido. Use YYYY-MM-DD."}), 400
+    except Exception as e:
+        print(f"ERROR BACKEND: Error al obtener detalles de recibos: {e}")
+        return jsonify({"error": f"Error interno del servidor al obtener detalles: {str(e)}"}), 500
+    
+
+@api.route('/estudiantes/carga-masiva', methods=['POST'])
+@role_required(['owner', 'admin_empresa']) # Roles que pueden subir estudiantes
+@jwt_required()
+def bulk_upload_students():
+    """
+    Carga masiva de estudiantes a partir de un array JSON.
+    El JSON esperado es una lista de objetos: 
+    [{ "nombre_completo": "...", "correo_responsable": "...", "nombre_grado": "..." }]
+    """
+    students_data = request.get_json()
+    
+    if not isinstance(students_data, list):
+        return jsonify({"error": "El formato esperado es un array JSON de estudiantes."}), 400
+
+    current_user_id = get_jwt_identity()
+    id_empresa = get_current_user_company_id(current_user_id)
+    
+    if not id_empresa:
+        return jsonify({"error": "Empresa no asociada al usuario autenticado."}), 404
+
+    try:
+        # Pre-carga todos los Grados de la empresa para mapeo rápido.
+        # Esto reduce consultas a la BD dentro del loop
+        grados_map = {
+            g.nombre_grado.lower(): g.id_grado 
+            for g in Grado.query.filter_by(id_empresa=id_empresa).all()
+        }
+
+        new_students = []
+        errors = []
+        students_added_count = 0
+
+        for index, data in enumerate(students_data):
+            try:
+                # 1. Validación de datos obligatorios en el payload
+                nombre_completo = data.get('nombre_completo')
+                nombre_grado = data.get('nombre_grado') # Usado para buscar el id_grado
+                
+                if not nombre_completo:
+                    raise ValueError("Falta el campo obligatorio 'nombre_completo'.")
+                
+                if not nombre_grado:
+                    raise ValueError("Falta el campo obligatorio 'nombre_grado'.")
+
+                # 2. Mapeo del Grado (Case Insensitive)
+                id_grado = grados_map.get(nombre_grado.lower())
+                if not id_grado:
+                    raise ValueError(f"Grado '{nombre_grado}' no encontrado o no pertenece a esta empresa.")
+
+                # 3. Validar Correo (opcional, pero se recomienda validar formato si está presente)
+                correo_responsable = data.get('correo_responsable')
+                if correo_responsable and "@" not in correo_responsable:
+                     # Puedes añadir una validación de formato de email más rigurosa aquí
+                    raise ValueError(f"El correo responsable '{correo_responsable}' no tiene un formato válido.")
+
+                # 4. Crear instancia del modelo Estudiante
+                new_student = Estudiante(
+                    id_empresa=id_empresa,
+                    id_grado=id_grado,
+                    nombre_completo=nombre_completo,
+                    correo_responsable=correo_responsable,
+                    activo=data.get('activo', True) # Permite definir activo o usa True por defecto
+                    # NOTA: Tu modelo no tiene 'cedula', 'direccion' o 'telefono_responsable'. 
+                    # Si necesitas esos campos, debes agregarlos a tu clase Estudiante.
+                )
+                new_students.append(new_student)
+                
+            except ValueError as ve:
+                errors.append(f"Fila {index + 1} ({data.get('nombre_completo', 'N/A')}): {str(ve)}")
+            except Exception as e:
+                errors.append(f"Fila {index + 1} ({data.get('nombre_completo', 'N/A')}): Error inesperado - {str(e)}")
+
+        if errors:
+            # Si hay errores en la validación, abortamos la transacción
+            return jsonify({
+                "error": "Se encontraron errores durante la validación de algunos estudiantes. Ningún estudiante fue guardado.",
+                "errores_detalle": errors,
+                "estudiantes_listos_para_agregar": len(new_students)
+            }), 400
+
+        if new_students:
+            db.session.add_all(new_students)
+            db.session.commit()
+            students_added_count = len(new_students)
+
+        return jsonify({
+            "message": "Carga masiva completada exitosamente.",
+            "estudiantes_agregados": students_added_count,
+            "total_procesados": len(students_data)
+        }), 201
+
+    except SQLAlchemyError as sqlae:
+        db.session.rollback()
+        print(f"ERROR DB: Error al intentar guardar los estudiantes: {sqlae}")
+        return jsonify({"error": f"Error de base de datos al guardar (SQLAlchemy): {str(sqlae)}"}), 500
+    except Exception as e:
+        db.session.rollback()
+        print(f"ERROR BACKEND: Error en la carga masiva: {e}")
         return jsonify({"error": f"Error interno del servidor: {str(e)}"}), 500

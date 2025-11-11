@@ -1,0 +1,571 @@
+/* ======================================================================== */
+/* --- ESTILOS GENERALES Y ESTRUCTURA --- */
+/* ======================================================================== */
+
+/* Contenedor principal para centrar el contenido */
+.analytics-content-area {
+    max-width: 1300px;
+    margin: 0 auto;
+    padding: 0 20px 40px 20px;
+}
+
+/* Tarjeta principal que contiene las secciones */
+.analytics-card {
+    background-color: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    padding: 30px;
+    margin-bottom: 30px;
+}
+
+.analytics-card-header {
+    margin-bottom: 20px;
+}
+
+.analytics-card-header h3 {
+    font-size: 1.5em;
+    color: #2c3e50;
+    margin-bottom: 15px;
+    font-weight: 600;
+}
+
+/* Separador */
+hr {
+    border: none;
+    border-top: 1px solid #e6eaf0;
+    margin: 20px 0;
+}
+
+
+/* --- ENCABEZADO Y BOTÓN DE VOLVER --- */
+
+.main-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 30px;
+    background-color: #ffffff;
+    border-bottom: 1px solid #e6eaf0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    margin-bottom: 30px;
+    max-width: 1300px;
+    margin-left: auto;
+    margin-right: auto;
+    border-radius: 12px;
+}
+
+.headline {
+    color: #2c3e50;
+    margin: 0;
+    font-size: 1.8em;
+    font-weight: 700;
+}
+
+.header-right .sm-back-button {
+    background-color: #3498db; 
+    color: white;
+    border: none;
+    padding: 10px 18px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.95em;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+.header-right .sm-back-button:hover {
+    background-color: #2980b9; 
+    transform: translateY(-2px);
+}
+
+
+/* --- FILTROS --- */
+
+.analytics-filters-container {
+    display: flex;
+    gap: 20px;
+    align-items: flex-end;
+    flex-wrap: wrap;
+}
+
+.analytics-filter-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.analytics-filter-group label {
+    font-weight: 500;
+    color: #34495e;
+    margin-bottom: 5px;
+}
+
+.analytics-filter-group input {
+    padding: 10px;
+    border: 1px solid #dcdfe4;
+    border-radius: 6px;
+    font-size: 1em;
+    transition: border-color 0.2s;
+}
+
+.analytics-btn-apply-filters {
+    background-color: #1abc9c;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 1em;
+    font-weight: 500;
+    transition: background-color 0.2s ease;
+}
+
+.analytics-btn-apply-filters:hover {
+    background-color: #16a085;
+}
+
+
+/* ======================================================================== */
+/* --- SEPARACIÓN DE TOTALES Y GRÁFICO --- */
+/* ======================================================================== */
+
+/* Bloque 1: Total Monto Pagado del Período */
+.analytics-period-total-message {
+    font-size: 1.2em;
+    font-weight: 600;
+    color: #2c3e50;
+    text-align: left; 
+    margin: 20px 0 10px 0; 
+    padding: 8px 15px; 
+    background-color: #f0f7f4; 
+    border-left: 5px solid #1abc9c; 
+    border-radius: 5px;
+}
+
+.analytics-period-total-message strong {
+    color: #16a085; 
+    font-size: 1.1em;
+    font-weight: 700;
+}
+
+/* Bloque 2: Total Venta (Costo) */
+.total-venta-resumen {
+    text-align: center;
+    padding: 15px;
+    background-color: #e8f8f5; 
+    border: 1px solid #1abc9c;
+    border-radius: 8px;
+    margin: 10px 0 30px 0; 
+}
+
+.total-venta-resumen p {
+    font-size: 1.25em; 
+    color: #2c3e50;
+    margin: 0;
+    font-weight: 700;
+}
+
+.total-venta-resumen p strong {
+    color: #16a085; 
+    font-size: 1.1em;
+}
+
+
+/* ======================================================================== */
+/* --- GRÁFICO Y LEYENDA --- */
+/* ======================================================================== */
+
+.analytics-chart-area {
+    min-height: 450px; 
+    padding: 25px 35px; 
+    display: flex;
+    flex-direction: column; 
+    align-items: center;
+    justify-content: flex-start; 
+    background-color: #fcfcfc;
+    border-radius: 10px;
+    border: 1px solid #e6eaf0;
+    box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.03);
+    position: relative;
+    gap: 15px;
+}
+
+.analytics-chart-area h3 {
+    width: 100%; 
+    text-align: center; 
+    color: #34495e;
+    font-size: 1.6em;
+    margin: 0;
+    font-weight: 600;
+}
+
+/* Pequeño ajuste para los elementos de la leyenda de Recharts */
+.recharts-legend-item {
+    font-size: 0.85em;
+}
+
+
+/* ======================================================================== */
+/* --- TABLAS Y DETALLE --- */
+/* ======================================================================== */
+
+.analytics-table-container {
+    width: 100%;
+    overflow-x: auto;
+    margin-top: 25px; 
+    border: 1px solid #e0e6ec;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.analytics-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.95em; 
+}
+
+.analytics-table thead {
+    background-color: #34495e; 
+    color: white;
+}
+
+.analytics-table th, .analytics-table td {
+    border: 1px solid #ebf0f5; 
+    padding: 15px 12px;
+    text-align: left;
+    word-wrap: break-word;
+    max-width: 250px;
+}
+
+.analytics-table th {
+    font-weight: 600;
+    text-align: center;
+    font-size: 1em;
+}
+
+.analytics-table tbody tr:nth-child(even) {
+    background-color: #f7f9fb;
+}
+
+.analytics-table tbody tr:hover {
+    background-color: #f0f4f7;
+    cursor: default;
+}
+
+/* Estilo para la fila de resumen seleccionada */
+.analytics-row-selected {
+    background-color: #e8f8f5 !important; 
+    font-weight: 600;
+    border: 1px solid #1abc9c !important;
+}
+.analytics-row-selected td {
+    color: #16a085;
+}
+
+/* Botón "Ver Detalle" */
+.analytics-btn-detail {
+    background-color: #3498db;
+    color: white;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.85em;
+    font-weight: 500;
+    transition: background-color 0.2s ease;
+}
+
+.analytics-btn-detail:hover {
+    background-color: #2980b9;
+}
+
+
+/* --- MENSAJES DE ESTADO --- */
+
+.analytics-loading-message,
+.analytics-error-message,
+.analytics-info-message {
+    padding: 15px;
+    border-radius: 6px;
+    margin: 20px 0;
+    text-align: center;
+    font-weight: 500;
+}
+
+.analytics-loading-message {
+    background-color: #f0f7f4;
+    color: #1abc9c;
+}
+
+.analytics-error-message {
+    background-color: #fbe6e6;
+    color: #e74c3c;
+    border: 1px solid #e74c3c;
+}
+
+.analytics-info-message {
+    background-color: #eaf4fd;
+    color: #3498db;
+}
+
+/* --- ESTILOS DE ACCIONES (EDITAR/ANULAR) --- */
+
+.analytics-actions-cell {
+    display: flex;
+    gap: 5px; 
+    justify-content: center;
+    min-width: 150px; 
+}
+
+.analytics-btn-edit,
+.analytics-btn-delete {
+    border: none;
+    padding: 5px 10px;
+    cursor: pointer;
+    border-radius: 4px;
+    font-size: 12px;
+    transition: background-color 0.2s;
+}
+
+.analytics-btn-edit {
+    background-color: #007bff; 
+    color: white;
+}
+
+.analytics-btn-edit:hover {
+    background-color: #0056b3;
+}
+
+.analytics-btn-delete {
+    background-color: #dc3545; 
+    color: white;
+}
+
+.analytics-btn-delete:hover {
+    background-color: #c82333;
+}
+
+
+/* ======================================================================== */
+/* --- ESTILOS ESPECÍFICOS DEL MODAL DE EDICIÓN (SIN CONFLICTO DE COLOR) --- */
+/* (Las clases .modal-overlay y .modal-content AHORA son manejadas por formModal.css) */
+/* ======================================================================== */
+
+/* NOTA: Las clases .modal-overlay y .modal-content ya NO están aquí. */
+/* Sus estilos de fondo (#2e3b4e) vienen de formModal.css. */
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    /* Usamos el color de borde de formModal para consistencia */
+    border-bottom: 2px solid #4a5a70; 
+    padding-bottom: 15px;
+    margin-bottom: 25px;
+}
+
+.modal-header h2 {
+    /* Usamos el color de acento de formModal para consistencia */
+    color: #61dafb; 
+    font-size: 1.8em;
+    font-weight: 700;
+    margin: 0;
+}
+
+.modal-close-btn {
+    background: none;
+    border: none;
+    font-size: 30px;
+    cursor: pointer;
+    /* Usamos el color de texto claro de formModal para consistencia */
+    color: #e0e0e0; 
+    transition: color 0.2s;
+}
+
+.modal-close-btn:hover {
+    /* Usamos el color de error de formModal para consistencia */
+    background-color: #ff6b6b;
+    color: white;
+}
+
+/* --- Estilos para la información no editable (COSTO/SALDO) --- */
+.modal-body p {
+    font-size: 1.1em;
+    margin-bottom: 10px;
+    padding: 5px 0;
+    /* Usamos el color de texto claro de formModal para consistencia */
+    color: #e0e0e0; 
+}
+
+/* ⭐ RESALTE para Costo Total y Saldo Actual ⭐ */
+.modal-body p strong {
+    font-weight: 700;
+    font-size: 1.1em;
+    /* Usamos el color de acento de formModal para consistencia */
+    color: #61dafb; 
+}
+/* Estilo específico para el saldo pendiente */
+.modal-body p:nth-child(2) { 
+    /* Usamos el color de borde oscuro de formModal para consistencia */
+    border-bottom: 1px dashed #4a5a70;
+    padding-bottom: 15px;
+    margin-bottom: 20px;
+}
+
+
+/* --- Estilos para los campos de edición --- */
+/* NOTA: Estos selectores tienen un conflicto con formModal.css, */
+/* pero aquí se mantienen más específicos (.modal-body). */
+
+.modal-body .form-group {
+    margin-bottom: 20px;
+}
+
+.modal-body label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    /* Usamos el color de texto claro de formModal para consistencia */
+    color: #e0e0e0;
+    font-size: 1em;
+}
+
+.modal-body input[type="number"],
+.modal-body select,
+.modal-body textarea {
+    width: 100%;
+    padding: 10px; 
+    /* Usamos los colores de fondo de input de formModal para consistencia */
+    border: 1px solid #4a5a70;
+    border-radius: 8px; /* Usamos el radio de formModal */
+    box-sizing: border-box; 
+    background-color: #3a475a; 
+    color: #ffffff; 
+    font-size: 1em;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.modal-body input:focus,
+.modal-body select:focus,
+.modal-body textarea:focus {
+    /* Usamos el color de foco de formModal para consistencia */
+    border-color: #61dafb; 
+    box-shadow: 0 0 0 3px rgba(97, 218, 251, 0.3);
+    outline: none;
+}
+
+.modal-body input:disabled,
+.modal-body select:disabled,
+.modal-body textarea:disabled {
+    background-color: #4a5a70; /* Color oscuro */
+    color: #b0b0b0;
+    cursor: not-allowed;
+}
+
+/* --- Pie de página del Modal (Botones) --- */
+
+.modal-footer {
+    padding-top: 20px;
+    /* Usamos el color de borde oscuro de formModal para consistencia */
+    border-top: 1px solid #4a5a70;
+    display: flex; 
+    justify-content: flex-end; 
+    gap: 10px;
+}
+
+/* Nota: Si el HTML usa las clases genéricas .btn-primary y .btn-secondary, 
+   formModal.css las manejará. Si usa .analytics-btn-*, mantendremos el estilo. */
+.modal-footer button {
+    padding: 10px 20px; 
+    font-size: 1em;
+    font-weight: 600;
+    border-radius: 10px; /* Usamos el radio de formModal */
+    transition: background-color 0.2s;
+}
+
+/* Aplicando el estilo Secundario de formModal (gris oscuro) */
+.analytics-btn-cancel {
+    background-color: #4a5a70; 
+    color: #e0e0e0;
+    border: none;
+}
+.analytics-btn-cancel:hover {
+    background-color: #3a475a;
+}
+
+/* Aplicando el estilo Primario de formModal (azul cian) */
+.analytics-btn-apply-filters { 
+    background-color: #61dafb; 
+    color: #20232a; /* Texto oscuro */
+    border: none;
+}
+.analytics-btn-apply-filters:hover {
+    background-color: #4aadc4;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+
+/* ======================================================================== */
+/* --- MEDIA QUERIES (RESPONSIVE) --- */
+/* ======================================================================== */
+
+@media (max-width: 900px) {
+    .analytics-filters-container {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .analytics-filter-group {
+        width: 100%;
+    }
+}
+
+
+@media (max-width: 768px) {
+    .main-header {
+        padding: 15px 15px;
+    }
+    .headline {
+        font-size: 1.5em;
+    }
+    .analytics-content-area {
+        padding: 0 10px 30px 10px;
+    }
+    .analytics-card {
+        padding: 20px;
+    }
+    
+    /* Ajuste de totales */
+    .analytics-period-total-message,
+    .total-venta-resumen p {
+        font-size: 1.1em;
+    }
+    
+    /* Ajuste de gráfica */
+    .analytics-chart-area {
+        min-height: 400px;
+        padding: 15px 20px;
+    }
+
+    /* Ajuste de tablas */
+    .analytics-table th, .analytics-table td {
+        padding: 10px 8px;
+        font-size: 0.85em;
+    }
+    
+    /* Ajuste de modal */
+    .modal-content {
+        padding: 20px;
+    }
+}

@@ -55,6 +55,36 @@ class Empresa(db.Model):
     espacios: Mapped[List["Espacio"]] = relationship("Espacio", back_populates="empresa")
     formularios: Mapped[List["Formulario"]] = relationship("Formulario", back_populates="empresa")
 
+     ### INICIO DE CORRECCIÓN: AGREGAR RELACIONES FALTANTES PARA RECIBOS
+    
+    # Relación con Concepto (propiedad faltante: 'conceptos')
+    conceptos: Mapped[List["Concepto"]] = relationship(
+        "Concepto", 
+        back_populates="empresa", 
+        cascade="all, delete-orphan"
+    )
+
+    # Relación con Grado (propiedad faltante: 'grados')
+    grados: Mapped[List["Grado"]] = relationship(
+        "Grado", 
+        back_populates="empresa", 
+        cascade="all, delete-orphan"
+    )
+
+    # Relación con Estudiante (propiedad faltante: 'estudiantes')
+    estudiantes: Mapped[List["Estudiante"]] = relationship(
+        "Estudiante", 
+        back_populates="empresa", 
+        cascade="all, delete-orphan"
+    )
+
+    # Relación con TransaccionRecibo (propiedad faltante: 'transacciones')
+    transacciones: Mapped[List["TransaccionRecibo"]] = relationship(
+        "TransaccionRecibo", 
+        back_populates="empresa", 
+        cascade="all, delete-orphan"
+    )
+
     def serialize(self):
         return {
             "id_empresa": self.id_empresa,
@@ -96,6 +126,10 @@ class Usuario(db.Model):
     notificaciones: Mapped[List["Notificacion"]] = relationship("Notificacion", back_populates="usuario_destinatario")
 
     documentos_subidos: Mapped[List["DocumentosMinisterio"]] = relationship("DocumentosMinisterio", back_populates="usuario_que_subio")
+
+    # Nueva relación inversa para TransaccionRecibo
+    transacciones_creadas: Mapped[List["TransaccionRecibo"]] = relationship("TransaccionRecibo", back_populates="usuario_creador")
+
 
 
     def serialize(self):
@@ -479,4 +513,140 @@ class DocumentosMinisterio(db.Model):
             "user_id": self.user_id,
             "categoria_id": self.categoria_id,
             "tipo_contenido": self.tipo_contenido
+        }
+
+# =========================================================================
+# NUEVOS MODELOS PARA EL MÓDULO DE RECIBOS Y ANÁLISIS
+# =========================================================================
+
+class Concepto(db.Model):
+    __tablename__ = 'conceptos'
+    
+    id_concepto: Mapped[int] = mapped_column(Integer, primary_key=True)
+    id_empresa: Mapped[int] = mapped_column(Integer, ForeignKey('empresas.id_empresa'), nullable=False)
+    nombre_concepto: Mapped[str] = mapped_column(String(255), nullable=False)
+    valor_base: Mapped[float] = mapped_column(Float, nullable=False) # Valor por defecto del concepto
+    activo: Mapped[bool] = mapped_column(db.Boolean, default=True) # Para desactivar conceptos sin borrarlos
+
+    # Relaciones
+    empresa: Mapped["Empresa"] = relationship("Empresa", back_populates="conceptos")
+    detalles_recibo: Mapped[List["DetalleRecibo"]] = relationship("DetalleRecibo", back_populates="concepto")
+
+    def serialize(self):
+        return {
+            "id_concepto": self.id_concepto,
+            "id_empresa": self.id_empresa,
+            "nombre_concepto": self.nombre_concepto,
+            "valor_base": self.valor_base,
+            "activo": self.activo
+        }
+
+class Grado(db.Model):
+    __tablename__ = 'grados'
+    
+    id_grado: Mapped[int] = mapped_column(Integer, primary_key=True)
+    id_empresa: Mapped[int] = mapped_column(Integer, ForeignKey('empresas.id_empresa'), nullable=False)
+    nombre_grado: Mapped[str] = mapped_column(String(100), nullable=False) # Prejardín, Grado Uno, Grado Once, etc.
+    orden: Mapped[int] = mapped_column(Integer, nullable=False, default=0) # Para ordenar los grados
+    activo: Mapped[bool] = mapped_column(db.Boolean, default=True)
+
+    # Relaciones
+    empresa: Mapped["Empresa"] = relationship("Empresa", back_populates="grados")
+    estudiantes: Mapped[List["Estudiante"]] = relationship("Estudiante", back_populates="grado")
+
+    def serialize(self):
+        return {
+            "id_grado": self.id_grado,
+            "id_empresa": self.id_empresa,
+            "nombre_grado": self.nombre_grado,
+            "orden": self.orden,
+            "activo": self.activo
+        }
+
+class Estudiante(db.Model):
+    __tablename__ = 'estudiantes'
+
+    id_estudiante: Mapped[int] = mapped_column(Integer, primary_key=True)
+    id_empresa: Mapped[int] = mapped_column(Integer, ForeignKey('empresas.id_empresa'), nullable=False)
+    id_grado: Mapped[int] = mapped_column(Integer, ForeignKey('grados.id_grado'), nullable=False)
+    nombre_completo: Mapped[str] = mapped_column(String(255), nullable=False)
+    correo_responsable: Mapped[Optional[str]] = mapped_column(String(120), nullable=True) # Email para enviar el recibo
+    activo: Mapped[bool] = mapped_column(db.Boolean, default=True)
+
+    # Relaciones
+    empresa: Mapped["Empresa"] = relationship("Empresa", back_populates="estudiantes")
+    grado: Mapped["Grado"] = relationship("Grado", back_populates="estudiantes")
+    detalles_recibo: Mapped[List["DetalleRecibo"]] = relationship("DetalleRecibo", back_populates="estudiante")
+
+    def serialize(self):
+        return {
+            "id_estudiante": self.id_estudiante,
+            "id_empresa": self.id_empresa,
+            "id_grado": self.id_grado,
+            "nombre_completo": self.nombre_completo,
+            "correo_responsable": self.correo_responsable,
+            "activo": self.activo
+        }
+
+class TransaccionRecibo(db.Model):
+    __tablename__ = 'transacciones_recibos'
+    
+    id_transaccion: Mapped[int] = mapped_column(Integer, primary_key=True)
+    id_empresa: Mapped[int] = mapped_column(Integer, ForeignKey('empresas.id_empresa'), nullable=False)
+    id_usuario_creador: Mapped[int] = mapped_column(Integer, ForeignKey('usuarios.id_usuario'), nullable=False) # Secretaria
+    fecha_transaccion: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    
+    # Costo total de los conceptos en el recibo (monto fijo)
+    total_recibo: Mapped[float] = mapped_column(Float, nullable=False) 
+    
+    # Monto de pago ingresado por el usuario (Abono o Total)
+    monto_pagado: Mapped[float] = mapped_column(Float, nullable=False, default=0.0) 
+    
+    # Lo que queda por pagar (total_recibo - monto_pagado)
+    saldo_pendiente: Mapped[float] = mapped_column(Float, nullable=False, default=0.0) 
+    
+    tipo_pago: Mapped[str] = mapped_column(String(50), nullable=False, default='Total') # 'Total' o 'Abono'
+    observaciones: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    
+    # Relaciones
+    empresa: Mapped["Empresa"] = relationship("Empresa", back_populates="transacciones")
+    usuario_creador: Mapped["Usuario"] = relationship("Usuario", back_populates="transacciones_creadas")
+    detalles: Mapped[List["DetalleRecibo"]] = relationship("DetalleRecibo", back_populates="transaccion")
+
+    def serialize(self):
+        return {
+            "id_transaccion": self.id_transaccion,
+            "id_empresa": self.id_empresa,
+            "id_usuario_creador": self.id_usuario_creador,
+            "fecha_transaccion": self.fecha_transaccion.isoformat(),
+            "total_recibo": self.total_recibo,
+            "monto_pagado": self.monto_pagado, # Nuevo
+            "saldo_pendiente": self.saldo_pendiente, # Nuevo
+            "tipo_pago": self.tipo_pago,
+            "observaciones": self.observaciones
+        }
+
+class DetalleRecibo(db.Model):
+    __tablename__ = 'detalle_recibo'
+    
+    id_detalle: Mapped[int] = mapped_column(Integer, primary_key=True)
+    id_transaccion: Mapped[int] = mapped_column(Integer, ForeignKey('transacciones_recibos.id_transaccion'), nullable=False)
+    id_estudiante: Mapped[int] = mapped_column(Integer, ForeignKey('estudiantes.id_estudiante'), nullable=False)
+    id_concepto: Mapped[int] = mapped_column(Integer, ForeignKey('conceptos.id_concepto'), nullable=False)
+    valor_cobrado: Mapped[float] = mapped_column(Float, nullable=False) # Valor por unidad del concepto
+    cantidad: Mapped[int] = mapped_column(Integer, default=1) 
+
+    # Relaciones
+    transaccion: Mapped["TransaccionRecibo"] = relationship("TransaccionRecibo", back_populates="detalles")
+    estudiante: Mapped["Estudiante"] = relationship("Estudiante", back_populates="detalles_recibo")
+    concepto: Mapped["Concepto"] = relationship("Concepto", back_populates="detalles_recibo")
+
+    def serialize(self):
+        return {
+            "id_detalle": self.id_detalle,
+            "id_transaccion": self.id_transaccion,
+            "id_estudiante": self.id_estudiante,
+            "id_concepto": self.id_concepto,
+            "valor_cobrado": self.valor_cobrado,
+            "cantidad": self.cantidad
         }

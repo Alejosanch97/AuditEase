@@ -3,7 +3,7 @@ from flask_admin import Admin
 from .models import (
     db, Empresa, Usuario, Espacio, SubEspacio, Objeto,
     TipoRespuesta, Formulario, Pregunta, EnvioFormulario,
-    Respuesta, Observacion, Notificacion
+    Respuesta, Observacion, Notificacion, Concepto, Grado, Estudiante, TransaccionRecibo, DetalleRecibo 
 )
 from flask_admin.contrib.sqla import ModelView
 from flask_admin.model import typefmt
@@ -176,6 +176,52 @@ class NotificacionView(ModelView):
     }
     form_columns = ['id_formulario', 'id_usuario_destinatario', 'tipo_notificacion', 'mensaje', 'fecha_hora_programada', 'estado', 'frecuencia_notificacion', 'horas_especificas_envio']
 
+# --- Vistas de Nuevos Modelos de Recibos y Análisis ---
+
+class ConceptoView(ModelView):
+    column_list = ['id_concepto', 'nombre_concepto', 'empresa.nombre_empresa', 'valor_base', 'activo']
+    column_searchable_list = ['nombre_concepto']
+    column_filters = ['activo', 'empresa.nombre_empresa']
+    # Aquí están las form_columns definidas:
+    form_columns = ['id_empresa', 'nombre_concepto', 'valor_base', 'activo']
+    column_labels = dict(nombre_concepto='Nombre del Concepto', valor_base='Valor Base')
+
+class GradoView(ModelView):
+    column_list = ['id_grado', 'nombre_grado', 'empresa.nombre_empresa', 'orden', 'activo']
+    column_searchable_list = ['nombre_grado']
+    column_filters = ['activo', 'empresa.nombre_empresa']
+    # Aquí están las form_columns definidas:
+    form_columns = ['id_empresa', 'nombre_grado', 'orden', 'activo']
+    column_labels = dict(nombre_grado='Nombre del Grado')
+
+class EstudianteView(ModelView):
+    column_list = ['id_estudiante', 'nombre_completo', 'grado.nombre_grado', 'empresa.nombre_empresa', 'correo_responsable', 'activo']
+    column_searchable_list = ['nombre_completo', 'correo_responsable']
+    column_filters = ['activo', 'grado.nombre_grado', 'empresa.nombre_empresa']
+    # Aquí están las form_columns definidas:
+    form_columns = ['id_empresa', 'id_grado', 'nombre_completo', 'correo_responsable', 'activo']
+    column_labels = dict(correo_responsable='Correo del Responsable')
+
+class TransaccionReciboView(ModelView):
+    column_list = ['id_transaccion', 'empresa.nombre_empresa', 'usuario_creador.nombre_completo', 'fecha_transaccion', 'total_recibo', 'tipo_pago', 'observaciones']
+    column_searchable_list = ['tipo_pago']
+    column_filters = ['fecha_transaccion', 'tipo_pago', 'empresa.nombre_empresa']
+    column_formatters = {
+        'fecha_transaccion': date_format
+    }
+    # Aquí están las form_columns definidas:
+    form_columns = ['id_empresa', 'id_usuario_creador', 'fecha_transaccion', 'total_recibo', 'tipo_pago', 'observaciones']
+    column_labels = dict(usuario_creador='Creado por Usuario', total_recibo='Total Recibo')
+
+class DetalleReciboView(ModelView):
+    column_list = ['id_detalle', 'transaccion.id_transaccion', 'estudiante.nombre_completo', 'concepto.nombre_concepto', 'valor_cobrado', 'cantidad']
+    column_searchable_list = ['valor_cobrado']
+    column_filters = ['concepto.nombre_concepto', 'estudiante.nombre_completo']
+    # Aquí están las form_columns definidas:
+    form_columns = ['id_transaccion', 'id_estudiante', 'id_concepto', 'valor_cobrado', 'cantidad']
+    column_labels = dict(valor_cobrado='Valor Cobrado')
+
+
 def setup_admin(app):
     app.secret_key = os.environ.get('FLASK_APP_KEY', 'sample key')
     app.config['FLASK_ADMIN_SWATCH'] = 'cerulean'
@@ -194,3 +240,9 @@ def setup_admin(app):
     admin.add_view(RespuestaView(Respuesta, db.session, name='Respuestas'))
     admin.add_view(ObservacionView(Observacion, db.session, name='Observaciones'))
     admin.add_view(NotificacionView(Notificacion, db.session, name='Notificaciones'))
+    # --- Añadidas las Vistas de Recibos y Análisis ---
+    admin.add_view(ConceptoView(Concepto, db.session, name='Conceptos'))
+    admin.add_view(GradoView(Grado, db.session, name='Grados'))
+    admin.add_view(EstudianteView(Estudiante, db.session, name='Estudiantes'))
+    admin.add_view(TransaccionReciboView(TransaccionRecibo, db.session, name='Transacciones Recibos'))
+    admin.add_view(DetalleReciboView(DetalleRecibo, db.session, name='Detalle Recibo'))

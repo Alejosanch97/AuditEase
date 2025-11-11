@@ -1,19 +1,29 @@
 // src/components/UserCompanyManagement.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useGlobalReducer from '../hooks/useGlobalReducer';
-import "../styles/userCompanyManagement.css"; // Este CSS ahora será exclusivo para este componente
-// Asegúrate de tener Font Awesome configurado en tu proyecto (por CDN en index.html o como paquete npm)
+import "../styles/userCompanyManagement.css";
 
 export const UserCompanyManagement = () => {
   const { store, dispatch } = useGlobalReducer();
   const navigate = useNavigate();
 
-  const [companies, setCompanies] = useState([]); // Estado para almacenar las empresas del owner
-  const [selectedCompanyId, setSelectedCompanyId] = useState(''); // Para la creación de usuarios
+  // Estados existentes para gestión y formularios
+  const [companies, setCompanies] = useState([]); // Empresas activas (para select y listado)
+  const [selectedCompanyId, setSelectedCompanyId] = useState('');
   const [showCreateCompanyForm, setShowCreateCompanyForm] = useState(false);
   const [showCreateUserForm, setShowCreateUserForm] = useState(false);
 
+  // ESTADOS AÑADIDOS para la visualización de listas
+  const [allCompanyUsers, setAllCompanyUsers] = useState([]);
+  const [loadingLists, setLoadingLists] = useState(false);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+
+  // ⭐ NUEVOS ESTADOS PARA GESTIÓN DE VISTAS COLAPSABLES
+  const [isCompaniesListOpen, setIsCompaniesListOpen] = useState(true);
+  const [isUsersListOpen, setIsUsersListOpen] = useState(true);
+
+  // Estados de formulario existentes
   const [companyFormData, setCompanyFormData] = useState({
     nombre_empresa: '',
     direccion: '',
@@ -23,35 +33,26 @@ export const UserCompanyManagement = () => {
   const [userFormData, setUserFormData] = useState({
     nombre_completo: '',
     email: '',
-    password: '', // Contraseña inicial para el nuevo usuario
+    password: '',
     confirmar_password: '',
     telefono_personal: '',
     cargo: '',
-    rol: 'admin_empresa' // Rol por defecto, el owner solo crearía admin_empresa o usuario_formulario
+    rol: 'admin_empresa'
   });
 
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
   const [successMessage, setSuccessMessage] = useState('');
 
-  // Nuevos estados para la visibilidad de las contraseñas
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  // Efecto para cargar las empresas del owner al inicio
-  useEffect(() => {
-    // currentUser ya está garantizado por DashboardLayout
-    if (store.user && store.user.rol === 'owner') {
-      fetchCompanies();
-    } else if (!store.user || store.user.rol !== 'owner') {
-      // Si no es owner o no está logeado, redirige
-      dispatch({ type: 'SET_MESSAGE', payload: { type: 'error', text: 'Acceso no autorizado.' } });
-      navigate('/profile'); // O a donde corresponda
-    }
-  }, [store.user, navigate, dispatch]); // Dependencia actualizada a store.user
+  // ==========================================================
+  // 1. FUNCIONES DE FETCH
+  // ==========================================================
 
-  const fetchCompanies = async () => {
-    setLoading(true);
+  const fetchCompanies = useCallback(async () => {
+    setLoadingLists(true);
     setErrors({});
     try {
       const token = localStorage.getItem('access_token');
@@ -64,9 +65,12 @@ export const UserCompanyManagement = () => {
       });
       const data = await response.json();
       if (response.ok) {
-        setCompanies(data.empresas || []);
-        if (data.empresas && data.empresas.length > 0) {
-          setSelectedCompanyId(data.empresas[0].id_empresa); // Selecciona la primera empresa por defecto
+        const activeCompanies = (data.empresas || []).filter(comp => comp.activo);
+        setCompanies(activeCompanies);
+        if (activeCompanies.length > 0) {
+          setSelectedCompanyId(activeCompanies[0].id_empresa);
+        } else {
+          setSelectedCompanyId('');
         }
       } else {
         setErrors({ fetch: data.error || 'Error al cargar empresas.' });
@@ -75,9 +79,57 @@ export const UserCompanyManagement = () => {
       console.error('Error fetching companies:', error);
       setErrors({ fetch: 'Error de conexión al cargar empresas.' });
     } finally {
-      setLoading(false);
+      setLoadingLists(false);
     }
-  };
+  }, []);
+
+  const fetchCompanyUsers = useCallback(async () => {
+    if (store.user && store.user.rol === 'owner') {
+      setLoadingUsers(true);
+      const token = localStorage.getItem('access_token');
+      if (!token) {
+        setLoadingUsers(false);
+        return;
+      }
+      try {
+        const url = `${import.meta.env.VITE_BACKEND_URL}/api/owner/usuarios`; 
+
+        const response = await fetch(url, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await response.json();
+
+        if (response.ok && data.usuarios) {
+          const activeUsers = data.usuarios.filter(user => user.activo);
+          setAllCompanyUsers(activeUsers); 
+        } else {
+          console.error('Error al cargar usuarios:', data.error);
+        }
+      } catch (error) {
+        console.error('Error de conexión al cargar usuarios:', error);
+      } finally {
+        setLoadingUsers(false);
+      }
+    }
+  }, [store.user]);
+
+  // ==========================================================
+  // 2. EFECTO PARA CARGAR
+  // ==========================================================
+  
+  useEffect(() => {
+    if (store.user && store.user.rol === 'owner') {
+      fetchCompanies();
+      fetchCompanyUsers();
+    } else if (!store.user || store.user.rol !== 'owner') {
+      dispatch({ type: 'SET_MESSAGE', payload: { type: 'error', text: 'Acceso no autorizado.' } });
+      navigate('/profile');
+    }
+  }, [store.user, navigate, dispatch, fetchCompanies, fetchCompanyUsers]);
+
+  // ==========================================================
+  // 3. HANDLERS (Tu lógica se mantiene, solo se añade la recarga)
+  // ==========================================================
 
   const handleCompanyChange = (e) => {
     const { name, value } = e.target;
@@ -91,7 +143,6 @@ export const UserCompanyManagement = () => {
     setErrors(prev => ({ ...prev, [name]: '' }));
   };
 
-  // Función para alternar la visibilidad de la contraseña
   const togglePasswordVisibility = (field) => {
     if (field === 'password') {
       setShowPassword(!showPassword);
@@ -157,7 +208,7 @@ export const UserCompanyManagement = () => {
         setSuccessMessage('Empresa creada exitosamente.');
         setCompanyFormData({ nombre_empresa: '', direccion: '', telefono: '', email_contacto: '' });
         setShowCreateCompanyForm(false);
-        fetchCompanies(); // Refrescar la lista de empresas
+        await fetchCompanies();
         dispatch({ type: 'SET_MESSAGE', payload: { type: 'success', text: 'Empresa creada con éxito.' } });
       } else {
         setErrors({ general: data.error || 'Error al crear la empresa.' });
@@ -203,6 +254,7 @@ export const UserCompanyManagement = () => {
           telefono_personal: '', cargo: '', rol: 'admin_empresa'
         });
         setShowCreateUserForm(false);
+        await fetchCompanyUsers();
         dispatch({ type: 'SET_MESSAGE', payload: { type: 'success', text: 'Usuario creado con éxito.' } });
       } else {
         setErrors({ general: data.error || 'Error al crear el usuario.' });
@@ -215,34 +267,44 @@ export const UserCompanyManagement = () => {
     }
   };
 
+  // ==========================================================
+  // 4. LÓGICA DE FILTRADO PARA LA TABLA
+  // ==========================================================
+
+  const activeDisplayUsers = useMemo(() => {
+    return allCompanyUsers.filter(user => user.rol === 'admin_empresa' || user.rol === 'usuario_formulario');
+  }, [allCompanyUsers]);
+
+
   // El spinner de carga se ajusta para el contenido principal
-  if (loading && companies.length === 0) {
+  if ((loading && companies.length === 0) || (loadingLists && allCompanyUsers.length === 0)) {
     return (
-      <div className="ucm-loading-spinner-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', width: '100%', fontSize: '2em', color: 'var(--primary-dark)' }}>
+      <div className="ucm-loading-spinner-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', width: '100%', fontSize: '2em', color: 'var(--ucm-primary-dark)' }}>
         Cargando gestión...
       </div>
     );
   }
 
-  // Si no es owner, el useEffect ya redirige, así que no deberíamos llegar aquí si la lógica es correcta.
   if (!store.user || store.user.rol !== 'owner') {
-    return null; // O un mensaje de "Acceso denegado" si lo deseas
+    return null;
   }
 
+  // ==========================================================
+  // 5. RENDERIZADO (Con colapso y IDs)
+  // ==========================================================
+
   return (
-    <> {/* Usamos un fragmento ya que el DashboardLayout proporciona el contenedor principal */}
+    <>
       <header className="main-header">
         <h1 className="headline">Gestión de Empresas y Usuarios</h1>
         <div className="header-right">
-          {/* Puedes añadir iconos o información adicional aquí si lo deseas */}
-          {/* El botón de volver a perfil se puede manejar desde la barra lateral o aquí si es muy específico */}
           <button className="ucm-back-button" onClick={() => navigate('/profile')}>
             <i className="fas fa-arrow-left"></i> Volver a Mi Perfil
           </button>
         </div>
       </header>
 
-      <div className="ucm-content-area"> {/* Nuevo contenedor para el contenido principal de la página */}
+      <div className="ucm-content-area">
         <div className="ucm-messages-container">
           {errors.general && (
             <div className="ucm-alert ucm-alert-danger">{errors.general}</div>
@@ -462,6 +524,85 @@ export const UserCompanyManagement = () => {
               </button>
             </form>
           )}
+        </section>
+
+        <hr className="ucm-separator" />
+
+        {/* ⭐ SECCIÓN COLAPSABLE: LISTADO DE EMPRESAS CREADAS */}
+        <section className="ucm-section ucm-companies-list-section">
+            {/* Header colapsable */}
+            <div 
+                className={`ucm-list-header ${isCompaniesListOpen ? 'open' : ''}`}
+                onClick={() => setIsCompaniesListOpen(!isCompaniesListOpen)}
+            >
+                <h2>
+                    Empresas Activas Creadas ({companies.length})
+                </h2>
+                <i className={`fas fa-chevron-${isCompaniesListOpen ? 'up' : 'down'}`}></i>
+            </div>
+            
+            {/* Contenido colapsable */}
+            <div className={`ucm-list-content ${isCompaniesListOpen ? 'open' : ''}`}>
+                {loadingLists && companies.length === 0 ? (
+                    <p>Cargando lista de empresas...</p>
+                ) : companies.length === 0 ? (
+                    <p className="ucm-alert ucm-alert-info">Aún no has creado ninguna empresa activa.</p>
+                ) : (
+                    <div className="ucm-list-container companies-list">
+                        {companies.map(comp => (
+                            <div key={comp.id_empresa} className="ucm-list-item company-item">
+                                <div className="ucm-item-details">
+                                    <h4>{comp.nombre_empresa}</h4>
+                                    {/* ⭐ ID de la Empresa Añadido */}
+                                    <p>ID Empresa: <strong>{comp.id_empresa}</strong> | Contacto: {comp.email_contacto || 'N/A'}</p>
+                                </div>
+                                <div className="ucm-item-actions">
+                                    <button className="ucm-manage-btn edit-btn"><i className="fas fa-edit"></i> Editar</button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
+        </section>
+
+        {/* ⭐ SECCIÓN COLAPSABLE: LISTADO DE USUARIOS CREADOS */}
+        <section className="ucm-section ucm-users-list-section">
+            {/* Header colapsable */}
+            <div 
+                className={`ucm-list-header ${isUsersListOpen ? 'open' : ''}`}
+                onClick={() => setIsUsersListOpen(!isUsersListOpen)}
+            >
+                <h2>
+                    Usuarios Activos Creados ({activeDisplayUsers.length})
+                </h2>
+                <i className={`fas fa-chevron-${isUsersListOpen ? 'up' : 'down'}`}></i>
+            </div>
+            
+            {/* Contenido colapsable */}
+            <div className={`ucm-list-content ${isUsersListOpen ? 'open' : ''}`}>
+                {loadingUsers && activeDisplayUsers.length === 0 ? (
+                    <p>Cargando lista de usuarios...</p>
+                ) : activeDisplayUsers.length === 0 ? (
+                    <p className="ucm-alert ucm-alert-info">Aún no has creado ningún usuario (Administrador o Empleado).</p>
+                ) : (
+                    <div className="ucm-list-container users-list">
+                        {activeDisplayUsers.map(user => (
+                            <div key={user.id_usuario} className="ucm-list-item user-item">
+                                <div className="ucm-item-details">
+                                    <h4>{user.nombre_completo}</h4>
+                                    {/* ⭐ ID del Usuario Añadido (usando id_empleado si existe) */}
+                                    <p>ID Usuario: <strong>{user.id_empleado || user.id_usuario}</strong> | Rol: <strong>{user.rol}</strong></p>
+                                    <p>Email: {user.email} | Empresa: {user.empresa?.nombre_empresa || 'N/A'}</p>
+                                </div>
+                                <div className="ucm-item-actions">
+                                    <button className="ucm-manage-btn edit-btn"><i className="fas fa-edit"></i> Editar</button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
         </section>
       </div>
     </>

@@ -68,6 +68,7 @@ export const Profile = () => {
       fetchForms();
     }
   }, [allForms.length, dispatch, navigate]);
+  
 
   const favoriteFormsDetails = useMemo(() => {
     if (!currentUser || !currentUser.favoritos || allForms.length === 0) {

@@ -39,11 +39,22 @@ export const initialStore = () => {
     currentEnvio: null,
 
     // =========================================================================
-    // *** PROPIEDADES PARA DOCUMENTOS DEL MINISTERIO (NUEVO) ***
+    // *** PROPIEDADES PARA DOCUMENTOS DEL MINISTERIO ***
     // =========================================================================
-    documentosCategorias: [], // Un array de categorías, cada una con un array de documentos.
-    isLoadingDocumentos: false, // Booleano para gestionar el estado de carga de los documentos.
-    errorDocumentos: null, // Para guardar mensajes de error relacionados con la carga/subida de documentos.
+    documentosCategorias: [], 
+    isLoadingDocumentos: false,
+    errorDocumentos: null, 
+
+    // =========================================================================
+    // *** PROPIEDADES PARA TRANSACCIONES Y RECIBOS (INCLUYE ABONOS/SALDOS) ***
+    // =========================================================================
+    transacciones: [],          // Array principal para almacenar todas las transacciones/recibos (TransaccionRecibo).
+    currentTransaccion: null,   // Objeto para almacenar la transacción seleccionada/actual.
+    isLoadingTransacciones: false, 
+    errorTransacciones: null,
+    // Podrías añadir un campo para el análisis si lo gestionas globalmente:
+    // recibosAnalisis: null, 
+    // recibosDetallesConcepto: [],
   }
 }
 
@@ -92,6 +103,10 @@ export default function storeReducer(store, action = {}) {
         documentosCategorias: [], 
         isLoadingDocumentos: false,
         errorDocumentos: null,
+        transacciones: [], 
+        currentTransaccion: null,
+        isLoadingTransacciones: false,
+        errorTransacciones: null,
         message: { type: 'success', text: 'Sesión cerrada exitosamente.' }
       };
 
@@ -328,21 +343,16 @@ export default function storeReducer(store, action = {}) {
       };
 
     // =========================================================================
-    // *** ACCIONES ACTUALIZADAS PARA DOCUMENTOS DEL MINISTERIO ***
+    // *** ACCIONES PARA DOCUMENTOS DEL MINISTERIO ***
     // =========================================================================
     case 'SET_CATEGORIAS_DOCUMENTOS':
-        // Esta acción establece todas las categorías y sus documentos anidados al iniciar.
-        // El payload debe ser el array de categorías completo recibido del backend.
         return {
             ...store,
             documentosCategorias: action.payload,
             isLoadingDocumentos: false,
             errorDocumentos: null,
         };
-
     case 'ADD_NUEVA_CATEGORIA':
-        // Esta acción añade una nueva categoría al estado.
-        // El payload debe ser el objeto de categoría completo que devuelve el backend.
         return {
             ...store,
             documentosCategorias: [...store.documentosCategorias, action.payload],
@@ -350,8 +360,6 @@ export default function storeReducer(store, action = {}) {
         };
 
     case 'DELETE_CATEGORIA':
-        // Esta acción elimina una categoría y sus documentos del estado.
-        // El payload debe ser el ID de la categoría a eliminar.
         return {
             ...store,
             documentosCategorias: store.documentosCategorias.filter(
@@ -361,9 +369,6 @@ export default function storeReducer(store, action = {}) {
         };
 
     case 'ADD_DOCUMENTO_TO_CATEGORIA':
-        // Esta acción añade un nuevo documento a una categoría existente.
-        // El payload debe ser un objeto con el ID de la categoría y el objeto del documento.
-        // { categoriaId: 1, documento: { id: 101, nombre: '...', url_archivo: '...' } }
         return {
             ...store,
             documentosCategorias: store.documentosCategorias.map(cat =>
@@ -376,8 +381,6 @@ export default function storeReducer(store, action = {}) {
         };
 
     case 'DELETE_DOCUMENTO':
-        // Esta acción elimina un documento de una categoría específica.
-        // El payload debe ser el ID del documento a eliminar.
         return {
             ...store,
             documentosCategorias: store.documentosCategorias.map(cat => ({
@@ -399,7 +402,80 @@ export default function storeReducer(store, action = {}) {
             errorDocumentos: action.payload,
             isLoadingDocumentos: false,
         };
+
+    // =========================================================================
+    // *** ACCIONES PARA TRANSACCIONES Y RECIBOS (CORRECTO PARA ABONOS/SALDOS) ***
+    // =========================================================================
+    case 'SET_TRANSACCIONES':
+        // Establece la lista completa de transacciones
+        return {
+            ...store,
+            transacciones: action.payload,
+            isLoadingTransacciones: false,
+            errorTransacciones: null,
+        };
     
+    case 'ADD_TRANSACCION':
+        // Añade una nueva transacción a la lista
+        return {
+            ...store,
+            // Asegúrate de que el backend devuelve la transaccion serializada (con total_recibo, monto_pagado, saldo_pendiente)
+            transacciones: [...store.transacciones, action.payload],
+            isLoadingTransacciones: false,
+        };
+
+    case 'UPDATE_TRANSACCION':
+        // Actualiza una transacción existente por su ID
+        return {
+            ...store,
+            transacciones: store.transacciones.map(t =>
+                t.id === action.payload.id ? action.payload : t
+            ),
+            currentTransaccion: store.currentTransaccion && store.currentTransaccion.id === action.payload.id
+                ? action.payload
+                : store.currentTransaccion,
+            isLoadingTransacciones: false,
+        };
+
+    case 'DELETE_TRANSACCION':
+        // Elimina una transacción por su ID
+        return {
+            ...store,
+            transacciones: store.transacciones.filter(t => t.id !== action.payload),
+            currentTransaccion: store.currentTransaccion && store.currentTransaccion.id === action.payload
+                ? null
+                : store.currentTransaccion,
+            isLoadingTransacciones: false,
+        };
+    
+    case 'SET_CURRENT_TRANSACCION':
+        // Establece la transacción que se está viendo o editando
+        return {
+            ...store,
+            currentTransaccion: action.payload,
+        };
+    
+    case 'CLEAR_CURRENT_TRANSACCION':
+        // Limpia la transacción actual
+        return {
+            ...store,
+            currentTransaccion: null,
+        };
+
+    case 'SET_LOADING_TRANSACCIONES':
+        return {
+            ...store,
+            isLoadingTransacciones: action.payload,
+            errorTransacciones: action.payload ? null : store.errorTransacciones,
+        };
+
+    case 'SET_ERROR_TRANSACCIONES':
+        return {
+            ...store,
+            errorTransacciones: action.payload,
+            isLoadingTransacciones: false,
+        };
+
     default:
       console.warn(`Unknown action type: ${action.type}`);
       return store;

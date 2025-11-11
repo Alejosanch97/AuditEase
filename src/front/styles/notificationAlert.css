@@ -1,0 +1,79 @@
+/* ========================================================= */
+/* --- ESTILOS PARA NOTIFICACIÓN FLOTANTE (TOAST/ALERT) --- */
+/* ========================================================= */
+
+.notification-alert {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    padding: 15px 25px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+    z-index: 1050; /* Alto z-index para que esté sobre otros elementos */
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    max-width: 400px;
+    font-size: 16px;
+    font-family: Arial, sans-serif;
+    color: #ffffff; /* Texto blanco por defecto */
+    
+    /* Animación de entrada */
+    animation: slideIn 0.3s ease-out;
+}
+
+/* Animación de entrada (slideIn desde la derecha) */
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+/* Colores de los tipos de alerta */
+
+/* Tipo: Success (Éxito) */
+.notification-alert-success {
+    background-color: #2ecc71; /* Verde brillante */
+}
+
+/* Tipo: Error */
+.notification-alert-error {
+    background-color: #e74c3c; /* Rojo fuerte */
+}
+
+/* Tipo: Info (Información) */
+.notification-alert-info {
+    background-color: #3498db; /* Azul */
+}
+
+/* Icono */
+.notification-icon {
+    font-size: 1.5em;
+}
+
+/* Mensaje */
+.notification-message {
+    font-weight: 600;
+}
+
+/* Botón de cierre */
+.notification-close-btn {
+    background: none;
+    border: none;
+    color: inherit; /* Hereda el color del texto (blanco) */
+    cursor: pointer;
+    font-size: 1.5em;
+    line-height: 1;
+    margin-left: auto; /* Empuja el botón a la derecha */
+    opacity: 0.8;
+    transition: opacity 0.2s;
+}
+
+.notification-close-btn:hover {
+    opacity: 1;
+}
