@@ -47,14 +47,19 @@ CORS(app)
 app.config["JWT_SECRET_KEY"] = os.getenv("FLASK_APP_KEY")
 app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(hours=24)
 
-# *** CONFIGURACIÓN DE CORREO Y SERIALIZADOR (MODIFICADO) ***
+# *** CONFIGURACIÓN DE CORREO Y SERIALIZADOR (CORREGIDO PARA SSL/465) ***
 # Ahora lee de os.getenv primero (para Render), y usa los valores cableados como fallback (para Codespace)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY') or 'CREAR1997'
 app.config['MAIL_SERVER'] = os.getenv('MAIL_SERVER') or 'smtp.gmail.com'
-# Es vital asegurar que el puerto sea un entero
-app.config['MAIL_PORT'] = int(os.getenv('MAIL_PORT')) if os.getenv('MAIL_PORT') else 587
-# Lee MAIL_USE_TLS como True si la variable existe y su valor es 'True'
-app.config['MAIL_USE_TLS'] = os.getenv('MAIL_USE_TLS') in ('True', 'true', '1')
+
+# Es vital asegurar que el puerto sea un entero. Usamos 465 como fallback.
+app.config['MAIL_PORT'] = int(os.getenv('MAIL_PORT')) if os.getenv('MAIL_PORT') else 465
+
+# CAMBIO CRÍTICO 1: Configuración de seguridad para SSL/465. Se desactiva TLS por defecto.
+app.config['MAIL_USE_TLS'] = os.getenv('MAIL_USE_TLS') in ('True', 'true', '1') if os.getenv('MAIL_USE_TLS') else False
+# CAMBIO CRÍTICO 2: Se añade y activa MAIL_USE_SSL por defecto. Esto resuelve el error de protocolo.
+app.config['MAIL_USE_SSL'] = os.getenv('MAIL_USE_SSL') in ('True', 'true', '1') if os.getenv('MAIL_USE_SSL') else True
+
 
 # CRÍTICO: Lee las credenciales de Render
 app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME') or 'sgsstflow@gmail.com'
