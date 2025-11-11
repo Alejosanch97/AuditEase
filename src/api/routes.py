@@ -20,6 +20,7 @@ import cloudinary
 import cloudinary.uploader
 import base64 # Para decodificar base64 de firmas
 
+from threading import Thread
 from flask_mail import Message
 from itsdangerous import URLSafeTimedSerializer
 import os
@@ -5142,6 +5143,25 @@ def delete_estudiante(student_id):
 
 # --- Proceso de Recibo (Venta) ---
 
+# --- FUNCIÓN AUXILIAR PARA EL ENVÍO ASÍNCRONO (DEBE ESTAR AL INICIO) ---
+
+def send_async_email(app, msg):
+    """
+    Ejecuta el envío de correo dentro del contexto de la aplicación.
+    Esto es CRÍTICO para que Flask-Mail acceda a la configuración (MAIL_USERNAME, etc.).
+    """
+    # Usar app.app_context() es CRÍTICO para que el hilo acceda a la configuración de Flask-Mail
+    with app.app_context():
+        # Acceder a la extensión de mail
+        mail_sender = app.extensions.get('mail')
+        try:
+            # Aquí ocurre el envío BLOQUEANTE, pero dentro del hilo
+            mail_sender.send(msg) 
+            print(f"✅ Correo ASÍNCRONO enviado con éxito a: {msg.recipients}")
+        except Exception as e:
+            print(f"⚠️ Error al enviar correo asíncrono: {str(e)}")
+
+
 # URL del logo que solicitaste.
 LOGO_URL = "https://i.pinimg.com/736x/44/12/e9/4412e9bdd73724a178b18295e4ba921e.jpg"
 
@@ -5151,7 +5171,7 @@ LOGO_URL = "https://i.pinimg.com/736x/44/12/e9/4412e9bdd73724a178b18295e4ba921e.
 def submit_recibo():
     """
     Registra una nueva TransaccionRecibo (venta/abono) y sus detalles.
-    Añade el envío de un correo de recibo en formato HTML si el tipo de pago es 'Total'.
+    Añade el envío de un correo de recibo de forma ASÍNCRONA si el tipo de pago es 'Total'.
     """
     data = request.get_json()
     detalles_data = data.get('detalles', [])
@@ -5230,7 +5250,8 @@ def submit_recibo():
             valor_base = item['valor_base']
             subtotal = item['subtotal']
             
-            if not estudiante.grado:
+            # Asumiendo que Estudiante.grado es un objeto con un atributo nombre_grado
+            if not getattr(estudiante, 'grado', None):
                 db.session.rollback()
                 return jsonify({"error": "Estudiante sin grado asociado."}), 400
             
@@ -5258,7 +5279,8 @@ def submit_recibo():
                 recipient_emails.add(estudiante.correo_responsable)
 
 
-        # 5. Commit
+        # 5. Commit de la Transacción
+        # La transacción queda guardada en la base de datos aquí.
         db.session.commit()
 
         # 6. Lógica Condicional para Envío de Correo (solo si es Pago Total)
@@ -5336,8 +5358,7 @@ def submit_recibo():
                 </html>
                 """
                 
-                # Acceder a la instancia de mail
-                mail_sender = current_app.extensions.get('mail')
+                # Crear el objeto Message
                 msg = Message(
                     f"Recibo de Pago Total #{recibo_id} - {empresa_nombre}",
                     sender=(empresa_nombre, current_app.config['MAIL_USERNAME']), 
@@ -5350,18 +5371,29 @@ def submit_recibo():
                 # Versión de texto plano de respaldo
                 msg.body = f"Recibo de Pago Total #{recibo_id}.\nTotal Pagado: ${total_recibo:.2f}.\nConsulta la versión HTML para los detalles completos."
 
-                mail_sender.send(msg)
+                # --- EL CAMBIO CLAVE: INICIAR EL HILO ASÍNCRONO ---
+                # Usamos _get_current_object() para pasar una referencia segura del objeto app al hilo
+                app_context_object = current_app._get_current_object()
                 
-                print(f"✅ Correo de recibo total (HTML) enviado a: {recipient_emails}")
+                Thread(
+                    target=send_async_email, 
+                    args=(app_context_object, msg)
+                ).start()
+                
+                print(f"✅ Hilo de correo iniciado para: {recipient_emails}. Respondiendo inmediatamente al cliente.")
+                # ----------------------------------------------------
 
             except Exception as e:
-                print(f"⚠️ Error al enviar correo de recibo: {str(e)}")
+                # Si falla iniciar el hilo (ej. error de configuración de current_app), 
+                # registramos el error pero NO bloqueamos la respuesta al cliente.
+                print(f"⚠️ Error al intentar iniciar hilo de correo de recibo: {str(e)}")
         
-        # 7. Respuesta Final
+        # 7. Respuesta Final (¡Esta respuesta es la que el frontend recibirá inmediatamente!)
         return jsonify({
-            "message": "Recibo registrado exitosamente.", 
+            # Cambiamos el mensaje para indicar que el correo se está procesando
+            "message": "Recibo registrado exitosamente. El correo se está enviando en segundo plano.", 
             "recibo": nueva_transaccion.serialize(),
-            "email_sent": tipo_pago == 'Total' and bool(recipient_emails)
+            "email_sent_async": tipo_pago == 'Total' and bool(recipient_emails)
         }), 201
 
     except Exception as e:
