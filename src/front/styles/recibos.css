@@ -74,30 +74,34 @@
 
 /* Contenedores de mensajes (alertas) */
 .sm-messages-container {
-    margin-bottom: 15px;
+    margin-bottom: 20px;
 }
 
 .sm-alert {
-    padding: 12px 20px;
-    border-radius: 8px;
-    margin-bottom: 12px;
-    font-size: 0.95em;
+    padding: 15px 25px; /* ⭐ AUMENTAR el padding (más alto y ancho) */
+    border-radius: 10px; /* Aumentar el redondeo */
+    margin-bottom: 15px; /* Aumentar el margen entre alertas */
+    font-size: 1.1em; /* ⭐ AUMENTAR el tamaño de fuente */
     display: flex;
     align-items: center;
     gap: 10px;
-    box-shadow: var(--shadow-light);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Hacer la sombra más notable */
 }
 
 .sm-alert-danger {
+    /* ... (dejar como está o ajustar si se desea) */
     background-color: #ffe6e6;
     color: var(--error-color);
     border: 1px solid var(--error-color);
 }
 
 .sm-alert-success {
-    background-color: #e6ffe6;
-    color: var(--secondary-accent);
-    border: 1px solid var(--secondary-accent);
+    /* ⭐ HACER MUY PROMINENTE */
+    background-color: #d1f7e8; /* Color de fondo más claro, pero visible */
+    color: var(--primary-dark); /* ⭐ Usar un color de texto oscuro para alto contraste */
+    border: 3px solid var(--secondary-accent); /* ⭐ Borde mucho más grueso */
+    font-weight: 700; /* ⭐ Texto en negrita para destacar */
+    box-shadow: 0 6px 15px rgba(26, 188, 156, 0.3); /* Sombra enfocada en el color de éxito */
 }
 
 /* Secciones de formularios y tablas */

@@ -9,11 +9,11 @@ export const Sidebar = ({ currentUser, handleLogout, isVisible, onClose }) => {
   if (!currentUser) {
     return null;
   }
-  
+
   // **CLAVE: Obtener el ID de la empresa del usuario actual**
   const userCompanyId = currentUser.empresa ? currentUser.empresa.id_empresa : null;
   const ONLY_COMPANY_ID = 2;
-  
+
   // Condición de visibilidad para los menús de Recibos
   const canSeeRecibos = userCompanyId === ONLY_COMPANY_ID;
 
@@ -56,41 +56,45 @@ export const Sidebar = ({ currentUser, handleLogout, isVisible, onClose }) => {
             </li>
           )}
           {(currentUser.rol === 'admin_empresa') && (
-          <li className={location.pathname === '/user-management' ? 'active' : ''}>
-            <Link to="/user-management"><i className="fas fa-users-cog"></i> Gestión de Usuarios</Link>
-          </li>
-        )}
+            <li className={location.pathname === '/user-management' ? 'active' : ''}>
+              <Link to="/user-management"><i className="fas fa-users-cog"></i> Gestión de Usuarios</Link>
+            </li>
+          )}
           {(currentUser.rol === 'owner' || currentUser.rol === 'admin_empresa') && (
             <li className={location.pathname === '/manage-spaces' ? 'active' : ''}>
               <Link to="/manage-spaces"><i className="fas fa-map-marked-alt"></i> Gestión de Espacios</Link>
             </li>
           )}
           {(currentUser.rol === 'owner' || currentUser.rol === 'admin_empresa') && (
-          <li className={location.pathname === '/CreateForms' ? 'active' : ''}>
-            <Link to="/CreateForms"><i className="fas fa-file-alt"></i> Crear Formularios</Link>
-          </li>
+            <li className={location.pathname === '/CreateForms' ? 'active' : ''}>
+              <Link to="/CreateForms"><i className="fas fa-file-alt"></i> Crear Formularios</Link>
+            </li>
           )}
           <li className={location.pathname.startsWith('/Answerforms') ? 'active' : ''}>
             <Link to="/Answerforms"><i className="fas fa-clipboard-check"></i> Contestar Formularios</Link>
           </li>
-          
-          {/* ⭐ NUEVA CONDICIÓN: Solo visible si canSeeRecibos es true (id_empresa === 2) */}
-          {canSeeRecibos && (
+
+          {/* ⭐ SOLO empresa con id_empresa === 2 puede ver recibos, sin importar el rol */}
+          {userCompanyId === 2 && (
             <>
-              <li className={location.pathname === '/recibos' ? 'active' : ''}>
-                <Link to="/RecibosManagement"><i className="fas fa-receipt"></i> Recibos</Link>
+              <li className={location.pathname === '/RecibosManagement' ? 'active' : ''}>
+                <Link to="/RecibosManagement">
+                  <i className="fas fa-receipt"></i> Recibos
+                </Link>
               </li>
-              
-              <li className={location.pathname === '/analisis-recibos' ? 'active' : ''}>
-                <Link to="/RecibosAnalytics"><i className="fas fa-chart-pie"></i> Análisis Recibos</Link>
+
+              <li className={location.pathname === '/RecibosAnalytics' ? 'active' : ''}>
+                <Link to="/RecibosAnalytics">
+                  <i className="fas fa-chart-pie"></i> Análisis Recibos
+                </Link>
               </li>
             </>
           )}
-          
+
           {(currentUser.rol === 'owner' || currentUser.rol === 'admin_empresa') && (
-          <li className={location.pathname === '/analytics' ? 'active' : ''}>
-            <Link to="/analytics"><i className="fas fa-chart-line"></i> Gráficas y Datos</Link>
-          </li>
+            <li className={location.pathname === '/analytics' ? 'active' : ''}>
+              <Link to="/analytics"><i className="fas fa-chart-line"></i> Gráficas y Datos</Link>
+            </li>
           )}
           {(currentUser.rol === 'owner' || currentUser.rol === 'admin_empresa') && (
             <li className={location.pathname === '/documentos-ministerio' ? 'active' : ''}>

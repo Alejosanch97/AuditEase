@@ -147,7 +147,14 @@ export const Login = () => {
   return (
     <div className="sgsst-login-container">
         <div className="sgsst-login-left-panel">
-            <img src="/logo.svg" alt="SGSST FLOW Logo" className="sgsst-login-logo-image" />
+        <div className="sgsst-login-logo-wrapper">
+          <img
+            src="/logo.svg"
+            alt="SGSST FLOW Logo"
+            className="sgsst-login-logo-image"
+          />
+        </div>
+
             <h1 className="sgsst-login-welcome-headline">Bienvenido a SGSST FLOW</h1>
             <p className="sgsst-login-welcome-text">Tu solución integral para la gestión de seguridad y salud en el trabajo.</p>
         </div>

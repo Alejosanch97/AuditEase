@@ -114,7 +114,7 @@ export const RecibosManagement = () => {
 
   // Efecto inicial para cargar empresas y redirigir
   useEffect(() => {
-    if (!store.user || (store.user.rol !== 'owner' && store.user.rol !== 'admin_empresa')) {
+    if (!store.user || (store.user.rol !== 'owner' && store.user.rol !== 'admin_empresa' && store.user.rol !== 'usuario_formulario')) {
       dispatch({ type: 'SET_MESSAGE', payload: { type: 'error', text: 'Acceso no autorizado.' } });
       navigate('/profile');
       return;
@@ -154,7 +154,8 @@ export const RecibosManagement = () => {
 
     if (store.user.rol === 'owner') {
       fetchCompaniesForOwner(token);
-    } else if (store.user.rol === 'admin_empresa' && store.user.empresa) {
+    // ⭐⭐ CORRECCIÓN APLICADA: Incluir 'usuario_formulario' ⭐⭐
+    } else if ((store.user.rol === 'admin_empresa' || store.user.rol === 'usuario_formulario') && store.user.empresa) {
       setSelectedCompanyId(store.user.empresa.id_empresa);
     }
   }, [store.user, navigate, dispatch]);
@@ -786,7 +787,7 @@ export const RecibosManagement = () => {
     );
   }
 
-  if (!store.user || (store.user.rol !== 'owner' && store.user.rol !== 'admin_empresa')) {
+  if (!store.user || (store.user.rol !== 'owner' && store.user.rol !== 'admin_empresa' && store.user.rol !== 'usuario_formulario')) {
     return null;
   }
 

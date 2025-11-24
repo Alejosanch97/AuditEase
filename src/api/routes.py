@@ -4757,7 +4757,7 @@ def get_current_user_company_id(user_id):
 # --- CRUD: Grados ---
 
 @api.route('/grados', methods=['POST'])
-@role_required(['owner', 'admin_empresa'])
+@role_required(['owner', 'admin_empresa', 'usuario_formulario'])
 def create_grado():
     """Crea un nuevo grado asociado a la empresa del usuario."""
     data = request.get_json()
@@ -4798,7 +4798,7 @@ def get_all_grados():
     return jsonify({"grados": [g.serialize() for g in grados]}), 200
 
 @api.route('/grados/<int:grado_id>', methods=['PUT'])
-@role_required(['owner', 'admin_empresa'])
+@role_required(['owner', 'admin_empresa','usuario_formulario'])
 def update_grado(grado_id):
     """Actualiza un grado existente."""
     data = request.get_json()
@@ -4840,7 +4840,7 @@ def update_grado(grado_id):
         return jsonify({"error": f"Error al actualizar el grado: {str(e)}"}), 500
 
 @api.route('/grados/<int:grado_id>', methods=['DELETE'])
-@role_required(['owner', 'admin_empresa'])
+@role_required(['owner', 'admin_empresa', 'usuario_formulario'])
 def delete_grado(grado_id):
     """
     Desactiva o elimina un grado existente. 
@@ -4879,7 +4879,7 @@ def delete_grado(grado_id):
 # --- CRUD: Conceptos ---
 
 @api.route('/conceptos', methods=['POST'])
-@role_required(['owner', 'admin_empresa'])
+@role_required(['owner', 'admin_empresa', 'usuario_formulario'])
 def create_concepto():
     """Crea un nuevo concepto (ítem de cobro) asociado a la empresa."""
     data = request.get_json()
@@ -4923,7 +4923,7 @@ def get_all_conceptos():
     return jsonify({"conceptos": [c.serialize() for c in conceptos]}), 200
 
 @api.route('/conceptos/<int:concepto_id>', methods=['PUT'])
-@role_required(['owner', 'admin_empresa'])
+@role_required(['owner', 'admin_empresa', 'usuario_formulario'])
 def update_concepto(concepto_id):
     """Actualiza un concepto existente."""
     data = request.get_json()
@@ -4965,7 +4965,7 @@ def update_concepto(concepto_id):
         return jsonify({"error": f"Error al actualizar el concepto: {str(e)}"}), 500
 
 @api.route('/conceptos/<int:concepto_id>', methods=['DELETE'])
-@role_required(['owner', 'admin_empresa'])
+@role_required(['owner', 'admin_empresa', 'usuario_formulario'])
 def delete_concepto(concepto_id):
     """
     Desactiva o elimina un concepto existente. 
@@ -5005,7 +5005,7 @@ def delete_concepto(concepto_id):
 # --- CRUD: Estudiantes ---
 
 @api.route('/estudiantes', methods=['POST'])
-@role_required(['owner', 'admin_empresa'])
+@role_required(['owner', 'admin_empresa', 'usuario_formulario'])
 def create_estudiante():
     """Crea un nuevo estudiante asociado a un grado y la empresa."""
     data = request.get_json()
@@ -5057,7 +5057,7 @@ def get_all_estudiantes():
     return jsonify({"estudiantes": [e.serialize() for e in estudiantes]}), 200
 
 @api.route('/estudiantes/<int:student_id>', methods=['PUT'])
-@role_required(['owner', 'admin_empresa'])
+@role_required(['owner', 'admin_empresa', 'usuario_formulario'])
 def update_estudiante(student_id):
     """Actualiza un estudiante existente."""
     data = request.get_json()
@@ -5103,7 +5103,7 @@ def update_estudiante(student_id):
         return jsonify({"error": f"Error al actualizar el estudiante: {str(e)}"}), 500
 
 @api.route('/estudiantes/<int:student_id>', methods=['DELETE'])
-@role_required(['owner', 'admin_empresa'])
+@role_required(['owner', 'admin_empresa', 'usuario_formulario'])
 def delete_estudiante(student_id):
     """
     Desactiva o elimina un estudiante existente. 
@@ -5404,7 +5404,7 @@ def submit_recibo():
 # --- Proceso de Recibo (Edición/Actualización de Pago) ---
 
 @api.route('/recibos/<int:recibo_id>', methods=['PUT'])
-@role_required(['owner', 'admin_empresa']) # Solo usuarios con permiso pueden editar
+@role_required(['owner', 'admin_empresa', 'usuario_formulario']) # Solo usuarios con permiso pueden editar
 def update_recibo(recibo_id):
     """
     Actualiza el monto pagado, tipo de pago u observaciones de un TransaccionRecibo existente.
@@ -5474,7 +5474,7 @@ def update_recibo(recibo_id):
 # ------------------------------------------------------------------
 
 @api.route('/recibos/anular/<int:recibo_id>', methods=['DELETE'])
-@role_required(['owner', 'admin_empresa']) # Solo usuarios con permiso pueden anular
+@role_required(['owner', 'admin_empresa', 'usuario_formulario']) # Solo usuarios con permiso pueden anular
 def anular_recibo(recibo_id):
     """
     Realiza la ELIMINACIÓN FÍSICA (HARD DELETE) del TransaccionRecibo.
@@ -5519,7 +5519,7 @@ def anular_recibo(recibo_id):
         return jsonify({"error": error_message}), 500
 
 @api.route('/recibos/analisis', methods=['GET'])
-@role_required(['owner', 'admin_empresa'])
+@role_required(['owner', 'admin_empresa', 'usuario_formulario'])
 def get_recibos_analytics():
     """
     Genera un análisis de ventas (recibos) filtrado por rango de fechas y agrupado por concepto.
@@ -5599,7 +5599,7 @@ def get_recibos_analytics():
         return jsonify({"error": f"Error interno del servidor al generar análisis: {str(e)}"}), 500
 
 @api.route('/recibos/analisis/detalle', methods=['GET'])
-@role_required(['owner', 'admin_empresa'])
+@role_required(['owner', 'admin_empresa', 'usuario_formulario'])
 def get_recibos_detalle_por_concepto():
     """
     Devuelve la lista detallada de recibos (nombre del estudiante, grado, total, etc.) 
@@ -5661,7 +5661,7 @@ def get_recibos_detalle_por_concepto():
     
 
 @api.route('/estudiantes/carga-masiva', methods=['POST'])
-@role_required(['owner', 'admin_empresa']) # Roles que pueden subir estudiantes
+@role_required(['owner', 'admin_empresa', 'usuario_formulario']) # Roles que pueden subir estudiantes
 @jwt_required()
 def bulk_upload_students():
     """

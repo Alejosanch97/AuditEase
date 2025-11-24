@@ -1,61 +1,99 @@
-/* Contenedor principal del login */
+/* ------------------------------------------------------------------------ */
+/* --- VARIABLES --- */
+/* ------------------------------------------------------------------------ */
+:root {
+    --primary-color: #00473e; /* Verde Oscuro */
+    --secondary-color: #faae2b; /* Naranja/Amarillo */
+    --text-primary: #475d5b; /* Texto gris/verde */
+    --background-light: #ffffff;
+    --shadow-main: 0 12px 40px rgba(0, 0, 0, 0.15);
+}
+
+/* ------------------------------------------------------------------------ */
+/* --- CONTENEDOR PRINCIPAL Y BASE --- */
+/* ------------------------------------------------------------------------ */
 .sgsst-login-container {
     font-family: 'Inter', sans-serif;
-    background-color: #ffffff;
+    background-color: var(--background-light);
     border-radius: 20px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--shadow-main);
     display: flex;
-    flex-direction: column; /* Diseño en columna por defecto para móviles */
-    max-width: 1000px;
+    flex-direction: column;
+    max-width: 1050px; 
     width: 90%;
     overflow: hidden;
     height: auto;
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    min-height: 500px;
+    margin: 80px auto 40px auto; 
+    min-height: 550px;
+    align-items: stretch; /* Asegura que los ítems internos estiren su altura */
 }
 
-/* Left Panel - Welcome section */
+/* ------------------------------------------------------------------------ */
+/* --- PANEL IZQUIERDO (Verde) --- */
+/* ------------------------------------------------------------------------ */
 .sgsst-login-left-panel {
-    background-color: #00473e;
+    background-color: var(--primary-color);
     color: #fffffe;
-    padding: 40px;
+    padding: 60px 50px;
     display: flex;
     flex-direction: column;
-    justify-content: center;
-    align-items: center;
+    align-items: center; 
+    /* Cambiamos a space-between para que el logo y el texto se separen */
+    justify-content: space-between; 
     text-align: center;
     flex: 1;
-    min-height: 300px;
+    min-height: 350px; 
+    position: relative; 
 }
 
+/* ✅ Wrapper: Usado como centro para el logo */
+.sgsst-login-logo-wrapper {
+    display: flex;
+    justify-content: center; 
+    align-items: center;
+    width: 100%; 
+    flex-grow: 1; /* Permite que ocupe el espacio central */
+    /* Eliminamos márgenes superiores/inferiores fijos que agregaban altura innecesaria */
+    margin: 0;
+    padding-top: 20px; 
+    padding-bottom: 20px;
+}
+
+/* ------------------------------------------------------------------------ */
+/* --- AJUSTE GLOBAL DEL LOGO (Base) --- */
+/* ------------------------------------------------------------------------ */
 .sgsst-login-logo-image {
-    max-width: 500px;
+    max-width: 250px; 
+    width: 100%;
     height: auto;
-    margin-bottom: 30px;
     filter: drop-shadow(0 8px 15px rgba(0,0,0,0.4));
 }
 
+/* Título de Bienvenida (Oculto en este diseño) */
 .sgsst-login-welcome-headline {
-    font-size: 2.5rem;
-    font-weight: 700;
-    margin-bottom: 1rem;
-    line-height: 1.2;
+    display: none;
 }
 
+/* Texto de bienvenida - Ahora como último elemento Flexbox, no absoluto */
 .sgsst-login-welcome-text {
     font-size: 1.125rem;
     text-align: center;
-    line-height: 1.5;
-    max-width: 400px;
+    line-height: 1.6;
+    max-width: 450px;
+    margin-top: 0;
+    /* Eliminamos el posicionamiento absoluto que complicaba el flujo */
+    position: static; 
+    transform: none;
+    margin-bottom: 0;
+    padding-bottom: 20px; /* Padding inferior para separación */
 }
 
-/* Right Panel - Login Form section */
+/* ------------------------------------------------------------------------ */
+/* --- PANEL DERECHO (Formulario de Login) --- */
+/* ------------------------------------------------------------------------ */
 .sgsst-login-right-panel {
-    padding: 40px;
-    flex: 1;
+    padding: 50px; 
+    flex: 1; 
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -66,29 +104,29 @@
     font-weight: 700;
     text-align: center;
     margin-bottom: 1.5rem;
-    color: #00473e;
+    color: var(--primary-color);
 }
 
-/* Input field styling */
+/* Input field styling (Resto de estilos del formulario sin cambios) */
 .sgsst-login-input-group-wrapper {
-    margin-bottom: 15px;
+    margin-bottom: 20px; 
     position: relative;
 }
 
 .sgsst-login-input-field {
     border: 1px solid #e2e8f0;
     border-radius: 8px;
-    padding: 12px 16px;
+    padding: 14px 18px; 
     width: 100%;
     box-sizing: border-box;
     font-size: 16px;
-    color: #475d5b;
+    color: var(--text-primary);
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .sgsst-login-input-field:focus {
     outline: none;
-    border-color: #faae2b;
+    border-color: var(--secondary-color);
     box-shadow: 0 0 0 3px rgba(250, 174, 43, 0.3);
 }
 
@@ -99,7 +137,7 @@
 .sgsst-login-invalid-feedback {
     color: #dc3545;
     font-size: 0.875rem;
-    margin-top: 0.25rem;
+    margin-top: 0.4rem;
     display: block;
 }
 
@@ -110,14 +148,14 @@
 
 .sgsst-login-toggle-password-visibility {
     position: absolute;
-    right: 10px;
+    right: 15px; 
     top: 50%;
     transform: translateY(-50%);
     background: none;
     border: none;
     cursor: pointer;
     font-size: 1.2rem;
-    color: #475d5b;
+    color: var(--text-primary);
     padding: 5px;
     border-radius: 50%;
     transition: background-color 0.2s ease;
@@ -131,30 +169,30 @@
 .sgsst-login-forgot-password-link-container {
     display: flex;
     justify-content: flex-end;
-    margin-bottom: 1.5rem;
+    margin-bottom: 2rem; 
 }
 
 .sgsst-login-forgot-password-link {
-    font-size: 0.875rem;
-    color: #00473e;
+    font-size: 0.95rem; 
+    color: var(--primary-color);
     font-weight: 500;
     text-decoration: none;
     transition: color 0.3s ease;
 }
 
 .sgsst-login-forgot-password-link:hover {
-    color: #faae2b;
+    color: var(--secondary-color);
     text-decoration: underline;
 }
 
 /* Login button */
 .sgsst-login-button {
-    background-color: #faae2b;
-    color: #00473e;
-    padding: 14px 20px;
-    border-radius: 8px;
-    font-weight: 600;
-    font-size: 1.125rem;
+    background-color: var(--secondary-color);
+    color: var(--primary-color);
+    padding: 16px 20px; 
+    border-radius: 10px; 
+    font-weight: 700; 
+    font-size: 1.15rem;
     width: 100%;
     border: none;
     cursor: pointer;
@@ -164,8 +202,8 @@
 
 .sgsst-login-button:hover {
     background-color: #e09a24;
-    transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(250, 174, 43, 0.4);
+    transform: translateY(-3px); 
+    box-shadow: 0 10px 25px rgba(250, 174, 43, 0.4);
 }
 
 .sgsst-login-button:active {
@@ -185,8 +223,8 @@
     border: 3px solid rgba(255, 255, 255, 0.3);
     border-top: 3px solid #fff;
     border-radius: 50%;
-    width: 1em;
-    height: 1em;
+    width: 1.2em;
+    height: 1.2em;
     animation: sgsst-login-spin 1s linear infinite;
     display: inline-block;
     vertical-align: middle;
@@ -198,85 +236,23 @@
     100% { transform: rotate(360deg); }
 }
 
-/* Divider "o continuar con" */
-.sgsst-login-divider-text {
-    display: flex;
-    align-items: center;
-    text-align: center;
-    margin: 20px 0;
-    font-size: 0.875rem;
-    color: #9ca3af;
-}
-
-.sgsst-login-divider-text::before,
-.sgsst-login-divider-text::after {
-    content: '';
-    flex: 1;
-    border-bottom: 1px solid #e2e8f0;
-}
-
-.sgsst-login-divider-text:not(:empty)::before {
-    margin-right: 0.5em;
-}
-
-.sgsst-login-divider-text:not(:empty)::after {
-    margin-left: 0.5em;
-}
-
-/* Social buttons */
-.sgsst-login-social-buttons-container {
-    display: flex;
-    justify-content: center;
-    gap: 15px;
-    margin-top: 20px;
-    margin-bottom: 30px;
-}
-
-.sgsst-login-social-button {
-    background-color: #f2f7f5;
-    border: 1px solid #00332c;
-    border-radius: 50%;
-    width: 50px;
-    height: 50px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    cursor: pointer;
-    transition: background-color 0.3s ease, border-color 0.3s ease, transform 0.2s ease;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-}
-
-.sgsst-login-social-button:hover {
-    background-color: #e0e6e4;
-    border-color: #00473e;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
-}
-
-.sgsst-login-social-button img,
-.sgsst-login-social-button svg {
-    width: 24px;
-    height: 24px;
-    color: #00473e;
-}
-
 /* Sign up text and link */
 .sgsst-login-signup-text {
     text-align: center;
-    font-size: 0.875rem;
-    margin-top: 2rem;
-    color: #475d5b;
+    font-size: 0.95rem;
+    margin-top: 2.5rem; 
+    color: var(--text-primary);
 }
 
 .sgsst-login-signup-link {
-    color: #00473e;
-    font-weight: 500;
+    color: var(--primary-color);
+    font-weight: 600;
     text-decoration: none;
     transition: color 0.3s ease;
 }
 
 .sgsst-login-signup-link:hover {
-    color: #faae2b;
+    color: var(--secondary-color);
     text-decoration: underline;
 }
 
@@ -295,151 +271,187 @@
     font-size: 0.95rem;
 }
 
-.sgsst-login-close-alert-btn {
-    background: none;
-    border: none;
-    font-size: 1.5rem;
-    line-height: 1;
-    color: #721c24;
-    cursor: pointer;
-    padding: 0;
-    margin-left: 10px;
-    opacity: 0.7;
-    transition: opacity 0.2s ease;
-}
-
-.sgsst-login-close-alert-btn:hover {
-    opacity: 1;
-}
-
 /* ------------------------------------------------------------------------ */
 /* --- RESPONSIVE ADJUSTMENTS --- */
 /* ------------------------------------------------------------------------ */
 
-/* Pantallas de escritorio y grandes (ancho > 991px) */
+/* Pantallas de escritorio (ancho > 991px) */
 @media (min-width: 992px) {
     .sgsst-login-container {
-        flex-direction: row; /* Layout en fila para escritorios */
-        width: 80%;
-        max-width: 1200px; /* Aumentar el max-width para pantallas muy grandes */
+        flex-direction: row;
+        width: 85%;
+        max-width: 1100px;
         min-height: 600px;
+        margin: 34px auto 50px auto;
     }
+    
     .sgsst-login-left-panel {
-        padding: 60px; /* Más padding para pantallas grandes */
+        padding: 50px 60px; 
+        min-height: 600px;
+        flex: 0 0 40%; /* 40% para el panel verde */
+        justify-content: space-between; /* CLAVE: Para centrar el logo y poner el texto abajo */
     }
+    
     .sgsst-login-right-panel {
-        padding: 60px;
+        padding: 80px 60px;
+        flex: 1; /* El panel derecho (blanco) toma el 60% restante */
     }
-    .sgsst-login-welcome-headline {
-        font-size: 3rem; /* Título más grande para escritorio */
+    
+    /* Logo centrado en el espacio disponible */
+    .sgsst-login-logo-wrapper {
+        margin: 0; 
+        flex-grow: 1; 
+        align-items: center; 
+        justify-content: center; 
     }
-    .sgsst-login-heading {
-        font-size: 3rem;
+    .sgsst-login-logo-image {
+        width: 400px; /* Tamaño más razonable para desktop */
+        max-width: 400px; 
+        height: 400px; 
+        object-fit: contain; 
+    }
+    
+    /* Texto al final */
+    .sgsst-login-welcome-text {
+        font-size: 1.15rem;
+        /* Vuelve a ser estático, centrado por justify-content: space-between */
+        position: static; 
+        transform: none;
+        width: 100%;
+        padding-bottom: 0; 
     }
 }
 
-/* Tablets y portátiles pequeños (ancho entre 768px y 991px) */
+/* Tablets (ancho entre 768px y 991px) - PROPORCIÓN 50/50 - AJUSTE DE ALTURA */
 @media (min-width: 768px) and (max-width: 991px) {
     .sgsst-login-container {
-        flex-direction: row; /* Layout en fila para tablets */
+        flex-direction: row;
         width: 90%;
         max-width: 900px;
-        min-height: 550px;
+        min-height: 550px; /* Establecemos una altura mínima general */
+        margin: 48px auto 40px auto;
     }
-    .sgsst-login-left-panel, .sgsst-login-right-panel {
-        padding: 40px; /* Padding ajustado para tablets */
+    
+    /* APLICAMOS 50/50 ESTRICTO A AMBOS PANELES EN ANCHURA */
+    .sgsst-login-left-panel,
+    .sgsst-login-right-panel {
+        flex: 0 0 50%; /* CLAVE: Forzar la base al 50% */
+        max-width: 50%; 
+        min-height: 100%; /* Asegura que la altura se estire al contenedor */
     }
-    .sgsst-login-welcome-headline, .sgsst-login-heading {
-        font-size: 2.2rem;
+
+    /* AJUSTES INTERNOS DEL PANEL IZQUIERDO (VERDE) */
+    .sgsst-login-left-panel {
+        padding: 40px 30px; /* Reducimos el padding para dar más espacio al contenido */
+        justify-content: space-between; /* CLAVE: Centrar el logo y empujar el texto al fondo */
+    }
+
+    /* AJUSTES INTERNOS DEL PANEL DERECHO (BLANCO) */
+    .sgsst-login-right-panel {
+        padding: 60px 40px; /* Ajustamos el padding para un mejor balance */
+    }
+    
+    /* AJUSTE PARA TABLET: Logo centrado */
+    .sgsst-login-logo-wrapper {
+        margin: 0;
+        flex-grow: 1; /* Ocupa el espacio central */
+        padding-top: 10px; 
+        padding-bottom: 10px;
     }
     .sgsst-login-logo-image {
-        max-width: 400px;
+        max-width: 250px; 
+        width: 250px;
+        height: 250px;
+    }
+    
+    /* Texto al final, sin posición absoluta */
+    .sgsst-login-welcome-text {
+        font-size: 1rem;
+        line-height: 1.5;
+        position: static; /* Ya no es absoluto */
+        transform: none;
+        margin: 0;
+        padding-bottom: 0;
+    }
+    
+    .sgsst-login-heading {
+        font-size: 2rem;
     }
 }
 
-/* Móviles y tablets pequeñas (ancho <= 767px) */
+/* Móviles pequeños y medianos (ancho <= 767px) */
 @media (max-width: 767px) {
     .sgsst-login-container {
-        flex-direction: column; /* Apila los paneles verticalmente */
-        width: 95%; /* Ocupa casi todo el ancho para móviles */
-        max-width: 500px; /* Limita el ancho en pantallas intermedias */
+        flex-direction: column;
+        width: 92%;
+        max-width: 450px;
         min-height: auto;
-        position: fixed;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        height: auto;
-        max-height: 98vh; /* Evita que el modal sea más alto que la pantalla */
-        overflow-y: auto; /* Permite scroll si el contenido es muy largo */
+        border-radius: 15px;
+        margin: 100px auto 30px auto;
     }
-
+    
     .sgsst-login-left-panel {
-        padding: 30px 20px;
-        min-height: 200px; /* Altura mínima más pequeña */
+        padding: 35px 25px;
+        min-height: 250px; 
+        order: 1;
+        /* Mantener justify-content: space-between para la estructura vertical */
+        justify-content: space-between;
+        flex: 1;
+    }
+    
+    /* ✅ AJUSTE PARA MÓVILES: Logo ajustado */
+    .sgsst-login-logo-wrapper {
+        /* Mantenemos flex-grow 1 y quitamos márgenes fijos, el padding interno lo controla */
+        margin: 0;
+        flex-grow: 1;
     }
     .sgsst-login-logo-image {
-        max-width: 180px;
-        margin-bottom: 20px;
+        max-width: 180px; 
+        width: 180px;
+        height: 180px;
     }
-    .sgsst-login-welcome-headline {
-        font-size: 1.8rem;
-    }
+    
+    /* Texto en móvil: quitamos posición absoluta */
     .sgsst-login-welcome-text {
-        font-size: 0.9rem;
+        font-size: 0.95rem;
+        line-height: 1.5;
+        position: static;
+        transform: none;
+        margin-top: 10px;
+        padding-bottom: 0;
     }
 
     .sgsst-login-right-panel {
-        padding: 30px 20px;
+        padding: 35px 25px;
+        order: 2;
+        flex: 1;
     }
+    
     .sgsst-login-heading {
-        font-size: 1.8rem;
-        margin-bottom: 1rem;
-    }
-    .sgsst-login-button {
-        padding: 12px 15px;
-        font-size: 1rem;
-    }
-    .sgsst-login-social-buttons-container {
-        flex-wrap: wrap;
-        justify-content: center; /* Centrar los botones sociales */
-        gap: 10px;
-        margin-bottom: 20px;
-    }
-    .sgsst-login-social-button {
-        width: 45px;
-        height: 45px;
-    }
-    .sgsst-login-social-button img,
-    .sgsst-login-social-button svg {
-        width: 20px;
-        height: 20px;
+        font-size: 1.9rem;
     }
 }
 
-/* Móviles muy pequeños (ancho <= 480px) */
-@media (max-width: 480px) {
+/* Móviles muy pequeños (ancho <= 380px) */
+@media (max-width: 380px) {
+    .sgsst-login-container {
+        width: 95%;
+        margin: 90px auto 25px auto;
+    }
+    
     .sgsst-login-left-panel {
-        padding: 20px 15px;
-        min-height: 180px;
+        padding: 30px 20px;
+        min-height: 220px;
     }
-    .sgsst-login-welcome-headline {
-        font-size: 1.6rem;
+    
+    /* ✅ AJUSTE PARA MÓVILES MUY PEQUEÑOS */
+    .sgsst-login-logo-image {
+        max-width: 150px; 
+        width: 150px;
+        height: 150px;
     }
-    .sgsst-login-right-panel {
-        padding: 25px 15px;
-    }
-    .sgsst-login-heading {
-        font-size: 1.6rem;
-    }
-    .sgsst-login-button {
-        font-size: 0.9rem;
-        padding: 10px 12px;
-    }
-    .sgsst-login-social-buttons-container {
-        gap: 8px;
-    }
-    .sgsst-login-social-button {
-        width: 40px;
-        height: 40px;
+    
+    .sgsst-login-welcome-text {
+        font-size: 0.85rem;
     }
 }
