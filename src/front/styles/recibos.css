@@ -23,6 +23,8 @@
     display: flex;
     flex-direction: column;
     gap: 25px;
+    height: auto;      /* ✅ Asegura altura dinámica */
+    overflow: visible; /* ✅ Evita que se corte el contenido */
 }
 
 /* Header de la página */
@@ -337,6 +339,7 @@
     min-width: 70px;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     border: none;
+    margin-bottom: 3px;
 }
 
 .sm-button-edit {
@@ -424,8 +427,9 @@
 }
 
 .sm-collapsible-content.sm-open {
-    max-height: 2500px; /* Valor grande para animar */
+    max-height: none; 
     padding: 25px;
+    overflow: visible;
 }
 
 /* Receipt Form Enhancements */
