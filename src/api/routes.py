@@ -5164,13 +5164,12 @@ def send_async_email(app, msg):
 # URL del logo que solicitaste.
 LOGO_URL = "https://i.pinimg.com/736x/44/12/e9/4412e9bdd73724a178b18295e4ba921e.jpg"
 
-
 @api.route('/recibos/envio', methods=['POST'])
 @jwt_required()
 def submit_recibo():
     """
     Registra una nueva TransaccionRecibo (venta/abono) y sus detalles.
-    Añade el envío de un correo de recibo de forma ASÍNCRONA si el tipo de pago es 'Total'.
+    Añade el envío de un correo de recibo de forma ASÍNCRONA si el tipo de pago es 'Total' o 'Abono'.
     """
     data = request.get_json()
     detalles_data = data.get('detalles', [])
@@ -5190,7 +5189,6 @@ def submit_recibo():
     empresa_instance = Empresa.query.get(id_empresa)
     empresa_nombre = empresa_instance.nombre_empresa
 
-    
     if not detalles_data or not id_empresa:
         return jsonify({"error": "Detalles del recibo y empresa son requeridos."}), 400
 
@@ -5282,12 +5280,16 @@ def submit_recibo():
         # La transacción queda guardada en la base de datos aquí.
         db.session.commit()
 
-        # 6. Lógica Condicional para Envío de Correo (solo si es Pago Total)
-        if tipo_pago == 'Total' and recipient_emails:
+        # 6. Lógica Condicional para Envío de Correo (CORRECCIÓN: Se activa para Total y Abono)
+        if (tipo_pago == 'Total' or tipo_pago == 'Abono') and recipient_emails:
             try:
                 recibo_id = nueva_transaccion.id_transaccion
                 fecha_str = nueva_transaccion.fecha_transaccion.strftime('%d/%m/%Y %H:%M:%S')
                 
+                # Ajuste de títulos según el tipo de pago
+                asunto_tipo = "Recibo de Pago Total" if tipo_pago == 'Total' else "Recibo de Abono"
+                confirmacion_tipo = "el **pago total**" if tipo_pago == 'Total' else f"un **abono** de ${monto_pagado_ajustado:.2f}"
+
                 # Generar las filas de la tabla de detalles
                 tabla_filas = ""
                 for item in items_email:
@@ -5311,13 +5313,13 @@ def submit_recibo():
                             <img src="{LOGO_URL}" 
                                  alt="{empresa_nombre} Logo" 
                                  style="max-width: 150px; height: auto; display: block; margin: 0 auto; border-radius: 5px;">
-                            <h1 style="color: #333; font-size: 24px; margin-top: 10px;">Recibo de Pago Total</h1>
+                            <h1 style="color: #333; font-size: 24px; margin-top: 10px;">{asunto_tipo}</h1>
                             <p style="color: #666; font-size: 14px;">{empresa_nombre}</p>
                         </div>
                         
                         <div style="padding: 20px;">
                             <p style="font-size: 16px; color: #333;">Hola estimado(a) responsable,</p>
-                            <p style="color: #555;">Confirmamos el **pago total** del siguiente recibo registrado por **{current_user.nombre_completo}**.</p>
+                            <p style="color: #555;">Confirmamos {confirmacion_tipo} del siguiente recibo registrado por **{current_user.nombre_completo}**.</p>
                             
                             <div style="background-color: #e9ecef; padding: 10px; border-radius: 4px; margin-bottom: 20px;">
                                 <p style="margin: 0; color: #333;"><strong>Transacción No:</strong> {recibo_id}</p>
@@ -5338,9 +5340,13 @@ def submit_recibo():
                                 <tbody>
                                     {tabla_filas}
                                     <tr>
-                                        <td colspan="4" style="border: 1px solid #ddd; padding: 10px; text-align: right; font-weight: bold; background-color: #f0f0f0;">TOTAL PAGADO:</td>
-                                        <td style="border: 1px solid #ddd; padding: 10px; text-align: right; font-weight: bold; background-color: #f0f0f0; color: #28a745; font-size: 18px;">${total_recibo:.2f}</td>
+                                        <td colspan="4" style="border: 1px solid #ddd; padding: 10px; text-align: right; font-weight: bold; background-color: #f0f0f0;">MONTO PAGADO:</td>
+                                        <td style="border: 1px solid #ddd; padding: 10px; text-align: right; font-weight: bold; background-color: #f0f0f0; color: #28a745; font-size: 18px;">${monto_pagado_ajustado:.2f}</td>
                                     </tr>
+                                    {f'''<tr>
+                                        <td colspan="4" style="border: 1px solid #ddd; padding: 10px; text-align: right; font-weight: bold; background-color: #fff1f0;">SALDO PENDIENTE:</td>
+                                        <td style="border: 1px solid #ddd; padding: 10px; text-align: right; font-weight: bold; background-color: #fff1f0; color: #cf1322; font-size: 18px;">${saldo_pendiente:.2f}</td>
+                                    </tr>''' if tipo_pago == 'Abono' else ''}
                                 </tbody>
                             </table>
                             
@@ -5359,7 +5365,7 @@ def submit_recibo():
                 
                 # Crear el objeto Message
                 msg = Message(
-                    f"Recibo de Pago Total #{recibo_id} - {empresa_nombre}",
+                    f"{asunto_tipo} #{recibo_id} - {empresa_nombre}",
                     sender=(empresa_nombre, current_app.config['MAIL_USERNAME']), 
                     recipients=list(recipient_emails)
                 )
@@ -5368,10 +5374,9 @@ def submit_recibo():
                 msg.html = html_content 
                 
                 # Versión de texto plano de respaldo
-                msg.body = f"Recibo de Pago Total #{recibo_id}.\nTotal Pagado: ${total_recibo:.2f}.\nConsulta la versión HTML para los detalles completos."
+                msg.body = f"{asunto_tipo} #{recibo_id}.\nMonto Pagado: ${monto_pagado_ajustado:.2f}.\nConsulta la versión HTML para los detalles completos."
 
                 # --- EL CAMBIO CLAVE: INICIAR EL HILO ASÍNCRONO ---
-                # Usamos _get_current_object() para pasar una referencia segura del objeto app al hilo
                 app_context_object = current_app._get_current_object()
                 
                 Thread(
@@ -5380,25 +5385,20 @@ def submit_recibo():
                 ).start()
                 
                 print(f"✅ Hilo de correo iniciado para: {recipient_emails}. Respondiendo inmediatamente al cliente.")
-                # ----------------------------------------------------
 
             except Exception as e:
-                # Si falla iniciar el hilo (ej. error de configuración de current_app), 
-                # registramos el error pero NO bloqueamos la respuesta al cliente.
                 print(f"⚠️ Error al intentar iniciar hilo de correo de recibo: {str(e)}")
         
-        # 7. Respuesta Final (¡Esta respuesta es la que el frontend recibirá inmediatamente!)
+        # 7. Respuesta Final
         return jsonify({
-            # Cambiamos el mensaje para indicar que el correo se está procesando
             "message": "Recibo registrado exitosamente. El correo se está enviando en segundo plano.", 
             "recibo": nueva_transaccion.serialize(),
-            "email_sent_async": tipo_pago == 'Total' and bool(recipient_emails)
+            "email_sent_async": (tipo_pago == 'Total' or tipo_pago == 'Abono') and bool(recipient_emails)
         }), 201
 
     except Exception as e:
         db.session.rollback()
         print(f"ERROR BACKEND: Error al registrar el recibo: {e}")
-        # Se devuelve el error específico para el diagnóstico en el frontend/logs
         return jsonify({"error": f"Error interno del servidor al registrar el recibo: {str(e)}"}), 500
 
 # --- Proceso de Recibo (Edición/Actualización de Pago) ---
@@ -5470,15 +5470,15 @@ def update_recibo(recibo_id):
 
 
 # ------------------------------------------------------------------
-# --- Proceso de Recibo (ANULACIÓN FÍSICA / HARD DELETE) ---
+# --- Proceso de Recibo (ANULACIÓN FÍSICA / HARD DELETE) CON NOTIFICACIÓN ---
 # ------------------------------------------------------------------
 
 @api.route('/recibos/anular/<int:recibo_id>', methods=['DELETE'])
-@role_required(['owner', 'admin_empresa', 'usuario_formulario']) # Solo usuarios con permiso pueden anular
+@role_required(['owner', 'admin_empresa', 'usuario_formulario']) 
 def anular_recibo(recibo_id):
     """
-    Realiza la ELIMINACIÓN FÍSICA (HARD DELETE) del TransaccionRecibo.
-    (Opción elegida al no usar el campo 'activo').
+    Realiza la ELIMINACIÓN FÍSICA del recibo y envía un correo de notificación
+    a los responsables antes de borrar los datos.
     """
     current_user_id = get_jwt_identity()
     id_empresa = get_current_user_company_id(current_user_id)
@@ -5487,7 +5487,7 @@ def anular_recibo(recibo_id):
         return jsonify({"error": "Empresa no asociada al usuario."}), 404
 
     try:
-        # 1. Buscar la transacción (el recibo)
+        # 1. Buscar la transacción
         transaccion = TransaccionRecibo.query.filter_by(
             id_transaccion=recibo_id, 
             id_empresa=id_empresa
@@ -5496,26 +5496,85 @@ def anular_recibo(recibo_id):
         if not transaccion:
             return jsonify({"error": "Recibo no encontrado o no pertenece a la empresa."}), 404
 
-        # 2. ELIMINACIÓN EXPLÍCITA DE LOS DETALLES RELACIONADOS
-        # CRÍTICO: Esto soluciona el error NotNullViolation forzando la eliminación 
-        # de los registros DetalleRecibo antes de eliminar el padre.
+        # --- LOGICA DE NOTIFICACIÓN (ANTES DE ELIMINAR) ---
+        recipient_emails = set()
+        nombre_empresa = Empresa.query.get(id_empresa).nombre_empresa
+        
+        # Obtener los correos de los estudiantes involucrados en este recibo
+        for detalle in transaccion.detalles:
+            if detalle.estudiante and detalle.estudiante.correo_responsable:
+                recipient_emails.add(detalle.estudiante.correo_responsable)
+
+        if recipient_emails:
+            try:
+                # Construir el mensaje de anulación
+                msg = Message(
+                    f"ANULACIÓN de Recibo #{recibo_id} - {nombre_empresa}",
+                    sender=(nombre_empresa, current_app.config['MAIL_USERNAME']),
+                    recipients=list(recipient_emails)
+                )
+                
+                html_content = f"""
+                <html>
+                <body style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px;">
+                    <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 8px; overflow: hidden; border: 1px solid #ddd;">
+                        <div style="text-align: center; padding: 20px; background-color: #dc3545; color: white;">
+                            <h1 style="margin: 0; font-size: 22px;">Aviso de Anulación de Recibo</h1>
+                        </div>
+                        <div style="padding: 20px; color: #333; line-height: 1.6;">
+                            <p>Estimado(a) responsable,</p>
+                            <p>Le informamos que el recibo con <strong>ID #{recibo_id}</strong>, emitido anteriormente por <strong>{nombre_empresa}</strong>, ha sido <strong>ANULADO</strong> en nuestro sistema.</p>
+                            
+                            <div style="background-color: #fff3cd; border-left: 5px solid #ffc107; padding: 15px; margin: 20px 0;">
+                                <p style="margin: 0;"><strong>Motivos posibles:</strong></p>
+                                <ul style="margin-top: 5px;">
+                                    <li>Error en la digitación de costos o conceptos.</li>
+                                    <li>Actualización de la información del estudiante.</li>
+                                </ul>
+                            </div>
+
+                            <p><strong>¿Qué debe hacer?</strong></p>
+                            <p>Si la anulación se debió a un error de costos, pronto recibirá un nuevo recibo corregido. En caso de dudas, por favor diríjase a la oficina administrativa para aclarar la situación.</p>
+                            
+                            <p style="font-size: 13px; color: #666; margin-top: 30px;">
+                                Fecha de anulación: {datetime.utcnow().strftime('%d/%m/%Y %H:%M:%S')} (UTC)
+                            </p>
+                        </div>
+                        <div style="background-color: #f8f8f8; padding: 15px; text-align: center; font-size: 12px; color: #999;">
+                            Este es un mensaje automático de {nombre_empresa}.
+                        </div>
+                    </div>
+                </body>
+                </html>
+                """
+                msg.html = html_content
+                msg.body = f"El recibo #{recibo_id} ha sido anulado. Por favor diríjase a la oficina para más información."
+
+                # Iniciar envío asíncrono
+                app_context_object = current_app._get_current_object()
+                Thread(target=send_async_email, args=(app_context_object, msg)).start()
+                
+            except Exception as email_err:
+                print(f"⚠️ No se pudo enviar el correo de anulación: {str(email_err)}")
+
+        # --- CONTINUAR CON EL BORRADO FÍSICO ---
+        
+        # 2. ELIMINACIÓN DE LOS DETALLES
         DetalleRecibo.query.filter_by(id_transaccion=recibo_id).delete()
         
-        # 3. Eliminación Física de la Transacción Principal
+        # 3. Eliminación de la Transacción Principal
         db.session.delete(transaccion)
-        
         db.session.commit()
 
         return jsonify({
-            "message": f"Recibo {recibo_id} eliminado (anulado) exitosamente.",
+            "message": f"Recibo {recibo_id} anulado y notificación enviada.",
             "id_recibo_anulado": recibo_id
         }), 200
 
     except Exception as e:
         db.session.rollback()
-        # Captura el error para ver si persiste
-        error_message = f"Error interno del servidor al anular el recibo: {str(e)}"
-        print(f"ERROR BACKEND: Error al anular el recibo {recibo_id}: {error_message}")
+        error_message = f"Error al anular el recibo: {str(e)}"
+        print(f"ERROR: {error_message}")
         return jsonify({"error": error_message}), 500
 
 @api.route('/recibos/analisis', methods=['GET'])
