@@ -411,9 +411,9 @@ export const RecibosAnalytics = () => {
                                 <td>{new Date(recibo.fecha_recibo).toLocaleDateString()}</td>
                                 <td>{recibo.estudiante}</td>
                                 <td>{recibo.grado}</td>
-                                <td>${recibo.costo_total_recibo}</td>
-                                <td>**${recibo.monto_pagado}**</td>
-                                <td>${recibo.saldo_pendiente}</td>
+                                <td>{formatCurrency(recibo.costo_total_recibo)}</td>
+                                <td>**{formatCurrency(recibo.monto_pagado)}**</td>
+                                <td>{formatCurrency(recibo.saldo_pendiente)}</td>
                                 <td>{recibo.tipo_pago}</td>
                                 <td>{recibo.usuario_registro}</td>
                                 
@@ -501,12 +501,12 @@ export const RecibosAnalytics = () => {
                     
                     {/* === Mensajes de Total === */}
                     <p className="analytics-period-total-message">
-                       **Total Monto Pagado en el Período:** **${totalPagadoPeriodo}**
+                       **Total Monto Pagado en el Período:** **${formatCurrency(totalPagadoPeriodo)}**
                     </p>
 
                     {resumenData && resumenData.length > 0 && (
                         <div className="total-venta-resumen">
-                            <p>Total Venta (Costo): **${totalGlobalVentaCosto}**</p>
+                            <p>Total Venta (Costo): **${formatCurrency(totalGlobalVentaCosto)}**</p>
                         </div>
                     )}
                     
