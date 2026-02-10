@@ -13,6 +13,15 @@ import {
 // Colores para los gráficos (Recharts)
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d', '#ffc658', '#d0ed57', '#a4de6c', '#d068d8'];
 
+const formatCurrency = (value) => {
+    return new Intl.NumberFormat('es-CO', {
+        style: 'currency',
+        currency: 'COP',
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0,
+    }).format(value);
+};
+
 // Función helper para obtener la fecha de hoy en formato YYYY-MM-DD
 const getTodayDateString = () => {
     const today = new Date();
@@ -288,7 +297,7 @@ export const RecibosAnalytics = () => {
                         fill="#8884d8" 
                         labelLine={false} 
                         label={({ name, percent, value }) => 
-                            `${name} (${(percent * 100).toFixed(0)}%) $${value}`
+                            `${name} (${(percent * 100).toFixed(0)}%) ${formatCurrency(value)}`
                         }
                     >
                         {resumenData.map((entry, index) => (
@@ -296,7 +305,7 @@ export const RecibosAnalytics = () => {
                         ))}
                     </Pie>
                     <Tooltip 
-                        formatter={(value, name) => [`$${value}`, name]} 
+                        formatter={(value, name) => [formatCurrency(value), name]} 
                     />
                     <Legend 
                         layout="horizontal" 
@@ -337,7 +346,7 @@ export const RecibosAnalytics = () => {
                                 className={selectedConceptoId === item.id_concepto ? 'analytics-row-selected' : ''}
                             >
                                 <td>{item.name}</td>
-                                <td>**${item.value}**</td>
+                                <td>{formatCurrency(item.value)}</td>
                                 <td>{item.cantidad_transacciones}</td> 
                                 <td>
                                     <button 
