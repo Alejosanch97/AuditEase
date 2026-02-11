@@ -167,7 +167,19 @@ export const RecibosAnalytics = () => {
     }, []);
 
     const handleViewDetails = (recibo) => {
-        setViewReciboData(recibo);
+        // CORRECCIÓN: Buscamos todos los registros en 'detalleConcepto' que compartan el mismo 'id_recibo'
+        // Esto permite mostrar múltiples conceptos si el recibo fue por varios ítems.
+        const todosLosItemsDelRecibo = detalleConcepto.filter(item => item.id_recibo === recibo.id_recibo);
+        
+        setViewReciboData({
+            ...recibo,
+            conceptos_detalle: todosLosItemsDelRecibo.map(item => ({
+                nombre_concepto: item.concepto || selectedConceptoName,
+                monto: item.subtotal_costo,
+                cantidad: item.cantidad,
+                valor_unitario: item.valor_cobrado_unitario
+            }))
+        });
         setIsViewModalOpen(true);
     };
 
@@ -525,44 +537,67 @@ export const RecibosAnalytics = () => {
 };
 
 // --- MODAL DE VISTA RÁPIDA (DESGLOSE) ---
+// CORRECCIÓN: Estructura mejorada para mostrar tabla de conceptos y resumen de pago
 const ViewReciboDetailsModal = ({ isOpen, onClose, recibo }) => {
     if (!isOpen || !recibo) return null;
     return (
         <div className="modal-overlay">
-            <div className="modal-content" style={{ maxWidth: '500px' }}>
-                <div className="modal-header">
-                    <h2>Desglose del Recibo #{recibo.id_recibo}</h2>
-                    <button className="modal-close-btn" onClick={onClose}>&times;</button>
+            <div className="modal-content" style={{ maxWidth: '600px', backgroundColor: '#1a222d', color: 'white', borderRadius: '12px' }}>
+                <div className="modal-header" style={{ borderBottom: '1px solid #3a475a' }}>
+                    <h2 style={{ margin: 0 }}>Recibo de Pago #{recibo.id_recibo}</h2>
+                    <button className="modal-close-btn" onClick={onClose} style={{ fontSize: '24px', color: '#61dafb' }}>&times;</button>
                 </div>
                 <div className="modal-body">
-                    <div className="info-section" style={{ marginBottom: '20px', borderBottom: '1px dashed #4a5a70', paddingBottom: '10px' }}>
-                        <p><strong>Estudiante:</strong> {recibo.estudiante}</p>
-                        <p><strong>Fecha:</strong> {new Date(recibo.fecha_recibo).toLocaleDateString()}</p>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '20px', padding: '15px', backgroundColor: '#252f3f', borderRadius: '8px' }}>
+                        <p style={{ margin: 0 }}><strong>Estudiante:</strong> {recibo.estudiante}</p>
+                        <p style={{ margin: 0 }}><strong>Grado:</strong> {recibo.grado}</p>
+                        <p style={{ margin: 0 }}><strong>Fecha:</strong> {new Date(recibo.fecha_recibo).toLocaleString()}</p>
+                        <p style={{ margin: 0 }}><strong>Registrado por:</strong> {recibo.usuario_registro}</p>
                     </div>
-                    <h3 style={{ color: '#61dafb', fontSize: '1.2em', marginBottom: '10px' }}>Conceptos Pagados:</h3>
-                    <ul style={{ listStyle: 'none', padding: 0 }}>
-                        {recibo.conceptos_detalle && recibo.conceptos_detalle.length > 0 ? (
-                            recibo.conceptos_detalle.map((item, idx) => (
-                                <li key={idx} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid #3a475a' }}>
-                                    <span>{item.nombre_concepto}</span>
-                                    <strong>{formatCurrency(item.monto)}</strong>
-                                </li>
-                            ))
-                        ) : (
-                            <li style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid #3a475a' }}>
-                                <span>Monto Registrado</span>
-                                <strong>{formatCurrency(recibo.monto_pagado)}</strong>
-                            </li>
+                    
+                    <h3 style={{ color: '#61dafb', fontSize: '1.2em', marginBottom: '10px' }}>Conceptos Detallados:</h3>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '20px' }}>
+                        <thead>
+                            <tr style={{ textAlign: 'left', borderBottom: '2px solid #3a475a', color: '#90a4ae' }}>
+                                <th style={{ padding: '8px' }}>Concepto</th>
+                                <th style={{ padding: '8px', textAlign: 'center' }}>Cant.</th>
+                                <th style={{ padding: '8px', textAlign: 'right' }}>Subtotal</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {recibo.conceptos_detalle && recibo.conceptos_detalle.length > 0 ? (
+                                recibo.conceptos_detalle.map((item, idx) => (
+                                    <tr key={idx} style={{ borderBottom: '1px solid #3a475a' }}>
+                                        <td style={{ padding: '8px' }}>{item.nombre_concepto}</td>
+                                        <td style={{ padding: '8px', textAlign: 'center' }}>{item.cantidad}</td>
+                                        <td style={{ padding: '8px', textAlign: 'right' }}>{formatCurrency(item.monto)}</td>
+                                    </tr>
+                                ))
+                            ) : (
+                                <tr>
+                                    <td style={{ padding: '8px' }}>Monto Registrado</td>
+                                    <td style={{ padding: '8px', textAlign: 'center' }}>1</td>
+                                    <td style={{ padding: '8px', textAlign: 'right' }}>{formatCurrency(recibo.monto_pagado)}</td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
+
+                    <div style={{ textAlign: 'right', backgroundColor: '#252f3f', padding: '15px', borderRadius: '8px' }}>
+                        <p style={{ margin: '5px 0' }}>Total Recibo: <strong>{formatCurrency(recibo.costo_total_recibo)}</strong></p>
+                        <p style={{ margin: '5px 0', fontSize: '1.2em', color: '#4caf50' }}>Monto Pagado ({recibo.tipo_pago}): <strong>{formatCurrency(recibo.monto_pagado)}</strong></p>
+                        {recibo.saldo_pendiente > 0 && (
+                            <p style={{ margin: '5px 0', color: '#ff5252' }}>Saldo Pendiente: <strong>{formatCurrency(recibo.saldo_pendiente)}</strong></p>
                         )}
-                    </ul>
-                    <div className="modal-totals" style={{ marginTop: '20px', textAlign: 'right' }}>
-                        <p>Costo Total: <strong>{formatCurrency(recibo.costo_total_recibo)}</strong></p>
-                        <p style={{ fontSize: '1.2em', color: '#61dafb' }}>Pagado: <strong>{formatCurrency(recibo.monto_pagado)}</strong></p>
-                        <p style={{ color: '#ff6b6b' }}>Pendiente: <strong>{formatCurrency(recibo.saldo_pendiente)}</strong></p>
+                        {recibo.observaciones && (
+                             <p style={{ margin: '10px 0 0 0', textAlign: 'left', fontSize: '0.9em', color: '#90a4ae', borderTop: '1px solid #3a475a', paddingTop: '10px' }}>
+                                <strong>Obs:</strong> {recibo.observaciones}
+                             </p>
+                        )}
                     </div>
                 </div>
-                <div className="modal-footer">
-                    <button className="analytics-btn-cancel" onClick={onClose}>Cerrar</button>
+                <div className="modal-footer" style={{ borderTop: '1px solid #3a475a', padding: '15px' }}>
+                    <button className="analytics-btn-cancel" onClick={onClose} style={{ width: '100%' }}>Cerrar</button>
                 </div>
             </div>
         </div>

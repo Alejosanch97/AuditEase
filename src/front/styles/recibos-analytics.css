@@ -609,3 +609,63 @@ hr {
         padding: 20px;
     }
 }
+
+/* ======================================================================== */
+/* --- NUEVOS ESTADOS FALTANTES (POPOUP VISTA RÁPIDA) --- */
+/* ======================================================================== */
+
+/* Overlay para asegurar que cubra toda la pantalla */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 2000;
+}
+
+/* Contenedor del contenido del modal */
+.modal-content {
+    background-color: #1a222d;
+    padding: 0;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 600px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+    color: white;
+    overflow: hidden;
+}
+
+/* Info section dentro del modal de vista */
+.info-section p {
+    margin: 8px 0;
+    color: #e0e0e0;
+}
+
+/* Totales dentro del modal */
+.modal-totals p {
+    margin: 5px 0;
+    font-size: 1em;
+}
+
+/* Asegurar que las tablas dentro de modales oscuros se vean bien */
+.modal-body table {
+    border-collapse: collapse;
+    margin-top: 10px;
+}
+
+.modal-body th {
+    color: #90a4ae;
+    border-bottom: 2px solid #3a475a;
+    padding: 10px;
+}
+
+.modal-body td {
+    padding: 10px;
+    border-bottom: 1px solid #3a475a;
+    color: #ffffff;
+}
