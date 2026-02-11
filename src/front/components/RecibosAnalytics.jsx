@@ -166,39 +166,25 @@ export const RecibosAnalytics = () => {
         setIsModalOpen(true);
     }, []);
 
-    // ⭐ CORRECCIÓN PARA CARGAR TODOS LOS CONCEPTOS EN EL POPUP ⭐
-    const handleViewDetails = async (recibo) => {
-        setLoading(true);
-        const token = localStorage.getItem('access_token');
-        // Usamos el endpoint que obtiene todos los conceptos de un ID de recibo específico
-        const url = `${import.meta.env.VITE_BACKEND_URL}/api/recibos/${recibo.id_recibo}`;
-
-        try {
-            const response = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
-            const data = await response.json();
-
-            if (response.ok) {
-                // 'data' contiene la info completa del recibo incluyendo su array de 'conceptos'
-                setViewReciboData({
-                    ...recibo,
-                    conceptos_detalle: data.conceptos.map(item => ({
-                        nombre_concepto: item.nombre_concepto,
-                        monto: item.subtotal,
-                        cantidad: item.cantidad,
-                        valor_unitario: item.valor_unitario
-                    })),
-                    observaciones: data.observaciones // Aseguramos traer las observaciones reales
-                });
-                setIsViewModalOpen(true);
-            } else {
-                showAlert("No se pudo obtener el desglose completo del recibo.", 'error');
-            }
-        } catch (err) {
-            console.error("Error fetching full receipt details:", err);
-            showAlert("Error de conexión al obtener detalles.", 'error');
-        } finally {
-            setLoading(false);
-        }
+    // ⭐ CORRECCIÓN: USAR LOS DATOS YA CARGADOS PARA EL POPUP SIN LLAMAR RUTAS INEXISTENTES
+    const handleViewDetails = (recibo) => {
+        // Como el backend en 'detalle' nos da el costo_total_recibo y el monto_pagado del recibo completo,
+        // el pop-up mostrará esos valores globales. 
+        // Si el recibo tiene más conceptos, el 'costo_total_recibo' ya refleja la suma de todos.
+        
+        setViewReciboData({
+            ...recibo,
+            // En este caso, mostramos el concepto actual. 
+            // Nota: Si necesitas ver OTROS conceptos del mismo recibo, tu backend actual 'get_recibos_detalle_por_concepto'
+            // solo devuelve el concepto filtrado. Pero el monto_pagado y costo_total_recibo que envías son los del RECIBO COMPLETO.
+            conceptos_detalle: [{
+                nombre_concepto: selectedConceptoName,
+                monto: recibo.subtotal_costo,
+                cantidad: recibo.cantidad,
+                valor_unitario: recibo.valor_cobrado_unitario
+            }]
+        });
+        setIsViewModalOpen(true);
     };
 
     const handleDeleteClick = useCallback((reciboId) => {
@@ -212,6 +198,7 @@ export const RecibosAnalytics = () => {
         setConfirmDeleteId(null);
         setLoading(true);
         const token = localStorage.getItem('access_token');
+        // Usamos la ruta de anular que tienes configurada
         const url = `${import.meta.env.VITE_BACKEND_URL}/api/recibos/anular/${reciboId}`;
 
         try {
@@ -239,6 +226,7 @@ export const RecibosAnalytics = () => {
     const handleSaveEdit = useCallback(async (reciboId, updatedData) => {
         setLoading(true);
         const token = localStorage.getItem('access_token');
+        // Ojo: Asegúrate de que esta ruta PUT exista en tu backend según tus archivos
         const url = `${import.meta.env.VITE_BACKEND_URL}/api/recibos/${reciboId}`;
 
         try {
@@ -439,7 +427,6 @@ export const RecibosAnalytics = () => {
                                         className="analytics-btn-view"
                                         onClick={() => handleViewDetails(recibo)}
                                         title="Ver desglose de conceptos"
-                                        disabled={loading}
                                     >
                                         <i className="fas fa-eye"></i>
                                     </button>
@@ -573,7 +560,7 @@ const ViewReciboDetailsModal = ({ isOpen, onClose, recibo }) => {
                         <p style={{ margin: 0 }}><strong>Registrado por:</strong> {recibo.usuario_registro}</p>
                     </div>
                     
-                    <h3 style={{ color: '#61dafb', fontSize: '1.2em', marginBottom: '10px' }}>Conceptos Detallados:</h3>
+                    <h3 style={{ color: '#61dafb', fontSize: '1.2em', marginBottom: '10px' }}>Concepto Seleccionado:</h3>
                     <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '20px' }}>
                         <thead>
                             <tr style={{ textAlign: 'left', borderBottom: '2px solid #3a475a', color: '#90a4ae' }}>
@@ -583,35 +570,25 @@ const ViewReciboDetailsModal = ({ isOpen, onClose, recibo }) => {
                             </tr>
                         </thead>
                         <tbody>
-                            {recibo.conceptos_detalle && recibo.conceptos_detalle.length > 0 ? (
-                                recibo.conceptos_detalle.map((item, idx) => (
-                                    <tr key={idx} style={{ borderBottom: '1px solid #3a475a' }}>
-                                        <td style={{ padding: '8px' }}>{item.nombre_concepto}</td>
-                                        <td style={{ padding: '8px', textAlign: 'center' }}>{item.cantidad}</td>
-                                        <td style={{ padding: '8px', textAlign: 'right' }}>{formatCurrency(item.monto)}</td>
-                                    </tr>
-                                ))
-                            ) : (
-                                <tr>
-                                    <td style={{ padding: '8px' }}>Monto Registrado</td>
-                                    <td style={{ padding: '8px', textAlign: 'center' }}>1</td>
-                                    <td style={{ padding: '8px', textAlign: 'right' }}>{formatCurrency(recibo.monto_pagado)}</td>
+                            {recibo.conceptos_detalle && recibo.conceptos_detalle.map((item, idx) => (
+                                <tr key={idx} style={{ borderBottom: '1px solid #3a475a' }}>
+                                    <td style={{ padding: '8px' }}>{item.nombre_concepto}</td>
+                                    <td style={{ padding: '8px', textAlign: 'center' }}>{item.cantidad}</td>
+                                    <td style={{ padding: '8px', textAlign: 'right' }}>{formatCurrency(item.monto)}</td>
                                 </tr>
-                            )}
+                            ))}
                         </tbody>
                     </table>
 
                     <div style={{ textAlign: 'right', backgroundColor: '#252f3f', padding: '15px', borderRadius: '8px' }}>
-                        <p style={{ margin: '5px 0' }}>Total Recibo: <strong>{formatCurrency(recibo.costo_total_recibo)}</strong></p>
+                        <p style={{ margin: '5px 0' }}>Total Bruto del Recibo: <strong>{formatCurrency(recibo.costo_total_recibo)}</strong></p>
                         <p style={{ margin: '5px 0', fontSize: '1.2em', color: '#4caf50' }}>Monto Pagado ({recibo.tipo_pago}): <strong>{formatCurrency(recibo.monto_pagado)}</strong></p>
                         {recibo.saldo_pendiente > 0 && (
                             <p style={{ margin: '5px 0', color: '#ff5252' }}>Saldo Pendiente: <strong>{formatCurrency(recibo.saldo_pendiente)}</strong></p>
                         )}
-                        {recibo.observaciones && (
-                             <p style={{ margin: '10px 0 0 0', textAlign: 'left', fontSize: '0.9em', color: '#90a4ae', borderTop: '1px solid #3a475a', paddingTop: '10px' }}>
-                                <strong>Obs:</strong> {recibo.observaciones}
-                             </p>
-                        )}
+                        <p style={{ fontSize: '0.8em', color: '#90a4ae', marginTop: '10px', fontStyle: 'italic' }}>
+                            Nota: El monto pagado corresponde a la transacción completa del recibo.
+                        </p>
                     </div>
                 </div>
                 <div className="modal-footer" style={{ borderTop: '1px solid #3a475a', padding: '15px' }}>
@@ -647,7 +624,7 @@ const EditReciboModal = ({ isOpen, onClose, recibo, onSave, isLoading, showAlert
                     <button className="modal-close-btn" onClick={onClose}>&times;</button>
                 </div>
                 <div className="modal-body">
-                    <p>Costo Total: **{formatCurrency(recibo.costo_total_recibo)}**</p>
+                    <p>Costo Total del Recibo: **{formatCurrency(recibo.costo_total_recibo)}**</p>
                     <div className="form-group">
                         <label>Monto Pagado:</label>
                         <input name="monto_pagado" type="number" step="0.01" value={editedData.monto_pagado} onChange={handleChange} disabled={isLoading} />
