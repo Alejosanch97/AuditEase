@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import useGlobalReducer from '../hooks/useGlobalReducer';
 import "../styles/recibos-analytics.css";
 // ⭐ IMPORTACIONES DE COMPONENTES DE MENSAJERÍA/MODALES
-import NotificationAlert from './NotificationAlert'; // Asegúrate de exportarlo por defecto si usas esta sintaxis
+import NotificationAlert from './NotificationAlert'; 
 import { ConfirmationModal } from '../components/ConfirmationModal.jsx';
 
 import {
@@ -48,33 +48,29 @@ export const RecibosAnalytics = () => {
     const [selectedConceptoName, setSelectedConceptoName] = useState('');
 
     const [loading, setLoading] = useState(false);
-    const [error, setError] = useState(null); // Para errores de carga de la página/resumen
+    const [error, setError] = useState(null); 
 
-    // ⭐ ESTADOS PARA MODALES Y ALERTAS MEJORADAS ⭐
+    // ⭐ ESTADOS PARA MODALES Y ALERTAS ⭐
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [currentRecibo, setCurrentRecibo] = useState(null); 
-    const [confirmDeleteId, setConfirmDeleteId] = useState(null); // ID para el modal de confirmación
+    const [confirmDeleteId, setConfirmDeleteId] = useState(null); 
 
     // --- NUEVOS ESTADOS PARA VISTA RÁPIDA (OJITO) ---
     const [isViewModalOpen, setIsViewModalOpen] = useState(false);
     const [viewReciboData, setViewReciboData] = useState(null);
 
-    // Estado para la alerta (éxito/error/info)
     const [alertState, setAlertState] = useState({ 
         isOpen: false, 
         message: '', 
         type: 'info' 
     });
     
-    // Función para mostrar una alerta flotante
     const showAlert = useCallback((message, type = 'info') => {
         setAlertState({ isOpen: true, message, type });
-        // Nota: El auto-cierre se maneja dentro de NotificationAlert.jsx
     }, []);
 
     // --- FETCHERS Y HANDLERS ---
     
-    // Función de recarga de detalle, definida primero para usarla en los handlers de acción
     const fetchDetalleConcepto = useCallback(async (conceptoId) => {
         if (!conceptoId) {
             setDetalleConcepto([]);
@@ -107,7 +103,6 @@ export const RecibosAnalytics = () => {
         } 
     }, [startDate, endDate, showAlert]);
 
-    // Función de recarga de resumen, definida primero para usarla en los handlers de acción
     const fetchResumenData = useCallback(async () => {
         setLoading(true);
         setError(null);
@@ -121,7 +116,6 @@ export const RecibosAnalytics = () => {
         }
 
         let url = `${import.meta.env.VITE_BACKEND_URL}/api/recibos/analisis`;
-        
         const currentStartDate = startDate || getTodayDateString();
         const currentEndDate = endDate || '';
         
@@ -167,31 +161,25 @@ export const RecibosAnalytics = () => {
         }
     }, [dispatch, navigate, startDate, endDate, selectedConceptoId]);
 
-    
-    // ⭐ HANDLER DE EDICIÓN: ABRE MODAL
     const handleEdit = useCallback((reciboData) => {
         setCurrentRecibo(reciboData);
         setIsModalOpen(true);
     }, []);
 
-    // ⭐ NUEVO HANDLER PARA VER DETALLES (OJITO) ⭐
     const handleViewDetails = (recibo) => {
         setViewReciboData(recibo);
         setIsViewModalOpen(true);
     };
 
-
-    // ⭐ HANDLER DE ANULACIÓN (DELETE) - Ahora solo abre el modal de confirmación
     const handleDeleteClick = useCallback((reciboId) => {
-        setConfirmDeleteId(reciboId); // Establece el ID para mostrar el modal
+        setConfirmDeleteId(reciboId);
     }, []);
 
-    // ⭐ HANDLER DE CONFIRMACIÓN DE ANULACIÓN (LLAMADA DELETE)
     const handleConfirmDelete = useCallback(async () => {
         const reciboId = confirmDeleteId;
         if (!reciboId) return;
 
-        setConfirmDeleteId(null); // Cierra el modal de confirmación
+        setConfirmDeleteId(null);
         setLoading(true);
         const token = localStorage.getItem('access_token');
         const url = `${import.meta.env.VITE_BACKEND_URL}/api/recibos/anular/${reciboId}`;
@@ -204,7 +192,6 @@ export const RecibosAnalytics = () => {
             
             if (response.ok) {
                 showAlert(`Recibo ${reciboId} anulado exitosamente. Recargando datos.`, 'success');
-                
                 await fetchDetalleConcepto(selectedConceptoId);
                 await fetchResumenData(); 
             } else {
@@ -219,8 +206,6 @@ export const RecibosAnalytics = () => {
         }
     }, [fetchDetalleConcepto, fetchResumenData, selectedConceptoId, confirmDeleteId, showAlert]);
 
-
-    // ⭐ HANDLER DE GUARDAR EDICIÓN (LLAMADA PUT)
     const handleSaveEdit = useCallback(async (reciboId, updatedData) => {
         setLoading(true);
         const token = localStorage.getItem('access_token');
@@ -238,9 +223,7 @@ export const RecibosAnalytics = () => {
             
             if (response.ok) {
                 showAlert(`Recibo ${reciboId} actualizado exitosamente.`, 'success');
-                setIsModalOpen(false); // Cierra el modal
-                
-                // Recargar para mostrar los datos actualizados
+                setIsModalOpen(false);
                 await fetchDetalleConcepto(selectedConceptoId);
                 await fetchResumenData(); 
             } else {
@@ -256,8 +239,6 @@ export const RecibosAnalytics = () => {
 
     }, [fetchDetalleConcepto, fetchResumenData, selectedConceptoId, showAlert]);
 
-
-    // --- Efectos ---
     useEffect(() => {
         if (!isLoggedIn) {
             navigate('/login');
@@ -278,8 +259,6 @@ export const RecibosAnalytics = () => {
         setSelectedConceptoId(conceptoId);
         setSelectedConceptoName(conceptoName);
     };
-
-    // --- Render Functions ---
 
     const renderPieChart = () => {
         if (loading && resumenData.length === 0) { 
@@ -332,7 +311,6 @@ export const RecibosAnalytics = () => {
             return <p className="analytics-loading-message">Cargando resumen de recibos...</p>;
         }
         if (error) { return null; }
-        
         if (!resumenData || resumenData.length === 0) {
             return <p className="analytics-info-message">No hay datos de resumen para mostrar en la tabla.</p>;
         }
@@ -427,7 +405,6 @@ export const RecibosAnalytics = () => {
                                 <td>{recibo.usuario_registro}</td>
                                 
                                 <td className="analytics-actions-cell">
-                                    {/* ⭐ BOTÓN OJITO: Usa los datos que ya tenemos ⭐ */}
                                     <button 
                                         className="analytics-btn-view"
                                         onClick={() => handleViewDetails(recibo)}
@@ -462,7 +439,6 @@ export const RecibosAnalytics = () => {
 
     const totalGlobalVentaCosto = resumenData.reduce((sum, entry) => sum + entry.value, 0); 
 
-
     return (
         <>
             <header className="main-header">
@@ -475,62 +451,36 @@ export const RecibosAnalytics = () => {
             </header>
 
             <div className="analytics-content-area">
-                
                 {error && <div className="analytics-error-message">{error}</div>}
-
                 <section className="analytics-card analytics-full-width-card">
                     <div className="analytics-card-header">
                         <h3>Filtros de Período</h3>
                         <div className="analytics-filters-container">
                             <div className="analytics-filter-group">
                                 <label htmlFor="startDate">Desde:</label>
-                                <input 
-                                    type="date" 
-                                    id="startDate" 
-                                    value={startDate} 
-                                    onChange={(e) => setStartDate(e.target.value)} 
-                                    disabled={loading} 
-                                />
+                                <input type="date" id="startDate" value={startDate} onChange={(e) => setStartDate(e.target.value)} disabled={loading} />
                             </div>
                             <div className="analytics-filter-group">
                                 <label htmlFor="endDate">Hasta:</label>
-                                <input 
-                                    type="date" 
-                                    id="endDate" 
-                                    value={endDate} 
-                                    onChange={(e) => setEndDate(e.target.value)} 
-                                    disabled={loading} 
-                                />
+                                <input type="date" id="endDate" value={endDate} onChange={(e) => setEndDate(e.target.value)} disabled={loading} />
                             </div>
-                            <button 
-                                onClick={handleApplyFilters} 
-                                className="analytics-btn-apply-filters" 
-                                disabled={loading}
-                            >
-                                Aplicar Filtros
-                            </button>
+                            <button onClick={handleApplyFilters} className="analytics-btn-apply-filters" disabled={loading}>Aplicar Filtros</button>
                         </div>
                     </div>
-                    
                     <hr/>
-                    
                     <p className="analytics-period-total-message">
                        **Total Monto Pagado en el Período:** **{formatCurrency(totalPagadoPeriodo)}**
                     </p>
-
                     {resumenData && resumenData.length > 0 && (
                         <div className="total-venta-resumen">
                             <p>Total Venta (Costo): **{formatCurrency(totalGlobalVentaCosto)}**</p>
                         </div>
                     )}
-                    
                     <div className="analytics-chart-area">
                         <h3>Distribución de Ventas (Costo) por Concepto</h3>
                         {renderPieChart()}
                     </div>
-                    
                     {renderResumenTable()}
-
                 </section>
 
                 <section className="analytics-card analytics-full-width-card">
@@ -550,7 +500,6 @@ export const RecibosAnalytics = () => {
                 showAlert={showAlert}
             />
 
-            {/* ⭐ NUEVO MODAL: Muestra lo que el usuario ya pagó (basado en el objeto recibo) ⭐ */}
             <ViewReciboDetailsModal 
                 isOpen={isViewModalOpen}
                 onClose={() => setIsViewModalOpen(false)}
@@ -559,7 +508,7 @@ export const RecibosAnalytics = () => {
 
             {confirmDeleteId && (
                 <ConfirmationModal 
-                    message={`¿Está seguro de que desea ANULAR el Recibo ID ${confirmDeleteId}? Esta acción revierte el estado a "anulado" y es sensible.`}
+                    message={`¿Está seguro de que desea ANULAR el Recibo ID ${confirmDeleteId}?`}
                     onConfirm={handleConfirmDelete}
                     onCancel={() => setConfirmDeleteId(null)}
                 />
@@ -575,12 +524,9 @@ export const RecibosAnalytics = () => {
     );
 };
 
-// ===========================================
-// ⭐ NUEVO COMPONENTE: MODAL DE VISTA RÁPIDA
-// ===========================================
+// --- MODAL DE VISTA RÁPIDA (DESGLOSE) ---
 const ViewReciboDetailsModal = ({ isOpen, onClose, recibo }) => {
     if (!isOpen || !recibo) return null;
-
     return (
         <div className="modal-overlay">
             <div className="modal-content" style={{ maxWidth: '500px' }}>
@@ -593,10 +539,7 @@ const ViewReciboDetailsModal = ({ isOpen, onClose, recibo }) => {
                         <p><strong>Estudiante:</strong> {recibo.estudiante}</p>
                         <p><strong>Fecha:</strong> {new Date(recibo.fecha_recibo).toLocaleDateString()}</p>
                     </div>
-
                     <h3 style={{ color: '#61dafb', fontSize: '1.2em', marginBottom: '10px' }}>Conceptos Pagados:</h3>
-                    
-                    {/* Aquí mostramos los conceptos que vienen dentro del recibo */}
                     <ul style={{ listStyle: 'none', padding: 0 }}>
                         {recibo.conceptos_detalle && recibo.conceptos_detalle.length > 0 ? (
                             recibo.conceptos_detalle.map((item, idx) => (
@@ -606,18 +549,16 @@ const ViewReciboDetailsModal = ({ isOpen, onClose, recibo }) => {
                                 </li>
                             ))
                         ) : (
-                            /* Fallback: Si no viene el array detallado, mostramos al menos el concepto principal seleccionado */
                             <li style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid #3a475a' }}>
-                                <span>Concepto Principal Registrado</span>
+                                <span>Monto Registrado</span>
                                 <strong>{formatCurrency(recibo.monto_pagado)}</strong>
                             </li>
                         )}
                     </ul>
-
                     <div className="modal-totals" style={{ marginTop: '20px', textAlign: 'right' }}>
-                        <p style={{ fontSize: '1.1em' }}>Costo Total Recibo: <strong>{formatCurrency(recibo.costo_total_recibo)}</strong></p>
-                        <p style={{ fontSize: '1.3em', color: '#61dafb' }}>Monto Pagado: <strong>{formatCurrency(recibo.monto_pagado)}</strong></p>
-                        <p style={{ color: '#ff6b6b' }}>Saldo Pendiente: <strong>{formatCurrency(recibo.saldo_pendiente)}</strong></p>
+                        <p>Costo Total: <strong>{formatCurrency(recibo.costo_total_recibo)}</strong></p>
+                        <p style={{ fontSize: '1.2em', color: '#61dafb' }}>Pagado: <strong>{formatCurrency(recibo.monto_pagado)}</strong></p>
+                        <p style={{ color: '#ff6b6b' }}>Pendiente: <strong>{formatCurrency(recibo.saldo_pendiente)}</strong></p>
                     </div>
                 </div>
                 <div className="modal-footer">
@@ -628,16 +569,9 @@ const ViewReciboDetailsModal = ({ isOpen, onClose, recibo }) => {
     );
 };
 
-// ===========================================
-// ⭐ COMPONENTE MODAL DE EDICIÓN
-// ===========================================
+// --- MODAL DE EDICIÓN ---
 const EditReciboModal = ({ isOpen, onClose, recibo, onSave, isLoading, showAlert }) => {
-    const [editedData, setEditedData] = useState({
-        monto_pagado: 0,
-        tipo_pago: '',
-        observaciones: ''
-    });
-    
+    const [editedData, setEditedData] = useState({ monto_pagado: 0, tipo_pago: '', observaciones: '' });
     useEffect(() => {
         if (recibo) {
             setEditedData({
@@ -647,25 +581,11 @@ const EditReciboModal = ({ isOpen, onClose, recibo, onSave, isLoading, showAlert
             });
         }
     }, [recibo]);
-
     if (!isOpen || !recibo) return null;
-
     const handleChange = (e) => {
         const { name, value } = e.target;
-        setEditedData(prev => ({
-            ...prev,
-            [name]: name === 'monto_pagado' ? parseFloat(value) || 0 : value
-        }));
+        setEditedData(prev => ({ ...prev, [name]: name === 'monto_pagado' ? parseFloat(value) || 0 : value }));
     };
-    
-    const handleSave = () => {
-        if (editedData.monto_pagado < 0) {
-            showAlert("El monto pagado no puede ser negativo.", 'error'); 
-            return;
-        }
-        onSave(recibo.id_recibo, editedData);
-    };
-
     return (
         <div className="modal-overlay">
             <div className="modal-content">
@@ -674,52 +594,27 @@ const EditReciboModal = ({ isOpen, onClose, recibo, onSave, isLoading, showAlert
                     <button className="modal-close-btn" onClick={onClose}>&times;</button>
                 </div>
                 <div className="modal-body">
-                    <p>Costo Total del Recibo: **{formatCurrency(recibo.costo_total_recibo)}**</p>
-                    <p>Saldo Actual: **{formatCurrency(recibo.saldo_pendiente)}**</p>
-                    
+                    <p>Costo Total: **{formatCurrency(recibo.costo_total_recibo)}**</p>
                     <div className="form-group">
-                        <label htmlFor="monto_pagado">Monto Pagado (Nuevo Abono/Total):</label>
-                        <input
-                            id="monto_pagado"
-                            name="monto_pagado"
-                            type="number"
-                            step="0.01"
-                            value={editedData.monto_pagado}
-                            onChange={handleChange}
-                            disabled={isLoading}
-                        />
+                        <label>Monto Pagado:</label>
+                        <input name="monto_pagado" type="number" step="0.01" value={editedData.monto_pagado} onChange={handleChange} disabled={isLoading} />
                     </div>
-
                     <div className="form-group">
-                        <label htmlFor="tipo_pago">Tipo de Pago:</label>
-                        <select
-                            id="tipo_pago"
-                            name="tipo_pago"
-                            value={editedData.tipo_pago}
-                            onChange={handleChange}
-                            disabled={isLoading}
-                        >
+                        <label>Tipo de Pago:</label>
+                        <select name="tipo_pago" value={editedData.tipo_pago} onChange={handleChange} disabled={isLoading}>
                             <option value="Total">Total</option>
                             <option value="Abono">Abono</option>
                         </select>
                     </div>
-
                     <div className="form-group">
-                        <label htmlFor="observaciones">Observaciones:</label>
-                        <textarea
-                            id="observaciones"
-                            name="observaciones"
-                            value={editedData.observaciones}
-                            onChange={handleChange}
-                            rows="3"
-                            disabled={isLoading}
-                        />
+                        <label>Observaciones:</label>
+                        <textarea name="observaciones" value={editedData.observaciones} onChange={handleChange} rows="3" disabled={isLoading} />
                     </div>
                 </div>
                 <div className="modal-footer">
                     <button className="analytics-btn-cancel" onClick={onClose} disabled={isLoading}>Cancelar</button>
-                    <button className="analytics-btn-apply-filters" onClick={handleSave} disabled={isLoading}>
-                        {isLoading ? 'Guardando...' : 'Guardar Cambios'}
+                    <button className="analytics-btn-apply-filters" onClick={() => onSave(recibo.id_recibo, editedData)} disabled={isLoading}>
+                        {isLoading ? 'Guardando...' : 'Guardar'}
                     </button>
                 </div>
             </div>
