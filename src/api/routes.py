@@ -5717,6 +5717,65 @@ def get_recibos_detalle_por_concepto():
     except Exception as e:
         print(f"ERROR BACKEND: Error al obtener detalles de recibos: {e}")
         return jsonify({"error": f"Error interno del servidor al obtener detalles: {str(e)}"}), 500
+
+@api.route('/recibos/transaccion/<int:id_transaccion>', methods=['GET'])
+@role_required(['owner', 'admin_empresa', 'usuario_formulario'])
+def get_detalle_completo_recibo(id_transaccion):
+    """
+    Obtiene toda la información de un recibo específico:
+    Datos del cliente/estudiante, totales y la lista completa de conceptos pagados.
+    """
+    current_user_id = get_jwt_identity()
+    id_empresa = get_current_user_company_id(current_user_id)
+
+    try:
+        # Buscamos la transacción asegurándonos que pertenezca a la empresa del usuario
+        transaccion = TransaccionRecibo.query.filter_by(
+            id_transaccion=id_transaccion, 
+            id_empresa=id_empresa
+        ).first()
+
+        if not transaccion:
+            return jsonify({"error": "Recibo no encontrado o no pertenece a su empresa."}), 404
+
+        # Obtenemos todos los detalles (conceptos) asociados a esta transacción
+        # Se asume relación en el modelo: transaccion.detalles
+        detalles_db = DetalleRecibo.query.filter_by(id_transaccion=id_transaccion).all()
+        
+        conceptos_lista = []
+        for det in detalles_db:
+            conceptos_lista.append({
+                "id_detalle": det.id_detalle,
+                "id_concepto": det.id_concepto,
+                "nombre_concepto": det.concepto.nombre_concepto,
+                "cantidad": det.cantidad,
+                "valor_unitario": float(det.valor_cobrado),
+                "subtotal": float(det.valor_cobrado * det.cantidad),
+                # Si los estudiantes varían por concepto en el mismo recibo:
+                "estudiante": det.estudiante.nombre_completo if det.estudiante else "N/A",
+                "grado": det.estudiante.grado.nombre_grado if (det.estudiante and det.estudiante.grado) else "N/A"
+            })
+
+        # Construimos la respuesta completa para el Pop-up
+        return jsonify({
+            "cabecera": {
+                "id_recibo": transaccion.id_transaccion,
+                "fecha": transaccion.fecha_transaccion.strftime('%d/%m/%Y %I:%M %p'),
+                "total_bruto": float(transaccion.total_recibo),
+                "monto_pagado": float(transaccion.monto_pagado),
+                "saldo_pendiente": float(transaccion.saldo_pendiente),
+                "tipo_pago": transaccion.tipo_pago,
+                "registrado_por": transaccion.usuario_creador.nombre_completo if transaccion.usuario_creador else "Sistema",
+                # Datos generales (usando el estudiante del primer detalle como referencia principal)
+                "estudiante_principal": conceptos_lista[0]["estudiante"] if conceptos_lista else "N/A",
+                "grado_principal": conceptos_lista[0]["grado"] if conceptos_lista else "N/A"
+            },
+            "conceptos": conceptos_lista
+        }), 200
+
+    except Exception as e:
+        print(f"ERROR BACKEND: Error al obtener detalles del recibo {id_transaccion}: {e}")
+        return jsonify({"error": str(e)}), 500
     
 
 @api.route('/estudiantes/carga-masiva', methods=['POST'])

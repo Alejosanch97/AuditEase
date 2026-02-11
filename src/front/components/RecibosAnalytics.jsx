@@ -58,6 +58,7 @@ export const RecibosAnalytics = () => {
     // --- NUEVOS ESTADOS PARA VISTA RÁPIDA (OJITO) ---
     const [isViewModalOpen, setIsViewModalOpen] = useState(false);
     const [viewReciboData, setViewReciboData] = useState(null);
+    const [loadingView, setLoadingView] = useState(false);
 
     const [alertState, setAlertState] = useState({ 
         isOpen: false, 
@@ -166,25 +167,31 @@ export const RecibosAnalytics = () => {
         setIsModalOpen(true);
     }, []);
 
-    // ⭐ CORRECCIÓN: USAR LOS DATOS YA CARGADOS PARA EL POPUP SIN LLAMAR RUTAS INEXISTENTES
-    const handleViewDetails = (recibo) => {
-        // Como el backend en 'detalle' nos da el costo_total_recibo y el monto_pagado del recibo completo,
-        // el pop-up mostrará esos valores globales. 
-        // Si el recibo tiene más conceptos, el 'costo_total_recibo' ya refleja la suma de todos.
-        
-        setViewReciboData({
-            ...recibo,
-            // En este caso, mostramos el concepto actual. 
-            // Nota: Si necesitas ver OTROS conceptos del mismo recibo, tu backend actual 'get_recibos_detalle_por_concepto'
-            // solo devuelve el concepto filtrado. Pero el monto_pagado y costo_total_recibo que envías son los del RECIBO COMPLETO.
-            conceptos_detalle: [{
-                nombre_concepto: selectedConceptoName,
-                monto: recibo.subtotal_costo,
-                cantidad: recibo.cantidad,
-                valor_unitario: recibo.valor_cobrado_unitario
-            }]
-        });
-        setIsViewModalOpen(true);
+    // ⭐ CORRECCIÓN: LLAMADA A LA NUEVA RUTA PARA OBTENER TODO EL DESGLOSE ⭐
+    const handleViewDetails = async (recibo) => {
+        setLoadingView(true);
+        const token = localStorage.getItem('access_token');
+        const url = `${import.meta.env.VITE_BACKEND_URL}/api/recibos/transaccion/${recibo.id_recibo}`;
+
+        try {
+            const response = await fetch(url, { 
+                headers: { 'Authorization': `Bearer ${token}` } 
+            });
+            const data = await response.json();
+
+            if (response.ok) {
+                // 'data' contiene 'cabecera' y 'conceptos' según nuestra nueva ruta
+                setViewReciboData(data);
+                setIsViewModalOpen(true);
+            } else {
+                showAlert(data.error || "No se pudo obtener el desglose del recibo.", 'error');
+            }
+        } catch (err) {
+            console.error("Error fetching full receipt details:", err);
+            showAlert("Error de conexión al cargar el desglose.", 'error');
+        } finally {
+            setLoadingView(false);
+        }
     };
 
     const handleDeleteClick = useCallback((reciboId) => {
@@ -198,7 +205,6 @@ export const RecibosAnalytics = () => {
         setConfirmDeleteId(null);
         setLoading(true);
         const token = localStorage.getItem('access_token');
-        // Usamos la ruta de anular que tienes configurada
         const url = `${import.meta.env.VITE_BACKEND_URL}/api/recibos/anular/${reciboId}`;
 
         try {
@@ -226,7 +232,6 @@ export const RecibosAnalytics = () => {
     const handleSaveEdit = useCallback(async (reciboId, updatedData) => {
         setLoading(true);
         const token = localStorage.getItem('access_token');
-        // Ojo: Asegúrate de que esta ruta PUT exista en tu backend según tus archivos
         const url = `${import.meta.env.VITE_BACKEND_URL}/api/recibos/${reciboId}`;
 
         try {
@@ -427,8 +432,9 @@ export const RecibosAnalytics = () => {
                                         className="analytics-btn-view"
                                         onClick={() => handleViewDetails(recibo)}
                                         title="Ver desglose de conceptos"
+                                        disabled={loadingView}
                                     >
-                                        <i className="fas fa-eye"></i>
+                                        <i className={loadingView ? "fas fa-spinner fa-spin" : "fas fa-eye"}></i>
                                     </button>
                                     <button 
                                         className="analytics-btn-edit"
@@ -521,7 +527,7 @@ export const RecibosAnalytics = () => {
             <ViewReciboDetailsModal 
                 isOpen={isViewModalOpen}
                 onClose={() => setIsViewModalOpen(false)}
-                recibo={viewReciboData}
+                data={viewReciboData}
             />
 
             {confirmDeleteId && (
@@ -542,25 +548,27 @@ export const RecibosAnalytics = () => {
     );
 };
 
-// --- MODAL DE VISTA RÁPIDA (DESGLOSE) ---
-const ViewReciboDetailsModal = ({ isOpen, onClose, recibo }) => {
-    if (!isOpen || !recibo) return null;
+// ⭐ MODAL DE VISTA RÁPIDA (DESGLOSE COMPLETO) ⭐
+const ViewReciboDetailsModal = ({ isOpen, onClose, data }) => {
+    if (!isOpen || !data) return null;
+    const { cabecera, conceptos } = data;
+
     return (
         <div className="modal-overlay">
             <div className="modal-content" style={{ maxWidth: '600px', backgroundColor: '#1a222d', color: 'white', borderRadius: '12px' }}>
                 <div className="modal-header" style={{ borderBottom: '1px solid #3a475a' }}>
-                    <h2 style={{ margin: 0 }}>Recibo de Pago #{recibo.id_recibo}</h2>
+                    <h2 style={{ margin: 0 }}>Desglose del Recibo #{cabecera.id_recibo}</h2>
                     <button className="modal-close-btn" onClick={onClose} style={{ fontSize: '24px', color: '#61dafb' }}>&times;</button>
                 </div>
                 <div className="modal-body">
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '20px', padding: '15px', backgroundColor: '#252f3f', borderRadius: '8px' }}>
-                        <p style={{ margin: 0 }}><strong>Estudiante:</strong> {recibo.estudiante}</p>
-                        <p style={{ margin: 0 }}><strong>Grado:</strong> {recibo.grado}</p>
-                        <p style={{ margin: 0 }}><strong>Fecha:</strong> {new Date(recibo.fecha_recibo).toLocaleString()}</p>
-                        <p style={{ margin: 0 }}><strong>Registrado por:</strong> {recibo.usuario_registro}</p>
+                        <p style={{ margin: 0 }}><strong>Estudiante:</strong> {cabecera.estudiante_principal}</p>
+                        <p style={{ margin: 0 }}><strong>Grado:</strong> {cabecera.grado_principal}</p>
+                        <p style={{ margin: 0 }}><strong>Fecha:</strong> {cabecera.fecha}</p>
+                        <p style={{ margin: 0 }}><strong>Registrado por:</strong> {cabecera.registrado_por}</p>
                     </div>
                     
-                    <h3 style={{ color: '#61dafb', fontSize: '1.2em', marginBottom: '10px' }}>Concepto Seleccionado:</h3>
+                    <h3 style={{ color: '#61dafb', fontSize: '1.2em', marginBottom: '10px' }}>Conceptos Pagados:</h3>
                     <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '20px' }}>
                         <thead>
                             <tr style={{ textAlign: 'left', borderBottom: '2px solid #3a475a', color: '#90a4ae' }}>
@@ -570,21 +578,21 @@ const ViewReciboDetailsModal = ({ isOpen, onClose, recibo }) => {
                             </tr>
                         </thead>
                         <tbody>
-                            {recibo.conceptos_detalle && recibo.conceptos_detalle.map((item, idx) => (
+                            {conceptos && conceptos.map((item, idx) => (
                                 <tr key={idx} style={{ borderBottom: '1px solid #3a475a' }}>
                                     <td style={{ padding: '8px' }}>{item.nombre_concepto}</td>
                                     <td style={{ padding: '8px', textAlign: 'center' }}>{item.cantidad}</td>
-                                    <td style={{ padding: '8px', textAlign: 'right' }}>{formatCurrency(item.monto)}</td>
+                                    <td style={{ padding: '8px', textAlign: 'right' }}>{formatCurrency(item.subtotal)}</td>
                                 </tr>
                             ))}
                         </tbody>
                     </table>
 
                     <div style={{ textAlign: 'right', backgroundColor: '#252f3f', padding: '15px', borderRadius: '8px' }}>
-                        <p style={{ margin: '5px 0' }}>Total Bruto del Recibo: <strong>{formatCurrency(recibo.costo_total_recibo)}</strong></p>
-                        <p style={{ margin: '5px 0', fontSize: '1.2em', color: '#4caf50' }}>Monto Pagado ({recibo.tipo_pago}): <strong>{formatCurrency(recibo.monto_pagado)}</strong></p>
-                        {recibo.saldo_pendiente > 0 && (
-                            <p style={{ margin: '5px 0', color: '#ff5252' }}>Saldo Pendiente: <strong>{formatCurrency(recibo.saldo_pendiente)}</strong></p>
+                        <p style={{ margin: '5px 0' }}>Costo Total: <strong>{formatCurrency(cabecera.total_bruto)}</strong></p>
+                        <p style={{ margin: '5px 0', fontSize: '1.2em', color: '#61dafb' }}>Pagado: <strong>{formatCurrency(cabecera.monto_pagado)}</strong></p>
+                        {cabecera.saldo_pendiente > 0 && (
+                            <p style={{ margin: '5px 0', color: '#ff5252' }}>Pendiente: <strong>{formatCurrency(cabecera.saldo_pendiente)}</strong></p>
                         )}
                         <p style={{ fontSize: '0.8em', color: '#90a4ae', marginTop: '10px', fontStyle: 'italic' }}>
                             Nota: El monto pagado corresponde a la transacción completa del recibo.
