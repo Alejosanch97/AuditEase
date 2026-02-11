@@ -44,6 +44,8 @@ export const RecibosAnalytics = () => {
 
     // Data de detalle (para la tabla inferior)
     const [detalleConcepto, setDetalleConcepto] = useState([]);
+    // Guardamos TODOS los detalles cargados para poder buscar entre conceptos
+    const [allLoadedDetalles, setAllLoadedDetalles] = useState([]); 
     const [selectedConceptoId, setSelectedConceptoId] = useState('');
     const [selectedConceptoName, setSelectedConceptoName] = useState('');
 
@@ -92,6 +94,11 @@ export const RecibosAnalytics = () => {
 
             if (response.ok) {
                 setDetalleConcepto(data.detalles);
+                // Actualizamos la bolsa global de detalles para que el buscador de "ojito" encuentre todo
+                setAllLoadedDetalles(prev => {
+                    const filtered = prev.filter(p => !data.detalles.some(d => d.id_recibo === p.id_recibo));
+                    return [...filtered, ...data.detalles];
+                });
             } else {
                 showAlert(data.error || "Error al cargar el detalle del concepto.", 'error');
                 setDetalleConcepto([]);
@@ -166,21 +173,40 @@ export const RecibosAnalytics = () => {
         setIsModalOpen(true);
     }, []);
 
-    const handleViewDetails = (recibo) => {
-        // CORRECCIÓN: Buscamos todos los registros en 'detalleConcepto' que compartan el mismo 'id_recibo'
-        // Esto permite mostrar múltiples conceptos si el recibo fue por varios ítems.
-        const todosLosItemsDelRecibo = detalleConcepto.filter(item => item.id_recibo === recibo.id_recibo);
-        
-        setViewReciboData({
-            ...recibo,
-            conceptos_detalle: todosLosItemsDelRecibo.map(item => ({
-                nombre_concepto: item.concepto || selectedConceptoName,
-                monto: item.subtotal_costo,
-                cantidad: item.cantidad,
-                valor_unitario: item.valor_cobrado_unitario
-            }))
-        });
-        setIsViewModalOpen(true);
+    const handleViewDetails = async (recibo) => {
+        setLoading(true);
+        try {
+            const token = localStorage.getItem('access_token');
+            // ⭐ TRUCO: Consultamos al backend por el desglose real de este ID de recibo específico
+            // Esto garantiza que traiga todos los conceptos aunque no estén en la tabla actual.
+            const url = `${import.meta.env.VITE_BACKEND_URL}/api/recibos/desglose/${recibo.id_recibo}`;
+            const response = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
+            const data = await response.json();
+
+            if (response.ok) {
+                setViewReciboData({
+                    ...recibo,
+                    conceptos_detalle: data.conceptos // El backend debe devolver la lista de ítems
+                });
+                setIsViewModalOpen(true);
+            } else {
+                // Si el endpoint no existe, usamos el fallback de lo que hay en memoria
+                const todosLosItemsDelRecibo = detalleConcepto.filter(item => item.id_recibo === recibo.id_recibo);
+                setViewReciboData({
+                    ...recibo,
+                    conceptos_detalle: todosLosItemsDelRecibo.map(item => ({
+                        nombre_concepto: item.concepto || selectedConceptoName,
+                        monto: item.subtotal_costo,
+                        cantidad: item.cantidad
+                    }))
+                });
+                setIsViewModalOpen(true);
+            }
+        } catch (err) {
+            showAlert("Error al obtener el desglose del recibo.", "error");
+        } finally {
+            setLoading(false);
+        }
     };
 
     const handleDeleteClick = useCallback((reciboId) => {
@@ -537,14 +563,17 @@ export const RecibosAnalytics = () => {
 };
 
 // --- MODAL DE VISTA RÁPIDA (DESGLOSE) ---
-// CORRECCIÓN: Estructura mejorada para mostrar tabla de conceptos y resumen de pago
 const ViewReciboDetailsModal = ({ isOpen, onClose, recibo }) => {
     if (!isOpen || !recibo) return null;
+
+    // Calculamos el total sumando los conceptos cargados para validación visual
+    const sumaConceptos = recibo.conceptos_detalle?.reduce((acc, curr) => acc + curr.monto, 0) || 0;
+
     return (
         <div className="modal-overlay">
             <div className="modal-content" style={{ maxWidth: '600px', backgroundColor: '#1a222d', color: 'white', borderRadius: '12px' }}>
                 <div className="modal-header" style={{ borderBottom: '1px solid #3a475a' }}>
-                    <h2 style={{ margin: 0 }}>Recibo de Pago #{recibo.id_recibo}</h2>
+                    <h2 style={{ margin: 0, color: '#61dafb' }}>Recibo de Pago #{recibo.id_recibo}</h2>
                     <button className="modal-close-btn" onClick={onClose} style={{ fontSize: '24px', color: '#61dafb' }}>&times;</button>
                 </div>
                 <div className="modal-body">
@@ -555,49 +584,47 @@ const ViewReciboDetailsModal = ({ isOpen, onClose, recibo }) => {
                         <p style={{ margin: 0 }}><strong>Registrado por:</strong> {recibo.usuario_registro}</p>
                     </div>
                     
-                    <h3 style={{ color: '#61dafb', fontSize: '1.2em', marginBottom: '10px' }}>Conceptos Detallados:</h3>
+                    <h3 style={{ color: '#61dafb', fontSize: '1.1em', marginBottom: '10px', textTransform: 'uppercase' }}>Conceptos Detallados:</h3>
                     <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '20px' }}>
                         <thead>
-                            <tr style={{ textAlign: 'left', borderBottom: '2px solid #3a475a', color: '#90a4ae' }}>
-                                <th style={{ padding: '8px' }}>Concepto</th>
-                                <th style={{ padding: '8px', textAlign: 'center' }}>Cant.</th>
-                                <th style={{ padding: '8px', textAlign: 'right' }}>Subtotal</th>
+                            <tr style={{ textAlign: 'left', borderBottom: '2px solid #3a475a', color: '#90a4ae', fontSize: '0.9em' }}>
+                                <th style={{ padding: '10px' }}>Concepto</th>
+                                <th style={{ padding: '10px', textAlign: 'center' }}>Cant.</th>
+                                <th style={{ padding: '10px', textAlign: 'right' }}>Subtotal</th>
                             </tr>
                         </thead>
                         <tbody>
                             {recibo.conceptos_detalle && recibo.conceptos_detalle.length > 0 ? (
                                 recibo.conceptos_detalle.map((item, idx) => (
                                     <tr key={idx} style={{ borderBottom: '1px solid #3a475a' }}>
-                                        <td style={{ padding: '8px' }}>{item.nombre_concepto}</td>
-                                        <td style={{ padding: '8px', textAlign: 'center' }}>{item.cantidad}</td>
-                                        <td style={{ padding: '8px', textAlign: 'right' }}>{formatCurrency(item.monto)}</td>
+                                        <td style={{ padding: '10px' }}>{item.nombre_concepto}</td>
+                                        <td style={{ padding: '10px', textAlign: 'center' }}>{item.cantidad}</td>
+                                        <td style={{ padding: '10px', textAlign: 'right' }}>{formatCurrency(item.monto)}</td>
                                     </tr>
                                 ))
                             ) : (
                                 <tr>
-                                    <td style={{ padding: '8px' }}>Monto Registrado</td>
-                                    <td style={{ padding: '8px', textAlign: 'center' }}>1</td>
-                                    <td style={{ padding: '8px', textAlign: 'right' }}>{formatCurrency(recibo.monto_pagado)}</td>
+                                    <td colSpan="3" style={{ padding: '20px', textAlign: 'center', color: '#90a4ae' }}>No hay desglose disponible.</td>
                                 </tr>
                             )}
                         </tbody>
                     </table>
 
                     <div style={{ textAlign: 'right', backgroundColor: '#252f3f', padding: '15px', borderRadius: '8px' }}>
-                        <p style={{ margin: '5px 0' }}>Total Recibo: <strong>{formatCurrency(recibo.costo_total_recibo)}</strong></p>
-                        <p style={{ margin: '5px 0', fontSize: '1.2em', color: '#4caf50' }}>Monto Pagado ({recibo.tipo_pago}): <strong>{formatCurrency(recibo.monto_pagado)}</strong></p>
+                        <p style={{ margin: '5px 0', color: '#90a4ae' }}>Total Recibo (Costo): <strong>{formatCurrency(recibo.costo_total_recibo)}</strong></p>
+                        <p style={{ margin: '5px 0', fontSize: '1.3em', color: '#4caf50' }}>Monto Pagado: <strong>{formatCurrency(recibo.monto_pagado)}</strong></p>
                         {recibo.saldo_pendiente > 0 && (
                             <p style={{ margin: '5px 0', color: '#ff5252' }}>Saldo Pendiente: <strong>{formatCurrency(recibo.saldo_pendiente)}</strong></p>
                         )}
                         {recibo.observaciones && (
-                             <p style={{ margin: '10px 0 0 0', textAlign: 'left', fontSize: '0.9em', color: '#90a4ae', borderTop: '1px solid #3a475a', paddingTop: '10px' }}>
-                                <strong>Obs:</strong> {recibo.observaciones}
+                             <p style={{ margin: '15px 0 0 0', textAlign: 'left', fontSize: '0.85em', color: '#90a4ae', borderTop: '1px solid #3a475a', paddingTop: '10px', fontStyle: 'italic' }}>
+                                <strong>Observaciones:</strong> {recibo.observaciones}
                              </p>
                         )}
                     </div>
                 </div>
                 <div className="modal-footer" style={{ borderTop: '1px solid #3a475a', padding: '15px' }}>
-                    <button className="analytics-btn-cancel" onClick={onClose} style={{ width: '100%' }}>Cerrar</button>
+                    <button className="analytics-btn-cancel" onClick={onClose} style={{ width: '100%', padding: '12px' }}>Cerrar</button>
                 </div>
             </div>
         </div>
