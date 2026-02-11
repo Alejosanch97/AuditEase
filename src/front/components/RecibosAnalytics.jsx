@@ -55,10 +55,9 @@ export const RecibosAnalytics = () => {
     const [currentRecibo, setCurrentRecibo] = useState(null); 
     const [confirmDeleteId, setConfirmDeleteId] = useState(null); // ID para el modal de confirmación
 
-    // --- NUEVOS ESTADOS PARA VER CONCEPTOS (OJITO) ---
-    const [isConceptosModalOpen, setIsConceptosModalOpen] = useState(false);
-    const [conceptosDelRecibo, setConceptosDelRecibo] = useState([]);
-    const [loadingConceptos, setLoadingConceptos] = useState(false);
+    // --- NUEVOS ESTADOS PARA VISTA RÁPIDA (OJITO) ---
+    const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+    const [viewReciboData, setViewReciboData] = useState(null);
 
     // Estado para la alerta (éxito/error/info)
     const [alertState, setAlertState] = useState({ 
@@ -74,30 +73,6 @@ export const RecibosAnalytics = () => {
     }, []);
 
     // --- FETCHERS Y HANDLERS ---
-
-    // ⭐ NUEVA FUNCIÓN PARA EL BOTÓN DE "OJITO" ⭐
-    const fetchConceptosPorRecibo = useCallback(async (reciboId) => {
-        setLoadingConceptos(true);
-        const token = localStorage.getItem('access_token');
-        // Este endpoint debe devolver los detalles (conceptos) de un recibo específico
-        const url = `${import.meta.env.VITE_BACKEND_URL}/api/recibos/${reciboId}/conceptos`;
-        
-        try {
-            const response = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
-            const data = await response.json();
-            if (response.ok) {
-                setConceptosDelRecibo(data.conceptos || []);
-                setIsConceptosModalOpen(true);
-            } else {
-                showAlert("No se pudieron cargar los conceptos de este recibo.", 'error');
-            }
-        } catch (err) {
-            console.error("Error fetching items:", err);
-            showAlert("Error de conexión al obtener conceptos.", 'error');
-        } finally {
-            setLoadingConceptos(false);
-        }
-    }, [showAlert]);
     
     // Función de recarga de detalle, definida primero para usarla en los handlers de acción
     const fetchDetalleConcepto = useCallback(async (conceptoId) => {
@@ -122,7 +97,6 @@ export const RecibosAnalytics = () => {
             if (response.ok) {
                 setDetalleConcepto(data.detalles);
             } else {
-                // setError(data.error || "Error al cargar el detalle del concepto."); // Mantener solo showAlert para errores detallados
                 showAlert(data.error || "Error al cargar el detalle del concepto.", 'error');
                 setDetalleConcepto([]);
             }
@@ -199,6 +173,12 @@ export const RecibosAnalytics = () => {
         setCurrentRecibo(reciboData);
         setIsModalOpen(true);
     }, []);
+
+    // ⭐ NUEVO HANDLER PARA VER DETALLES (OJITO) ⭐
+    const handleViewDetails = (recibo) => {
+        setViewReciboData(recibo);
+        setIsViewModalOpen(true);
+    };
 
 
     // ⭐ HANDLER DE ANULACIÓN (DELETE) - Ahora solo abre el modal de confirmación
@@ -299,7 +279,7 @@ export const RecibosAnalytics = () => {
         setSelectedConceptoName(conceptoName);
     };
 
-    // --- Render Functions (sin cambios en el cuerpo de renderización) ---
+    // --- Render Functions ---
 
     const renderPieChart = () => {
         if (loading && resumenData.length === 0) { 
@@ -446,15 +426,12 @@ export const RecibosAnalytics = () => {
                                 <td>{recibo.tipo_pago}</td>
                                 <td>{recibo.usuario_registro}</td>
                                 
-                                {/* BOTONES DE ACCIÓN */}
                                 <td className="analytics-actions-cell">
-                                    {/* ⭐ BOTÓN DE VISTA (OJITO) ⭐ */}
+                                    {/* ⭐ BOTÓN OJITO: Usa los datos que ya tenemos ⭐ */}
                                     <button 
                                         className="analytics-btn-view"
-                                        onClick={() => fetchConceptosPorRecibo(recibo.id_recibo)}
-                                        disabled={loading || loadingConceptos}
+                                        onClick={() => handleViewDetails(recibo)}
                                         title="Ver desglose de conceptos"
-                                        style={{ backgroundColor: '#17a2b8', color: 'white', border: 'none', padding: '5px 8px', borderRadius: '4px', cursor: 'pointer', marginRight: '5px' }}
                                     >
                                         <i className="fas fa-eye"></i>
                                     </button>
@@ -464,15 +441,15 @@ export const RecibosAnalytics = () => {
                                         disabled={loading}
                                         title="Editar detalles de pago (monto/observaciones)"
                                     >
-                                        <i className="fas fa-edit"></i> Editar
+                                        <i className="fas fa-edit"></i>
                                     </button>
                                     <button 
                                         className="analytics-btn-delete"
-                                        onClick={() => handleDeleteClick(recibo.id_recibo)} // ⭐ Usa el handler que abre el modal
+                                        onClick={() => handleDeleteClick(recibo.id_recibo)}
                                         disabled={loading}
                                         title="Anular (soft delete) el recibo"
                                     >
-                                        <i className="fas fa-trash-alt"></i> Anular
+                                        <i className="fas fa-trash-alt"></i>
                                     </button>
                                 </td>
                             </tr>
@@ -501,7 +478,6 @@ export const RecibosAnalytics = () => {
                 
                 {error && <div className="analytics-error-message">{error}</div>}
 
-                {/* --- SECCIÓN 1: FILTROS Y RESUMEN GENERAL --- */}
                 <section className="analytics-card analytics-full-width-card">
                     <div className="analytics-card-header">
                         <h3>Filtros de Período</h3>
@@ -538,7 +514,6 @@ export const RecibosAnalytics = () => {
                     
                     <hr/>
                     
-                    {/* === Mensajes de Total === */}
                     <p className="analytics-period-total-message">
                        **Total Monto Pagado en el Período:** **{formatCurrency(totalPagadoPeriodo)}**
                     </p>
@@ -549,7 +524,6 @@ export const RecibosAnalytics = () => {
                         </div>
                     )}
                     
-                    {/* Gráfico y Tabla de Resumen */}
                     <div className="analytics-chart-area">
                         <h3>Distribución de Ventas (Costo) por Concepto</h3>
                         {renderPieChart()}
@@ -559,7 +533,6 @@ export const RecibosAnalytics = () => {
 
                 </section>
 
-                {/* --- SECCIÓN 2: DETALLE DE RECIBOS POR CONCEPTO SELECCIONADO --- */}
                 <section className="analytics-card analytics-full-width-card">
                     <div className="analytics-card-header">
                         <h2>Historial Detallado de Recibos</h2>
@@ -568,7 +541,6 @@ export const RecibosAnalytics = () => {
                 </section>
             </div>
             
-            {/* ⭐ LLAMADA AL MODAL DE EDICIÓN ⭐ */}
             <EditReciboModal 
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
@@ -578,14 +550,13 @@ export const RecibosAnalytics = () => {
                 showAlert={showAlert}
             />
 
-            {/* ⭐ NUEVO MODAL PARA EL OJITO ⭐ */}
-            <ConceptosModal 
-                isOpen={isConceptosModalOpen} 
-                onClose={() => setIsConceptosModalOpen(false)} 
-                conceptos={conceptosDelRecibo} 
+            {/* ⭐ NUEVO MODAL: Muestra lo que el usuario ya pagó (basado en el objeto recibo) ⭐ */}
+            <ViewReciboDetailsModal 
+                isOpen={isViewModalOpen}
+                onClose={() => setIsViewModalOpen(false)}
+                recibo={viewReciboData}
             />
 
-            {/* ⭐ LLAMADA A TU MODAL DE CONFIRMACIÓN (para anulación) ⭐ */}
             {confirmDeleteId && (
                 <ConfirmationModal 
                     message={`¿Está seguro de que desea ANULAR el Recibo ID ${confirmDeleteId}? Esta acción revierte el estado a "anulado" y es sensible.`}
@@ -594,7 +565,6 @@ export const RecibosAnalytics = () => {
                 />
             )}
 
-            {/* ⭐ COMPONENTE PARA ALERTAS (ÉXITO/ERROR) ⭐ */}
             <NotificationAlert
                 isOpen={alertState.isOpen}
                 message={alertState.message}
@@ -606,30 +576,48 @@ export const RecibosAnalytics = () => {
 };
 
 // ===========================================
-// ⭐ NUEVO COMPONENTE: MODAL DE CONCEPTOS (POP-UP OJITO)
+// ⭐ NUEVO COMPONENTE: MODAL DE VISTA RÁPIDA
 // ===========================================
-const ConceptosModal = ({ isOpen, onClose, conceptos }) => {
-    if (!isOpen) return null;
-    const totalRecibo = conceptos.reduce((acc, curr) => acc + (curr.monto || 0), 0);
+const ViewReciboDetailsModal = ({ isOpen, onClose, recibo }) => {
+    if (!isOpen || !recibo) return null;
 
     return (
         <div className="modal-overlay">
             <div className="modal-content" style={{ maxWidth: '500px' }}>
                 <div className="modal-header">
-                    <h2>Conceptos del Recibo</h2>
+                    <h2>Desglose del Recibo #{recibo.id_recibo}</h2>
                     <button className="modal-close-btn" onClick={onClose}>&times;</button>
                 </div>
                 <div className="modal-body">
-                    <ul className="conceptos-list" style={{ listStyle: 'none', padding: 0 }}>
-                        {conceptos.map((c, i) => (
-                            <li key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid #eee' }}>
-                                <span>{c.nombre_concepto || c.concepto}</span>
-                                <strong>{formatCurrency(c.monto)}</strong>
+                    <div className="info-section" style={{ marginBottom: '20px', borderBottom: '1px dashed #4a5a70', paddingBottom: '10px' }}>
+                        <p><strong>Estudiante:</strong> {recibo.estudiante}</p>
+                        <p><strong>Fecha:</strong> {new Date(recibo.fecha_recibo).toLocaleDateString()}</p>
+                    </div>
+
+                    <h3 style={{ color: '#61dafb', fontSize: '1.2em', marginBottom: '10px' }}>Conceptos Pagados:</h3>
+                    
+                    {/* Aquí mostramos los conceptos que vienen dentro del recibo */}
+                    <ul style={{ listStyle: 'none', padding: 0 }}>
+                        {recibo.conceptos_detalle && recibo.conceptos_detalle.length > 0 ? (
+                            recibo.conceptos_detalle.map((item, idx) => (
+                                <li key={idx} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid #3a475a' }}>
+                                    <span>{item.nombre_concepto}</span>
+                                    <strong>{formatCurrency(item.monto)}</strong>
+                                </li>
+                            ))
+                        ) : (
+                            /* Fallback: Si no viene el array detallado, mostramos al menos el concepto principal seleccionado */
+                            <li style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid #3a475a' }}>
+                                <span>Concepto Principal Registrado</span>
+                                <strong>{formatCurrency(recibo.monto_pagado)}</strong>
                             </li>
-                        ))}
+                        )}
                     </ul>
-                    <div style={{ textAlign: 'right', marginTop: '15px', fontSize: '1.2em' }}>
-                        Total Recibo: <strong>{formatCurrency(totalRecibo)}</strong>
+
+                    <div className="modal-totals" style={{ marginTop: '20px', textAlign: 'right' }}>
+                        <p style={{ fontSize: '1.1em' }}>Costo Total Recibo: <strong>{formatCurrency(recibo.costo_total_recibo)}</strong></p>
+                        <p style={{ fontSize: '1.3em', color: '#61dafb' }}>Monto Pagado: <strong>{formatCurrency(recibo.monto_pagado)}</strong></p>
+                        <p style={{ color: '#ff6b6b' }}>Saldo Pendiente: <strong>{formatCurrency(recibo.saldo_pendiente)}</strong></p>
                     </div>
                 </div>
                 <div className="modal-footer">
@@ -641,19 +629,15 @@ const ConceptosModal = ({ isOpen, onClose, conceptos }) => {
 };
 
 // ===========================================
-// ⭐ COMPONENTE MODAL DE EDICIÓN (Corregido para usar showAlert)
+// ⭐ COMPONENTE MODAL DE EDICIÓN
 // ===========================================
-
 const EditReciboModal = ({ isOpen, onClose, recibo, onSave, isLoading, showAlert }) => {
-    
-    // Estado interno del modal para manejar los campos de edición
     const [editedData, setEditedData] = useState({
         monto_pagado: 0,
         tipo_pago: '',
         observaciones: ''
     });
     
-    // Sincroniza los datos del recibo con el estado interno cuando se abre el modal
     useEffect(() => {
         if (recibo) {
             setEditedData({
@@ -675,13 +659,10 @@ const EditReciboModal = ({ isOpen, onClose, recibo, onSave, isLoading, showAlert
     };
     
     const handleSave = () => {
-        // Validación básica: Monto no puede ser negativo
         if (editedData.monto_pagado < 0) {
-            // ⭐ Usamos showAlert en lugar de alert()
             showAlert("El monto pagado no puede ser negativo.", 'error'); 
             return;
         }
-        
         onSave(recibo.id_recibo, editedData);
     };
 
@@ -736,18 +717,8 @@ const EditReciboModal = ({ isOpen, onClose, recibo, onSave, isLoading, showAlert
                     </div>
                 </div>
                 <div className="modal-footer">
-                    <button 
-                        className="analytics-btn-cancel" 
-                        onClick={onClose} 
-                        disabled={isLoading}
-                    >
-                        Cancelar
-                    </button>
-                    <button 
-                        className="analytics-btn-apply-filters" 
-                        onClick={handleSave} 
-                        disabled={isLoading}
-                    >
+                    <button className="analytics-btn-cancel" onClick={onClose} disabled={isLoading}>Cancelar</button>
+                    <button className="analytics-btn-apply-filters" onClick={handleSave} disabled={isLoading}>
                         {isLoading ? 'Guardando...' : 'Guardar Cambios'}
                     </button>
                 </div>
