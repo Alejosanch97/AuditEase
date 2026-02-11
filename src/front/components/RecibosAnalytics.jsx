@@ -7,7 +7,7 @@ import NotificationAlert from './NotificationAlert';
 import { ConfirmationModal } from '../components/ConfirmationModal.jsx';
 
 import {
-  PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer
+    PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer
 } from 'recharts';
 
 // Colores para los gráficos (Recharts)
@@ -166,22 +166,39 @@ export const RecibosAnalytics = () => {
         setIsModalOpen(true);
     }, []);
 
-    // ⭐ CORRECCIÓN APLICADA AQUÍ:
-    const handleViewDetails = (recibo) => {
-        // Buscamos todos los registros en 'detalleConcepto' que compartan el mismo 'id_recibo'
-        // Esto permite mostrar múltiples conceptos si el recibo fue por varios ítems cargados en el estado actual.
-        const todosLosItemsDelRecibo = detalleConcepto.filter(item => item.id_recibo === recibo.id_recibo);
-        
-        setViewReciboData({
-            ...recibo,
-            conceptos_detalle: todosLosItemsDelRecibo.map(item => ({
-                nombre_concepto: item.concepto || selectedConceptoName,
-                monto: item.subtotal_costo || item.monto_pagado,
-                cantidad: item.cantidad || 1,
-                valor_unitario: item.valor_cobrado_unitario || item.monto_pagado
-            }))
-        });
-        setIsViewModalOpen(true);
+    // ⭐ CORRECCIÓN PARA CARGAR TODOS LOS CONCEPTOS EN EL POPUP ⭐
+    const handleViewDetails = async (recibo) => {
+        setLoading(true);
+        const token = localStorage.getItem('access_token');
+        // Usamos el endpoint que obtiene todos los conceptos de un ID de recibo específico
+        const url = `${import.meta.env.VITE_BACKEND_URL}/api/recibos/${recibo.id_recibo}`;
+
+        try {
+            const response = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
+            const data = await response.json();
+
+            if (response.ok) {
+                // 'data' contiene la info completa del recibo incluyendo su array de 'conceptos'
+                setViewReciboData({
+                    ...recibo,
+                    conceptos_detalle: data.conceptos.map(item => ({
+                        nombre_concepto: item.nombre_concepto,
+                        monto: item.subtotal,
+                        cantidad: item.cantidad,
+                        valor_unitario: item.valor_unitario
+                    })),
+                    observaciones: data.observaciones // Aseguramos traer las observaciones reales
+                });
+                setIsViewModalOpen(true);
+            } else {
+                showAlert("No se pudo obtener el desglose completo del recibo.", 'error');
+            }
+        } catch (err) {
+            console.error("Error fetching full receipt details:", err);
+            showAlert("Error de conexión al obtener detalles.", 'error');
+        } finally {
+            setLoading(false);
+        }
     };
 
     const handleDeleteClick = useCallback((reciboId) => {
@@ -422,6 +439,7 @@ export const RecibosAnalytics = () => {
                                         className="analytics-btn-view"
                                         onClick={() => handleViewDetails(recibo)}
                                         title="Ver desglose de conceptos"
+                                        disabled={loading}
                                     >
                                         <i className="fas fa-eye"></i>
                                     </button>
