@@ -55,6 +55,11 @@ export const RecibosAnalytics = () => {
     const [currentRecibo, setCurrentRecibo] = useState(null); 
     const [confirmDeleteId, setConfirmDeleteId] = useState(null); // ID para el modal de confirmación
 
+    // --- NUEVOS ESTADOS PARA VER CONCEPTOS (OJITO) ---
+    const [isConceptosModalOpen, setIsConceptosModalOpen] = useState(false);
+    const [conceptosDelRecibo, setConceptosDelRecibo] = useState([]);
+    const [loadingConceptos, setLoadingConceptos] = useState(false);
+
     // Estado para la alerta (éxito/error/info)
     const [alertState, setAlertState] = useState({ 
         isOpen: false, 
@@ -69,6 +74,30 @@ export const RecibosAnalytics = () => {
     }, []);
 
     // --- FETCHERS Y HANDLERS ---
+
+    // ⭐ NUEVA FUNCIÓN PARA EL BOTÓN DE "OJITO" ⭐
+    const fetchConceptosPorRecibo = useCallback(async (reciboId) => {
+        setLoadingConceptos(true);
+        const token = localStorage.getItem('access_token');
+        // Este endpoint debe devolver los detalles (conceptos) de un recibo específico
+        const url = `${import.meta.env.VITE_BACKEND_URL}/api/recibos/${reciboId}/conceptos`;
+        
+        try {
+            const response = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
+            const data = await response.json();
+            if (response.ok) {
+                setConceptosDelRecibo(data.conceptos || []);
+                setIsConceptosModalOpen(true);
+            } else {
+                showAlert("No se pudieron cargar los conceptos de este recibo.", 'error');
+            }
+        } catch (err) {
+            console.error("Error fetching items:", err);
+            showAlert("Error de conexión al obtener conceptos.", 'error');
+        } finally {
+            setLoadingConceptos(false);
+        }
+    }, [showAlert]);
     
     // Función de recarga de detalle, definida primero para usarla en los handlers de acción
     const fetchDetalleConcepto = useCallback(async (conceptoId) => {
@@ -419,6 +448,16 @@ export const RecibosAnalytics = () => {
                                 
                                 {/* BOTONES DE ACCIÓN */}
                                 <td className="analytics-actions-cell">
+                                    {/* ⭐ BOTÓN DE VISTA (OJITO) ⭐ */}
+                                    <button 
+                                        className="analytics-btn-view"
+                                        onClick={() => fetchConceptosPorRecibo(recibo.id_recibo)}
+                                        disabled={loading || loadingConceptos}
+                                        title="Ver desglose de conceptos"
+                                        style={{ backgroundColor: '#17a2b8', color: 'white', border: 'none', padding: '5px 8px', borderRadius: '4px', cursor: 'pointer', marginRight: '5px' }}
+                                    >
+                                        <i className="fas fa-eye"></i>
+                                    </button>
                                     <button 
                                         className="analytics-btn-edit"
                                         onClick={() => handleEdit(recibo)} 
@@ -501,12 +540,12 @@ export const RecibosAnalytics = () => {
                     
                     {/* === Mensajes de Total === */}
                     <p className="analytics-period-total-message">
-                       **Total Monto Pagado en el Período:** **${formatCurrency(totalPagadoPeriodo)}**
+                       **Total Monto Pagado en el Período:** **{formatCurrency(totalPagadoPeriodo)}**
                     </p>
 
                     {resumenData && resumenData.length > 0 && (
                         <div className="total-venta-resumen">
-                            <p>Total Venta (Costo): **${formatCurrency(totalGlobalVentaCosto)}**</p>
+                            <p>Total Venta (Costo): **{formatCurrency(totalGlobalVentaCosto)}**</p>
                         </div>
                     )}
                     
@@ -536,6 +575,14 @@ export const RecibosAnalytics = () => {
                 recibo={currentRecibo}
                 onSave={handleSaveEdit}
                 isLoading={loading}
+                showAlert={showAlert}
+            />
+
+            {/* ⭐ NUEVO MODAL PARA EL OJITO ⭐ */}
+            <ConceptosModal 
+                isOpen={isConceptosModalOpen} 
+                onClose={() => setIsConceptosModalOpen(false)} 
+                conceptos={conceptosDelRecibo} 
             />
 
             {/* ⭐ LLAMADA A TU MODAL DE CONFIRMACIÓN (para anulación) ⭐ */}
@@ -555,6 +602,41 @@ export const RecibosAnalytics = () => {
                 onClose={() => setAlertState(prev => ({ ...prev, isOpen: false }))}
             />
         </>
+    );
+};
+
+// ===========================================
+// ⭐ NUEVO COMPONENTE: MODAL DE CONCEPTOS (POP-UP OJITO)
+// ===========================================
+const ConceptosModal = ({ isOpen, onClose, conceptos }) => {
+    if (!isOpen) return null;
+    const totalRecibo = conceptos.reduce((acc, curr) => acc + (curr.monto || 0), 0);
+
+    return (
+        <div className="modal-overlay">
+            <div className="modal-content" style={{ maxWidth: '500px' }}>
+                <div className="modal-header">
+                    <h2>Conceptos del Recibo</h2>
+                    <button className="modal-close-btn" onClick={onClose}>&times;</button>
+                </div>
+                <div className="modal-body">
+                    <ul className="conceptos-list" style={{ listStyle: 'none', padding: 0 }}>
+                        {conceptos.map((c, i) => (
+                            <li key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid #eee' }}>
+                                <span>{c.nombre_concepto || c.concepto}</span>
+                                <strong>{formatCurrency(c.monto)}</strong>
+                            </li>
+                        ))}
+                    </ul>
+                    <div style={{ textAlign: 'right', marginTop: '15px', fontSize: '1.2em' }}>
+                        Total Recibo: <strong>{formatCurrency(totalRecibo)}</strong>
+                    </div>
+                </div>
+                <div className="modal-footer">
+                    <button className="analytics-btn-cancel" onClick={onClose}>Cerrar</button>
+                </div>
+            </div>
+        </div>
     );
 };
 
@@ -611,8 +693,8 @@ const EditReciboModal = ({ isOpen, onClose, recibo, onSave, isLoading, showAlert
                     <button className="modal-close-btn" onClick={onClose}>&times;</button>
                 </div>
                 <div className="modal-body">
-                    <p>Costo Total del Recibo: **${recibo.costo_total_recibo}**</p>
-                    <p>Saldo Actual: **${recibo.saldo_pendiente}**</p>
+                    <p>Costo Total del Recibo: **{formatCurrency(recibo.costo_total_recibo)}**</p>
+                    <p>Saldo Actual: **{formatCurrency(recibo.saldo_pendiente)}**</p>
                     
                     <div className="form-group">
                         <label htmlFor="monto_pagado">Monto Pagado (Nuevo Abono/Total):</label>

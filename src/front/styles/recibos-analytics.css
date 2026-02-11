@@ -516,6 +516,46 @@ hr {
     }
 }
 
+/* --- NUEVO BOTÓN DE VISTA (OJITO) --- */
+
+.analytics-btn-view {
+    background-color: #17a2b8; /* Color cian/info */
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    cursor: pointer;
+    border-radius: 4px;
+    font-size: 12px;
+    transition: background-color 0.2s, transform 0.1s;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+}
+
+.analytics-btn-view:hover {
+    background-color: #138496;
+    transform: translateY(-1px);
+}
+
+.analytics-btn-view:active {
+    transform: translateY(0);
+}
+
+/* --- AJUSTE PARA LA LISTA DE CONCEPTOS EN EL MODAL --- */
+
+.conceptos-list li {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color: #e0e0e0; /* Color claro para que combine con tu modal oscuro */
+}
+
+.conceptos-list li span {
+    font-weight: 500;
+}
+
+.conceptos-list li strong {
+    color: #61dafb; /* Color cian de acento que ya usas */
+}
 
 /* ======================================================================== */
 /* --- MEDIA QUERIES (RESPONSIVE) --- */
